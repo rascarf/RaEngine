@@ -5,6 +5,8 @@
 #include "Layer/Layer.h"
 #include "Event/EventDispatcher.h"
 
+
+
 namespace ReEngine
 {
     Application::Application()
@@ -26,6 +28,8 @@ namespace ReEngine
     {
         while (mRunning)
         {
+            glClearColor(0.0, 0.0, 1.0, 1.0);
+            glClear(GL_COLOR_BUFFER_BIT);
             mWindow->Update();
         }
     }

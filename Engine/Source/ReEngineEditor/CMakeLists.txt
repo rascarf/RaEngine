@@ -16,7 +16,6 @@ target_include_directories(ReEngineEditor PRIVATE
 target_compile_definitions(ReEngineEditor PRIVATE
 	PLATFORM_WINDOWS
 	DEBUG
-	_CRT_SECURE_NO_WARNINGS
 )
 
 if(MSVC)

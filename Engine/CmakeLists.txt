@@ -7,4 +7,26 @@ set(EngineResourcesDir "${EngineRootDir}/Resources")
 set(EngineShadersDir "${EngineRootDir}/Shaders")
 set(EngineSourceDir "${EngineRootDir}/Source")
 
+if (MSVC)
+    add_compile_options("/MP")
+endif()
+
+find_package(OpenGL 4.5 REQUIRED)
+find_package(OpenMP)
+
+if (OPENGL_FOUND)
+    message("Found OpenGL")
+else()
+    message("Not Found OpenGL")
+endif()
+
+file(COPY ${EngineAssetsDir}
+DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+
+file(COPY ${EngineShadersDir}
+DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+
+file(COPY ${EngineResourcesDir}
+DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+
 add_subdirectory(Source)

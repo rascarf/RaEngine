@@ -5,6 +5,8 @@
 #include "Window/Window.h"
 #include "Layer/LayerStack.h"
 
+#include <GLFW/glfw3.h>
+
 namespace ReEngine
 {
     class Application

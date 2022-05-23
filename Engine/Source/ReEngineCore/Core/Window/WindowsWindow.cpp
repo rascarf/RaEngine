@@ -1,4 +1,5 @@
 #include "Core/Window/WindowsWindow.h"
+#include "Core/Window/GLFWWindow.h"
 #include "Event/ApplicationEvent.h"
 #include "Event/KeyEvent.h"
 #include "Event/MouseEvent.h"
@@ -142,7 +143,8 @@ namespace ReEngine
 
     Window* Window::CreateReWindow(const WindowProperty& Property)
     {
-        return new WindowsWindow(Property);
+        return new GLWindow(Property); // GLFW
+        // return new WindowsWindow(Property); // Win
     }
 
 

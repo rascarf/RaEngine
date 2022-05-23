@@ -29,6 +29,10 @@ namespace ReEngine
         virtual void SetEventCallback(const EventCallBackFunc CallBack) override;
 
         LRESULT  Proc(HWND handle, UINT Msg, WPARAM wParam, LPARAM lParam);
+
+        bool IsVSync() const override{return true;}
+        void SetVSync(bool enabled) override{}
+
     private:
         void Init(const ReEngine::WindowProperty&);
         void ShutDown();
