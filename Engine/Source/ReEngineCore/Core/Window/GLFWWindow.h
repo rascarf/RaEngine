@@ -1,7 +1,7 @@
 #pragma once
 #include "Core/Window/Window.h"
-
 #include <GLFW/glfw3.h>
+class GLFWwindow;
 
 namespace ReEngine
 {

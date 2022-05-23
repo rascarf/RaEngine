@@ -17,7 +17,13 @@ target_include_directories(
     PRIVATE "${EngineCoreDir}"
 )
 
-#target_compile_definitions(ReEngineCorePRIVATE BUILD_DLLPRIVATE DEBUG"ENGINE_ROOT_DIR=${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
+target_compile_definitions(
+    ReEngineCore 
+    PRIVATE DEBUG
+    PRIVATE GLFW_INCLUDE_NONE
+    PRIVATE IMGUI_IMPL_OPENGL_LOADER_CUSTOM
+    "ENGINE_ROOT_DIR=${CMAKE_RUNTIME_OUTPUT_DIRECTORY}"
+    )
 
 target_link_libraries(
     ReEngineCore PUBLIC 

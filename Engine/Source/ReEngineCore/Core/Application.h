@@ -5,7 +5,7 @@
 #include "Window/Window.h"
 #include "Layer/LayerStack.h"
 
-#include <GLFW/glfw3.h>
+#include <Glad/glad.h>
 
 namespace ReEngine
 {
@@ -20,11 +20,14 @@ namespace ReEngine
 
         void OnEvent(std::shared_ptr<Event> e);
 
-        void PushLayer(Layer* InLayer);
+        virtual void PushLayer(Layer* InLayer);
 
-        void PushOverlay(Layer* Overlay);
+        virtual void PushOverlay(Layer* Overlay);
 
         bool OnClose(Event* e);
+
+        Window* GetWindow() { return mWindow.get(); }
+        inline static Application& Get() { return *s_instance; }
 
     private:
 
@@ -32,6 +35,7 @@ namespace ReEngine
         std::unique_ptr<Window> mWindow;
         bool mRunning = true;
         LayerStack mLayerStack;
+        static Application* s_instance;
     };
 
     //单例模式

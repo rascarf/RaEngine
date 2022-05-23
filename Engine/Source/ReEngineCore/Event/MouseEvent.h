@@ -6,6 +6,10 @@ namespace ReEngine
     class MouseMoveEvent : public Event
     {
     public:
+        MouseMoveEvent(){}
+        MouseMoveEvent(float xpos,float ypos):MouseX(xpos),MouseY(ypos){}
+        ~MouseMoveEvent(){}
+
         inline float GetX() { return MouseX; }
         inline float GetY() { return MouseY; }
 
