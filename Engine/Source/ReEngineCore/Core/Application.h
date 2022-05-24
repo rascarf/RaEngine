@@ -18,7 +18,10 @@ namespace ReEngine
 
         void Run();
 
-        void OnEvent(std::shared_ptr<Event> e);
+        virtual void OnInit() {}
+        virtual void OnShutdown() {}
+        virtual void OnUpdate() {}
+        virtual void OnEvent(std::shared_ptr<Event> e);
 
         virtual void PushLayer(Layer* InLayer);
 

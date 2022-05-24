@@ -36,6 +36,7 @@ namespace ReEngine
 
     void Application::Run()
     {
+        OnInit();
         while (mRunning)
         {
             glClearColor(0.0, 0.0, 1.0, 1.0);
@@ -46,10 +47,11 @@ namespace ReEngine
                 (*(--it))->OnUpdate();
             }
 
-            RE_CORE_INFO("{0},{1}", Input::GetMousePos().x, Input::GetMousePos().y);
+            // RE_CORE_INFO("{0},{1}", Input::GetMousePos().x, Input::GetMousePos().y);
 
             mWindow->Update();
         }
+        OnShutdown();
 
     }
 

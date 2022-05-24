@@ -11,6 +11,7 @@ namespace ReEngine
         inline static float GetMouseX() { return s_Instance->GetMouseXImpl(); }
         inline static float GetMouseY() { return s_Instance->GetMouseYImpl(); }
         inline static glm::vec2 GetMousePos() { return s_Instance->GetMousePosImpl(); }
+
     protected:
         virtual bool IsKeyPressedImpl(int keycode) = 0;
         virtual bool IsMouseButtonPressedImpl(int button) = 0;
@@ -30,7 +31,6 @@ namespace ReEngine
         virtual glm::vec2 GetMousePosImpl() override;
         virtual float GetMouseXImpl() override;
         virtual float GetMouseYImpl() override;
-
     };
 
 
