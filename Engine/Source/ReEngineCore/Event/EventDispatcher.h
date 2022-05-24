@@ -11,21 +11,24 @@ namespace ReEngine
     {
         //这里的T是实例化后的Event
         template<typename T>
-        using EventFunc = std::function<bool(T&)>;
+        using EventFunc = std::function<bool(T)>;
 
     public:
         //构造函数：将Event和Dispatcher绑定
-        //目前每个 Dispatcher 只绑定一个函数
-        EventDispatcher(std::shared_ptr<Event>& InEvent):mEvent(InEvent){}
+        //根据事件生成Dispathcher，使用Dispatcher派发事件
+        EventDispatcher(std::shared_ptr<Event> InEvent):mEvent(InEvent){}
 
         //输入的函数用仿函数封装
         template<typename T, typename F>
         bool DispatchEvent(F&& Func)
         {
+            auto s = mEvent->GetEventType();
+            auto a = T::GetStaticType();
             if(mEvent->GetEventType() == T::GetStaticType())
             {
-                mEvent->Handled = Func(static_cast<Event*>(mEvent.get()));
+                mEvent->Handled = Func(std::dynamic_pointer_cast<T>(mEvent));
                 return true;
+
             }
 
             return false;

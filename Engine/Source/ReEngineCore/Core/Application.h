@@ -24,15 +24,14 @@ namespace ReEngine
 
         virtual void PushOverlay(Layer* Overlay);
 
-        bool OnClose(Event* e);
+        bool OnClose(std::shared_ptr<Event> e);
 
-        Window* GetWindow() { return mWindow.get(); }
+        inline static Window* GetWindow() { return mWindow.get(); }
+
         inline static Application& Get() { return *s_instance; }
 
     private:
-
-    private:
-        std::unique_ptr<Window> mWindow;
+        static std::unique_ptr<Window> mWindow;
         bool mRunning = true;
         LayerStack mLayerStack;
         static Application* s_instance;

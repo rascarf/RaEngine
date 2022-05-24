@@ -3,11 +3,13 @@
 #include "Log/Log.h"
 #include "Layer/Layer.h"
 #include "Event/EventDispatcher.h"
+#include "Input/Input.h"
 
 
 namespace ReEngine
 {
     Application* Application::s_instance = nullptr;
+    std::unique_ptr<Window> Application:: mWindow = nullptr;
 
     Application::Application()
     {
@@ -20,7 +22,7 @@ namespace ReEngine
 
         mWindow = std::unique_ptr<Window>(Window::CreateReWindow());
 
-        mWindow->SetEventCallback([this](std::shared_ptr<Event>& e)
+        mWindow->SetEventCallback([this](std::shared_ptr<Event> e)
         {
                 OnEvent(e);
         });
@@ -44,20 +46,21 @@ namespace ReEngine
                 (*(--it))->OnUpdate();
             }
 
+            RE_CORE_INFO("{0},{1}", Input::GetMousePos().x, Input::GetMousePos().y);
+
             mWindow->Update();
         }
+
     }
 
     void Application::OnEvent(std::shared_ptr<Event> e)
     {
-        RE_CORE_INFO("{0}", e->ToString());
-        EventDispatcher CloseDispatcher(e);
-
-        CloseDispatcher.DispatchEvent<WindowCloseEvent>([&](Event* e) {return OnClose(e); });
+        EventDispatcher Dispatcher(e);
+        Dispatcher.DispatchEvent<WindowCloseEvent>([&](std::shared_ptr<Event> e) {return OnClose(e); });
 
         for (auto it = mLayerStack.end(); it != mLayerStack.begin(); )
         {
-            (*(--it))->OnEvent(e.get());
+            (*(--it))->OnEvent(e);
             if (e->Handled)
                 break;
         }
@@ -76,7 +79,7 @@ namespace ReEngine
         Overlay->OnAttach();
     }
 
-    bool Application::OnClose(Event* e)
+    bool Application::OnClose(std::shared_ptr<Event> e)
     {
         mRunning = false;
         return true;

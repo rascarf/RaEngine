@@ -12,3 +12,6 @@
 
 //×óÒÆ
 #define BIT(x) (1 << x)
+
+// #define HZ_BIND_EVENT_FN(fn) std::bind(&##fn, this, std::placeholders::_1)
+#define RE_BIND_EVENT_FN(EventType,CallBackFunc) [&](std::shared_ptr<EventType> e) {return CallBackFunc(e); }

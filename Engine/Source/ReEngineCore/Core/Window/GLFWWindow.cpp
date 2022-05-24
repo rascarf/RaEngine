@@ -7,6 +7,8 @@
 
 #include <Glad/glad.h>
 
+#include "imgui.h"
+
 
 namespace ReEngine
 {
@@ -30,6 +32,10 @@ namespace ReEngine
     {
         glfwPollEvents();
         glfwSwapBuffers(m_Window);
+
+        ImGuiMouseCursor imgui_cursor = ImGui::GetMouseCursor();
+        glfwSetCursor(m_Window, m_MouseCursors[imgui_cursor] ? m_MouseCursors[imgui_cursor] : m_MouseCursors[ImGuiMouseCursor_Arrow]);
+        glfwSetInputMode(m_Window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
     }
 
     bool GLWindow::IsVSync() const
@@ -131,33 +137,53 @@ namespace ReEngine
                 {
                 case GLFW_PRESS:
                 {
-                    auto keyEvent = std::make_shared<KeyPressedEvent>(button, 0);
-                    data.EventCallBack(keyEvent);
+                    auto MouseEvent = std::make_shared<MouseButtonPressedEvent>(button);
+                    data.EventCallBack(MouseEvent);
                     break;
                 }
 
                 case GLFW_RELEASE:
                 {
-                    auto keyEvent = std::make_shared<KeyReleasedEvent>(button);
+                    auto keyEvent = std::make_shared<MouseButtonReleasedEvent>(button);
                     data.EventCallBack(keyEvent);
                     break;
                 }
                 }
             });
+
         glfwSetScrollCallback(m_Window, [](GLFWwindow* window, double xoffset, double yoffset)
             {
                 WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
-                data.EventCallBack(std::make_shared<MouseScrollEvent>(xoffset, yoffset));
+
+                auto ScrollEvent = std::make_shared<MouseScrollEvent>(xoffset, yoffset);
+                data.EventCallBack(ScrollEvent);
             });
 
         glfwSetCursorPosCallback(m_Window, [](GLFWwindow* window, double xPos, double yPos)
             {
                 WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
-
+        
                 auto MouseEvent = std::make_shared<MouseMoveEvent>(xPos, yPos);
                 data.EventCallBack(MouseEvent);
             });
-        
+
+        glfwSetCharCallback(m_Window, [](GLFWwindow* window, unsigned int codepoint)
+            {
+                auto& data = *((WindowData*)glfwGetWindowUserPointer(window));
+
+                auto TypeEvent = std::make_shared<KeyTypedEvent>((int)codepoint);
+                data.EventCallBack(TypeEvent);
+            });
+
+        m_MouseCursors[ImGuiMouseCursor_Arrow] = glfwCreateStandardCursor(GLFW_ARROW_CURSOR);
+        m_MouseCursors[ImGuiMouseCursor_TextInput] = glfwCreateStandardCursor(GLFW_IBEAM_CURSOR);
+        m_MouseCursors[ImGuiMouseCursor_ResizeAll] = glfwCreateStandardCursor(GLFW_ARROW_CURSOR);   // FIXME: GLFW doesn't have this.
+        m_MouseCursors[ImGuiMouseCursor_ResizeNS] = glfwCreateStandardCursor(GLFW_VRESIZE_CURSOR);
+        m_MouseCursors[ImGuiMouseCursor_ResizeEW] = glfwCreateStandardCursor(GLFW_HRESIZE_CURSOR);
+        m_MouseCursors[ImGuiMouseCursor_ResizeNESW] = glfwCreateStandardCursor(GLFW_ARROW_CURSOR);  // FIXME: GLFW doesn't have this.
+        m_MouseCursors[ImGuiMouseCursor_ResizeNWSE] = glfwCreateStandardCursor(GLFW_ARROW_CURSOR);  // FIXME: GLFW doesn't have this.
+        m_MouseCursors[ImGuiMouseCursor_Hand] = glfwCreateStandardCursor(GLFW_HAND_CURSOR);
+
     }
 
     void GLWindow::ShutDonw()
