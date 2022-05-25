@@ -6,6 +6,7 @@
 #include "Input/Input.h"
 
 
+
 namespace ReEngine
 {
     Application* Application::s_instance = nullptr;
@@ -22,11 +23,16 @@ namespace ReEngine
 
         mWindow = std::unique_ptr<Window>(Window::CreateReWindow());
 
+        
+        m_UI = new ImGuiLayer();
+        PushOverlay(m_UI);
+
         mWindow->SetEventCallback([this](std::shared_ptr<Event> e)
         {
                 OnEvent(e);
         });
 
+        
     }
 
     Application::~Application()
@@ -43,14 +49,16 @@ namespace ReEngine
             glClear(GL_COLOR_BUFFER_BIT);
 
             for (auto it = mLayerStack.end(); it != mLayerStack.begin(); )
-            {
                 (*(--it))->OnUpdate();
-            }
 
-            // RE_CORE_INFO("{0},{1}", Input::GetMousePos().x, Input::GetMousePos().y);
+            m_UI->Begin();
+            for (Layer* it : mLayerStack)
+                it->OnUIRender();
+            m_UI->End();
 
             mWindow->Update();
         }
+
         OnShutdown();
 
     }

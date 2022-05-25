@@ -44,3 +44,8 @@ if(NOT TARGET ImGuizmo)
     include(ImGuizmo.cmake)
     set_target_properties(ImGuizmo PROPERTIES FOLDER ${ThirdPartyFolder}/ImGuizmo)
 endif()
+
+if(NOT TARGET magic_enum::magic_enum)
+    # find_package(magic_enum CONFIG REQUIRED)
+    add_subdirectory(magic_enum)
+endif()

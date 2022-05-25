@@ -5,6 +5,7 @@
 
 #include <imgui/imgui.h>
 #include <GLFW/glfw3.h>
+
 #include <imgui/backends/imgui_impl_glfw.h>
 #include <imgui/backends/imgui_impl_opengl3.h>
 
@@ -19,28 +20,8 @@ ReEngine::ImGuiLayer::~ImGuiLayer()
 {
 }
 
-void ReEngine::ImGuiLayer::OnUpdate()
-{
-    Layer::OnUpdate();
-
-    ImGuiIO& io = ImGui::GetIO();
-    Application& app = Application::Get();
-    io.DisplaySize = ImVec2(app.GetWindow()->GetWindowWidth(), app.GetWindow()->GetWindowHeight());
-
-    ImGui_ImplOpenGL3_NewFrame();
-    ImGui::NewFrame();
-
-    static bool show = true;
-    ImGui::ShowDemoWindow(&show);
-
-    ImGui::Render();
-    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-}
-
 void ReEngine::ImGuiLayer::OnEvent(std::shared_ptr<Event> e)
 {
-    Layer::OnEvent(e);
-
     EventDispatcher dispatcher(e);
 
     dispatcher.DispatchEvent<MouseButtonPressedEvent>(RE_BIND_EVENT_FN(MouseButtonPressedEvent, ImGuiLayer::OnMouseButtonPressedEvent));
@@ -60,45 +41,73 @@ void ReEngine::ImGuiLayer::OnEvent(std::shared_ptr<Event> e)
     dispatcher.DispatchEvent<WindowResizeEvent>(RE_BIND_EVENT_FN(WindowResizeEvent,ImGuiLayer::OnWindowResizeEvent));
 }
 
+void ReEngine::ImGuiLayer::OnUpdate()
+{
+    Layer::OnUpdate();
+}
+
+void ReEngine::ImGuiLayer::Begin()
+{
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
+}
+
+void ReEngine::ImGuiLayer::End()
+{
+    ImGuiIO& io = ImGui::GetIO();
+    Application& app = Application::Get();
+    io.DisplaySize = ImVec2(app.GetWindow()->GetWindowWidth(), app.GetWindow()->GetWindowHeight());
+
+    ImGui::Render();
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+    if(io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+    {
+        GLFWwindow* backup_current_context = glfwGetCurrentContext();
+        ImGui::UpdatePlatformWindows();
+        ImGui::RenderPlatformWindowsDefault();
+        glfwMakeContextCurrent(backup_current_context);
+    }
+
+}
+
+void ReEngine::ImGuiLayer::OnUIRender()
+{
+    Layer::OnUIRender();
+    static bool show = true;
+    ImGui::ShowDemoWindow(&show);
+}
+
 void ReEngine::ImGuiLayer::OnAttach()
 {
-    Layer::OnAttach();
+    IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGui::StyleColorsDark();
-
     ImGuiIO& io = ImGui::GetIO();
     io.BackendFlags |= ImGuiBackendFlags_HasMouseCursors;
     io.BackendFlags |= ImGuiBackendFlags_HasSetMousePos;
+    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+    io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 
-    io.KeyMap[ImGuiKey_Tab] = GLFW_KEY_TAB;
-    io.KeyMap[ImGuiKey_LeftArrow] = GLFW_KEY_LEFT;
-    io.KeyMap[ImGuiKey_RightArrow] = GLFW_KEY_RIGHT;
-    io.KeyMap[ImGuiKey_UpArrow] = GLFW_KEY_UP;
-    io.KeyMap[ImGuiKey_DownArrow] = GLFW_KEY_DOWN;
-    io.KeyMap[ImGuiKey_PageUp] = GLFW_KEY_PAGE_UP;
-    io.KeyMap[ImGuiKey_PageDown] = GLFW_KEY_PAGE_DOWN;
-    io.KeyMap[ImGuiKey_Home] = GLFW_KEY_HOME;
-    io.KeyMap[ImGuiKey_End] = GLFW_KEY_END;
-    io.KeyMap[ImGuiKey_Insert] = GLFW_KEY_INSERT;
-    io.KeyMap[ImGuiKey_Delete] = GLFW_KEY_DELETE;
-    io.KeyMap[ImGuiKey_Backspace] = GLFW_KEY_BACKSPACE;
-    io.KeyMap[ImGuiKey_Space] = GLFW_KEY_SPACE;
-    io.KeyMap[ImGuiKey_Enter] = GLFW_KEY_ENTER;
-    io.KeyMap[ImGuiKey_Escape] = GLFW_KEY_ESCAPE;
-    io.KeyMap[ImGuiKey_A] = GLFW_KEY_A;
-    io.KeyMap[ImGuiKey_C] = GLFW_KEY_C;
-    io.KeyMap[ImGuiKey_V] = GLFW_KEY_V;
-    io.KeyMap[ImGuiKey_X] = GLFW_KEY_X;
-    io.KeyMap[ImGuiKey_Y] = GLFW_KEY_Y;
-    io.KeyMap[ImGuiKey_Z] = GLFW_KEY_Z;
+    ImGuiStyle& style = ImGui::GetStyle();
+    if(io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+    {
+        style.WindowRounding = 0.0f;
+        style.Colors[ImGuiCol_WindowBg].w = 1.0f;
+    }
 
-
+    Application& app = Application::Get();
+    auto window = static_cast<GLFWwindow*>(app.GetWindow()->GetNativeWindow());
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 410");
 }
 
 void ReEngine::ImGuiLayer::OnDetach()
 {
-    Layer::OnDetach();
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
 }
 
 bool ReEngine::ImGuiLayer::OnMouseButtonPressedEvent(std::shared_ptr<MouseButtonPressedEvent> e)

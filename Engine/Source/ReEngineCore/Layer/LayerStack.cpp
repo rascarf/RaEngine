@@ -4,7 +4,6 @@
 
 ReEngine::LayerStack::LayerStack()
 {
-    LayerInsertIt = mLayerStack.begin();
 }
 
 ReEngine::LayerStack::~LayerStack()
@@ -17,7 +16,7 @@ ReEngine::LayerStack::~LayerStack()
 
 void ReEngine::LayerStack::PushLayer(Layer* InLayer)
 {
-    LayerInsertIt = mLayerStack.emplace(LayerInsertIt, InLayer);
+    mLayerStack.emplace(mLayerStack.begin() + LayerInsertIndex, InLayer);
 }
 
 void ReEngine::LayerStack::PopLayer(Layer* InLayer)
@@ -26,7 +25,7 @@ void ReEngine::LayerStack::PopLayer(Layer* InLayer)
     if(it != mLayerStack.end())
     {
         mLayerStack.erase(it);
-        --LayerInsertIt;
+        LayerInsertIndex--;
     }
 }
 

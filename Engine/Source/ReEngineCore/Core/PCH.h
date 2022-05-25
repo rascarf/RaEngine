@@ -17,4 +17,8 @@
 #include <Windows.h>
 #endif
 
+#include <magic_enum/include/magic_enum.hpp>
+#include <magic_enum/include/magic_enum_fuse.hpp>
+using namespace magic_enum;
+
 

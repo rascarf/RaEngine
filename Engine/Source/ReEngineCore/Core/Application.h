@@ -4,7 +4,7 @@
 #include "Event/Event.h"
 #include "Window/Window.h"
 #include "Layer/LayerStack.h"
-
+#include "Layer/ImGuiLayer.h"
 #include <Glad/glad.h>
 
 namespace ReEngine
@@ -35,6 +35,7 @@ namespace ReEngine
 
     private:
         static std::unique_ptr<Window> mWindow;
+        ImGuiLayer* m_UI;
         bool mRunning = true;
         LayerStack mLayerStack;
         static Application* s_instance;
