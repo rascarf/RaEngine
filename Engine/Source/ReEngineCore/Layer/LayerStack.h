@@ -21,7 +21,7 @@ namespace ReEngine
         inline std::vector<ReEngine::Layer*>::iterator end() { return mLayerStack.end(); }
     private:
         std::vector<ReEngine::Layer*>mLayerStack;
-        std::vector<ReEngine::Layer*>::iterator LayerInsertIt;
+        unsigned int  LayerInsertIndex = 0;
     };
 }
 

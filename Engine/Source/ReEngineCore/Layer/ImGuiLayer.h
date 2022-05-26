@@ -12,11 +12,13 @@ namespace ReEngine
         ImGuiLayer();
         ~ImGuiLayer();
 
-        void OnUpdate() override;
-        void OnEvent(std::shared_ptr<Event> e) override;
-
-        void OnAttach() override;
+        virtual void OnAttach() override;
         virtual void OnDetach() override;
+        virtual void OnEvent(std::shared_ptr<Event> e) override;
+        virtual void OnUpdate() override;
+        virtual void Begin() override;
+        virtual void End() override;
+        virtual void OnUIRender() override;
 
     private:
         bool OnMouseButtonPressedEvent(std::shared_ptr<MouseButtonPressedEvent> e);

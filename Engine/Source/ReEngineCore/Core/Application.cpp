@@ -10,7 +10,7 @@
 namespace ReEngine
 {
     Application* Application::s_instance = nullptr;
-    std::unique_ptr<Window> Application:: mWindow = nullptr;
+    std::unique_ptr<Window> Application::m_Window = nullptr;
 
     Application::Application()
     {
@@ -21,13 +21,13 @@ namespace ReEngine
 
         s_instance = this;
 
-        mWindow = std::unique_ptr<Window>(Window::CreateReWindow());
+        m_Window = std::unique_ptr<Window>(Window::CreateReWindow());
 
         
         m_UI = new ImGuiLayer();
         PushOverlay(m_UI);
 
-        mWindow->SetEventCallback([this](std::shared_ptr<Event> e)
+        m_Window->SetEventCallback([this](std::shared_ptr<Event> e)
         {
                 OnEvent(e);
         });
@@ -67,8 +67,8 @@ namespace ReEngine
             glClearColor(0.0, 0.0, 1.0, 1.0);
             glClear(GL_COLOR_BUFFER_BIT);
 
-            // glBindVertexArray(m_VertexArray);
-            // glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, nullptr);
+            glBindVertexArray(m_VertexArray);
+            glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, nullptr);
 
             for (auto it = mLayerStack.end(); it != mLayerStack.begin(); )
                 (*(--it))->OnUpdate();
@@ -78,7 +78,7 @@ namespace ReEngine
                 it->OnUIRender();
             m_UI->End();
 
-            mWindow->Update();
+            m_Window->Update();
         }
 
         OnShutdown();

@@ -30,8 +30,7 @@ namespace ReEngine
     void GLWindow::Update()
     {
         glfwPollEvents();
-
-
+        m_Context->SwapBuffers();
         ImGuiMouseCursor imgui_cursor = ImGui::GetMouseCursor();
         glfwSetCursor(m_Window, m_MouseCursors[imgui_cursor] ? m_MouseCursors[imgui_cursor] : m_MouseCursors[ImGuiMouseCursor_Arrow]);
         glfwSetInputMode(m_Window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);

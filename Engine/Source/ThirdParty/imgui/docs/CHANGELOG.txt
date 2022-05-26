@@ -99,6 +99,75 @@ Other changes:
 
 
 -----------------------------------------------------------------------
+ VERSION 1.88 WIP (In Progress)
+-----------------------------------------------------------------------
+
+Breaking changes:
+
+- Renamed ImGuiKeyModFlags to ImGuiModFlags. Kept inline redirection enums (will obsolete).
+  (This was never used in public API functions but technically present in imgui.h and ImGuiIO).
+
+Other Changes:
+
+- IO: Fixed backward-compatibility regression introduced in 1.87: (#4921, #4858)
+  - Direct accesses to io.KeysDown[] with legacy indices didn't work (with new backends).
+  - Direct accesses to io.KeysDown[GetKeyIndex(XXX)] would access invalid data (with old/new backends).
+  - Calling IsKeyDown() didn't have those problems, and is recommended as io.KeysDown[] is obsolete.
+- IO: Fixed input queue trickling of interleaved keys/chars events (which are frequent especially
+  when holding down a key as OS submits chars repeat events) delaying key presses and mouse movements.
+  In particular, using the input system for fast game-like actions (e.g. WASD camera move) would
+  typically have been impacted, as well as holding a key while dragging mouse. Constraints have
+  been lifted and are now only happening when e.g. an InputText() widget is active. (#4921, #4858)
+  Not that even thought you shouldn't need to disable io.ConfigInputTrickleEventQueue, you can
+  technically dynamically change its setting based on the context (e.g. disable only when hovering
+  or interacting with a game/3D view).
+- Clipper: Fixed a regression in 1.86 when not calling clipper.End() and late destructing the
+  clipper instance. High-level languages (Lua,Rust etc.) would typically be affected. (#4822)
+- Sliders, Drags: Fixed dragging when using hexadecimal display format string. (#5165, #3133)
+- Sliders, Drags: Fixed manual input when using hexadecimal display format string. (#5165, #3133)
+- InputScalar: Fixed manual input when using %03d style width in display format string. (#5165, #3133)
+- InputScalar: Automatically allow hexadecimal input when format is %X (without extra flag).
+- InputScalar: Automatically allow scientific input when format is float/double (without extra flag).
+- IsItemHovered(): added ImGuiHoveredFlags_NoNavOverride to disable the behavior where the
+  return value is overriden by focus when gamepad/keyboard navigation is active.
+- InputText: Fixed pressing Tab emitting two tabs characters because of dual Keys/Chars events being
+  trickled with the new input queue (happened on some backends only). (#2467, #1336)
+- Tables: Fixed incorrect border height used for logic when resizing one of several synchronized
+  instance of a same table ID, when instances have a different height. (#3955).
+- Inputs: Fixed IsMouseClicked() repeat mode rate being half of keyboard repeat rate.
+- ColorEdit: Fixed text baseline alignment after a SameLine() after a ColorEdit() with visible label.
+- Menus: Adjusted BeginMenu() closing logic so hovering void or non-MenuItem() in parent window
+  always lead to menu closure. Fixes using items that are not MenuItem() or BeginItem() at the root
+  level of a popup with a child menu opened.
+- Stack Tool: Added option to copy item path to clipboard. (#4631)
+- Drawlist: Fixed PathArcTo() emitting terminating vertices too close to arc vertices. (#4993) [@thedmd]
+- DrawList: Fixed texture-based anti-aliasing path with RGBA textures (#5132, #3245) [@cfillion]
+- Misc: Fixed IsAnyItemHovered() returning false when using navigation.
+- Misc: Added IMGUI_STB_SPRINTF_FILENAME to support custom path to stb_sprintf. (#5068, #2954) [@jakubtomsu]
+- Misc: Added constexpr to ImVec2/ImVec4 inline constructors. (#4995) [@Myriachan]
+- Misc: Updated stb_truetype.h from 1.20 to 1.26 (many fixes). (#5075)
+- Misc: Updated stb_textedit.h from 1.13 to 1.14 (our changes so this effectively is a no-op). (#5075)
+- Misc: Updated stb_rect_pack.h from 1.00 to 1.01 (minor). (#5075)
+- Misc: binary_to_compressed_c tool: Added -nostatic option. (#5021) [@podsvirov]
+- ImVector: Fixed erase() with empty range. (#5009) [@thedmd]
+- Backends: GLFW: Fixed a regression in 1.87 which resulted in keyboard modifiers events being
+  reported incorrectly on Linux/X11, due to a bug in GLFW. [@rokups]
+- Backends: SDL: Fixed dragging out viewport broken on some SDL setups. (#5012) [@rokups]
+- Backends: SDL: Added support for extra mouse buttons (SDL_BUTTON_X1/SDL_BUTTON_X2). (#5125) [@sgiurgiu]
+- Backends: OSX: Monitor NSKeyUp events to catch missing keyUp for key when user press Cmd + key (#5128) [@thedmd]
+- Examples: Emscripten: Fix building for latest Emscripten specs. (#3632)
+
+Docking+Viewports Branch:
+
+- Docking: Fixed floating docked nodes not being clamped into viewport workrect to stay reachable
+  when g.ConfigWindowsMoveFromTitleBarOnly is set and multi-viewports are disabled. (#5044)
+- Backends: SDL: Fixed dragging out main viewport broken on some SDL setups. (#5012) [@rokups]
+- Viewports: Fixed translating a host viewport from briefly altering the size of AlwaysAutoResize windows. (#5057)
+- Viewports: Fixed main viewport size not matching ImDrawData::DisplaySize for one frame during resize
+  when multi-viewports are disabled. (#4900)
+
+
+-----------------------------------------------------------------------
  VERSION 1.87 (Released 2022-02-07)
 -----------------------------------------------------------------------
 
@@ -391,7 +460,7 @@ If you are stuck on ancient compiler you may need to stay at this version onward
 
 Breaking Changes:
 
-- Removed GetWindowContentRegionWidth() function. keep inline redirection helper.
+- Removed GetWindowContentRegionWidth() function. Keep inline redirection helper.
   Can use 'GetWindowContentRegionMax().x - GetWindowContentRegionMin().x' instead but it's not
   very useful in practice, and the only use of it in the demo was illfit.
   Using 'GetContentRegionAvail().x' is generally a better choice.
