@@ -1,5 +1,7 @@
 #pragma once
 #include "Core/Window/Window.h"
+#include "Renderer/GraphicsContext.h"
+
 #include <GLFW/glfw3.h>
 class GLFWwindow;
 
@@ -34,6 +36,7 @@ namespace ReEngine
         };
 
     private:
+        GraphicsContext* m_Context;
         WindowData mData;
         GLFWwindow* m_Window;
         GLFWcursor* m_MouseCursors[9] = { 0 };

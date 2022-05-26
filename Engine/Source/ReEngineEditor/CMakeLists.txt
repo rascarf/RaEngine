@@ -21,5 +21,5 @@ target_compile_definitions(ReEngineEditor PRIVATE
 if(MSVC)
 	set_target_properties(
         ReEngineEditor PROPERTIES
-	VS_DEBUGGER_WORKING_DIRECTORY "${EngineEditorDir}")
+	VS_DEBUGGER_WORKING_DIRECTORY "${EngineRootDir}")
 endif()

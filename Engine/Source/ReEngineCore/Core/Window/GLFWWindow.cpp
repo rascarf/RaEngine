@@ -4,8 +4,7 @@
 #include "Event/KeyEvent.h"
 #include "Event/MouseEvent.h"
 #include "Log/Log.h"
-
-#include <Glad/glad.h>
+#include "Platform/OpenGL/OpenGLContext.h"
 
 #include "imgui.h"
 
@@ -31,7 +30,7 @@ namespace ReEngine
     void GLWindow::Update()
     {
         glfwPollEvents();
-        glfwSwapBuffers(m_Window);
+
 
         ImGuiMouseCursor imgui_cursor = ImGui::GetMouseCursor();
         glfwSetCursor(m_Window, m_MouseCursors[imgui_cursor] ? m_MouseCursors[imgui_cursor] : m_MouseCursors[ImGuiMouseCursor_Arrow]);
@@ -74,14 +73,8 @@ namespace ReEngine
         }
 
         m_Window = glfwCreateWindow((int)props.Width, (int)props.Height, mData.Title.c_str(), nullptr, nullptr);
-
-        glfwMakeContextCurrent(m_Window);
-        if(!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
-        {
-            RE_CORE_ERROR("Failed to initailize Glad");
-            return;
-        }
-        
+        m_Context = new OpenGLContext(m_Window);
+        m_Context->Init();
 
         glfwSetWindowUserPointer(m_Window, &mData);
         SetVSync(true);

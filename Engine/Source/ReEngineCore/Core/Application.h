@@ -38,6 +38,8 @@ namespace ReEngine
         bool mRunning = true;
         LayerStack mLayerStack;
         static Application* s_instance;
+
+        unsigned int m_VertexArray, m_VertexBuffer, m_Indices;
     };
 
     //单例模式
