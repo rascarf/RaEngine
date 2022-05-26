@@ -6,7 +6,7 @@
 #include <imgui.h>
 
 #include <GLFW/glfw3.h>
-
+#include <imgui_spectrum.h>
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_opengl3.h>
 
@@ -82,9 +82,15 @@ void ReEngine::ImGuiLayer::OnAttach()
 {
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
-    ImGui::StyleColorsDark();
+
+    // ImGui::StyleColorsDark();
+    ImGui::Spectrum::StyleColorsSpectrum();
+
     ImGuiIO& io = ImGui::GetIO();
 
+    io.Fonts->AddFontDefault();
+    ImFont* font = io.Fonts->AddFontFromFileTTF("./Resources/Fonts/SourceSans3-Regular.ttf", 24.0f);
+    if (font) io.FontDefault = font;
 
     io.BackendFlags |= ImGuiBackendFlags_HasMouseCursors;
     io.BackendFlags |= ImGuiBackendFlags_HasSetMousePos;
