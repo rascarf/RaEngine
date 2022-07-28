@@ -21,4 +21,6 @@
 #include <magic_enum_fuse.hpp>
 using namespace magic_enum;
 
+#include "Log/Log.h"
+
 

@@ -61,6 +61,24 @@ namespace ReEngine
 
     void Application::Run()
     {
+        enum class ShaderDataType
+        {
+            None = 0,
+            Float = 4,
+            Float2 = 4 * 2,
+            Float3 = 4 * 3,
+            Float4 = 4 * 4,
+            Mat3 = 4 * 3 * 3,
+            Mat4 = 4 * 4 * 4,
+            Int = 4,
+            Int2 = 4 * 2,
+            Int3 = 4 * 3,
+            Int4 = 4 * 4,
+            Bool = 1
+        };
+
+        ShaderDataType s = ShaderDataType::Bool;
+        RE_CORE_INFO("{0}", s);
         OnInit();
         while (mRunning)
         {
