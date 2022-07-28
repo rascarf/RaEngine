@@ -132,7 +132,7 @@ struct ImGui_ImplVulkan_Data
 
     ImGui_ImplVulkan_Data()
     {
-        memset((void*)this, 0, sizeof(*this));
+        memset(this, 0, sizeof(*this));
         BufferMemoryAlignment = 256;
     }
 };

@@ -1,5 +1,7 @@
 #pragma once
 #include "Core/Window/Window.h"
+#include "Renderer/GraphicsContext.h"
+
 #include <GLFW/glfw3.h>
 class GLFWwindow;
 
@@ -16,7 +18,8 @@ namespace ReEngine
         void SetVSync(bool enabled) override;
         unsigned GetWindowHeight() const override { return mData.Height; }
         unsigned GetWindowWidth() const override { return mData.Width; };
-        void SetEventCallback(const EventCallBackFunc CallBack) override;
+        virtual void SetEventCallback(const EventCallBackFunc CallBack) override;
+        inline virtual void* GetNativeWindow() override { return m_Window; }
 
     private:
 
@@ -33,8 +36,10 @@ namespace ReEngine
         };
 
     private:
+        GraphicsContext* m_Context;
         WindowData mData;
         GLFWwindow* m_Window;
+        GLFWcursor* m_MouseCursors[9] = { 0 };
     };
 }
 

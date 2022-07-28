@@ -4,7 +4,7 @@
 #include "Event/Event.h"
 #include "Window/Window.h"
 #include "Layer/LayerStack.h"
-
+#include "Layer/ImGuiLayer.h"
 #include <Glad/glad.h>
 
 namespace ReEngine
@@ -18,24 +18,29 @@ namespace ReEngine
 
         void Run();
 
-        void OnEvent(std::shared_ptr<Event> e);
+        virtual void OnInit() {}
+        virtual void OnShutdown() {}
+        virtual void OnUpdate() {}
+        virtual void OnEvent(std::shared_ptr<Event> e);
 
         virtual void PushLayer(Layer* InLayer);
 
         virtual void PushOverlay(Layer* Overlay);
 
-        bool OnClose(Event* e);
+        bool OnClose(std::shared_ptr<Event> e);
 
-        Window* GetWindow() { return mWindow.get(); }
+        inline static Window* GetWindow() { return m_Window.get(); }
         inline static Application& Get() { return *s_instance; }
 
     private:
-
-    private:
-        std::unique_ptr<Window> mWindow;
+        static Application* s_instance;
+        static std::unique_ptr<Window> m_Window;
+        ImGuiLayer* m_UI;
         bool mRunning = true;
         LayerStack mLayerStack;
-        static Application* s_instance;
+        
+
+        unsigned int m_VertexArray, m_VertexBuffer, m_Indices;
     };
 
     //单例模式

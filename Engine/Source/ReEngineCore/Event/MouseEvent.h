@@ -56,7 +56,7 @@ namespace ReEngine
         float MouseYOffset = 0.0f;
     };
 
-    class MouseButtonEvent : Event
+    class MouseButtonEvent : public Event
     {
     public:
         inline int GetMouseButton()const { return MouseButton; }

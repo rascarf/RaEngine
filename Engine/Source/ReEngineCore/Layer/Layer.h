@@ -13,7 +13,10 @@ namespace ReEngine
         virtual void OnAttach() {}
         virtual void OnDetach() {}
         virtual void OnUpdate() {}
-        virtual void OnEvent(Event* e) {}
+        virtual void OnEvent(std::shared_ptr<Event> e) {}
+        virtual void Begin(){}
+        virtual void End(){}
+        virtual void OnUIRender(){}
 
         inline std::string& GetName() { return DebugName; }
 

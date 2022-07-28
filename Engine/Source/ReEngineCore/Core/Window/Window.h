@@ -29,6 +29,7 @@ namespace ReEngine
 
         virtual void SetEventCallback(const EventCallBackFunc CallBack) = 0;
         static Window* CreateReWindow(const WindowProperty& Property = WindowProperty());
+        virtual void* GetNativeWindow() = 0;
         virtual void SetVSync(bool enabled) = 0;
         virtual bool IsVSync() const = 0;
     };
