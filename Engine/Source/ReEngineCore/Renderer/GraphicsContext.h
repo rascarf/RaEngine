@@ -1,4 +1,6 @@
 #pragma once
+#include "Core/Core.h"
+
 namespace ReEngine
 {
   class GraphicsContext

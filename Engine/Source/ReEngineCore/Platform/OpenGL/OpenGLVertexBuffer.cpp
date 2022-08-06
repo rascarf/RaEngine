@@ -1,4 +1,4 @@
-#include "Renderer/Buffer.h"
+#include "Renderer/VertexBuffer.h"
 
 namespace ReEngine
 {

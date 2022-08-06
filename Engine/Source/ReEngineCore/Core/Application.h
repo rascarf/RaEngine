@@ -5,7 +5,7 @@
 #include "Window/Window.h"
 #include "Layer/LayerStack.h"
 #include "Layer/ImGuiLayer.h"
-#include <Glad/glad.h>
+#include <ThirdParty/Glad/include/glad/glad.h>
 
 namespace ReEngine
 {
