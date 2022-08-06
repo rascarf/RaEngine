@@ -35,7 +35,7 @@ namespace ReEngine
         BufferElement() = default;
 
         BufferElement(ShaderDataType type, const std::string& name, bool normalized = false)
-            : Name(name), Type(type), Size( ShderDataTypeSize(type)), Offset(0), Normalized(normalized)
+            : Name(name), Type(type), Size(ShderDataTypeSize(type)), Offset(0), Normalized(normalized)
         {
         }
 
@@ -92,9 +92,9 @@ namespace ReEngine
     {
     public:
         virtual ~VertexBuffer() = default;
-        
-        virtual void Bind()const  = 0;
-        virtual void Unbind()const  = 0;
+
+        virtual void Bind()const = 0;
+        virtual void Unbind()const = 0;
 
         virtual void SetData(const void* data, uint32_t size) = 0;
 
@@ -106,19 +106,5 @@ namespace ReEngine
         static Ref<VertexBuffer> Create(void* vertices, uint32_t size, VertexBufferUsage usage = VertexBufferUsage::Static);
     };
 
-    class IndexBuffer
-    {
-    public:
-        virtual  ~IndexBuffer();
-
-        virtual void Bind() const = 0;
-        virtual void Unbind()const  = 0;
-
-        virtual void SetData(const void* data, uint32_t count) = 0;
-        virtual uint32_t GetCount() const = 0;
-
-
-        static Ref<IndexBuffer> Create(uint32_t count);
-        static Ref<IndexBuffer> Create(uint32_t* indices, uint32_t count);
-    };
 }
+

@@ -6,6 +6,7 @@ namespace ReEngine
   public:
       virtual void Init() = 0;
       virtual void SwapBuffers() = 0;
-  private:
+
+      static Ref<GraphicsContext> Create(void* Window);
   };
 };
