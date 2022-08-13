@@ -6,22 +6,37 @@ namespace ReEngine
     enum class ShaderDataType
     {
         None = 0,
-        Float = 4,
-        Float2 = 4 * 2,
-        Float3 = 4 * 3,
-        Float4 = 4 * 4,
-        Mat3 = 4 * 3 * 3,
-        Mat4 = 4 * 4 * 4,
-        Int = 4,
-        Int2 = 4 * 2,
-        Int3 = 4 * 3,
-        Int4 = 4 * 4,
-        Bool = 1
+        Float,
+        Float2,
+        Float3,
+        Float4,
+        Mat3,
+        Mat4,
+        Int,
+        Int2 ,
+        Int3,
+        Int4,
+        Bool
     };
 
     static uint32_t ShderDataTypeSize(ShaderDataType type)
     {
-        return static_cast<uint32_t>(type);
+        switch (type)
+        {
+        case ReEngine::ShaderDataType::Float:    return 4;
+        case ReEngine::ShaderDataType::Float2:   return 4 * 2;
+        case ReEngine::ShaderDataType::Float3:   return 4 * 3;
+        case ReEngine::ShaderDataType::Float4:   return 4 * 4;
+        case ReEngine::ShaderDataType::Mat3:     return 4 * 3 * 3;
+        case ReEngine::ShaderDataType::Mat4:     return 4 * 4 * 4;
+        case ReEngine::ShaderDataType::Int:      return 4;
+        case ReEngine::ShaderDataType::Int2:     return 4 * 2;
+        case ReEngine::ShaderDataType::Int3:     return 4 * 3;
+        case ReEngine::ShaderDataType::Int4:     return 4 * 4;
+        case ReEngine::ShaderDataType::Bool:     return 1;
+        }
+        
+        return 0;
     }
 
     struct BufferElement
@@ -41,7 +56,22 @@ namespace ReEngine
 
         uint32_t GetComponentCount() const
         {
-            return static_cast<uint32_t>(Type);
+            switch (Type)
+            {
+            case ReEngine::ShaderDataType::Float:    return 1;
+            case ReEngine::ShaderDataType::Float2:   return 2;
+            case ReEngine::ShaderDataType::Float3:   return 3;
+            case ReEngine::ShaderDataType::Float4:   return 4;
+            case ReEngine::ShaderDataType::Mat3:     return 3 * 3;
+            case ReEngine::ShaderDataType::Mat4:     return 4 * 4;
+            case ReEngine::ShaderDataType::Int:      return 1;
+            case ReEngine::ShaderDataType::Int2:     return 2;
+            case ReEngine::ShaderDataType::Int3:     return 3;
+            case ReEngine::ShaderDataType::Int4:     return 4;
+            case ReEngine::ShaderDataType::Bool:     return 1;
+            }
+            
+            return 0;
         }
     };
 

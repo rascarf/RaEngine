@@ -10,7 +10,7 @@
 
 #endif
 
-//×óÒÆ
+//Ã—Ã³Ã’Ã†
 #define BIT(x) (1 << x)
 
 #define RE_BIND_EVENT_FN(EventType,CallBackFunc) [&](std::shared_ptr<EventType> e) {return CallBackFunc(e); }

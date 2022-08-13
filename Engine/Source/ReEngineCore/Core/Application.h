@@ -7,6 +7,8 @@
 #include "Layer/ImGuiLayer.h"
 #include <ThirdParty/Glad/include/glad/glad.h>
 
+#include "Platform/OpenGL/OpenGLVertexArray.h"
+
 namespace ReEngine
 {
     class Application
@@ -41,6 +43,8 @@ namespace ReEngine
         
 
         unsigned int m_VertexArray, m_VertexBuffer, m_Indices;
+
+        Ref<OpenGLVertexArray> VArray;
     };
 
     //单例模式

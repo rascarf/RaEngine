@@ -1,23 +1,53 @@
-#include "Renderer/VertexBuffer.h"
+#include "OpenGLVertexBuffer.h"
+#include "glad/glad.h"
 
 namespace ReEngine
 {
-    class OpenGLVertexBuffer: public VertexBuffer
+    static GLenum OpenGLUsage(VertexBufferUsage usage)
     {
-        OpenGLVertexBuffer(uint32_t size, VertexBufferUsage usage = VertexBufferUsage::Dynamic);
-        OpenGLVertexBuffer(void* vertices, uint32_t size, VertexBufferUsage usage = VertexBufferUsage::Static);
-        virtual ~OpenGLVertexBuffer();
+        switch (usage)
+        {
+        case VertexBufferUsage::Dynamic : return GL_STATIC_DRAW;
+        case VertexBufferUsage::Static  : return GL_DYNAMIC_DRAW;
 
-        virtual void Bind() const override;
-        virtual void Unbind() const override;
+            RE_CORE_ERROR("Unknow Vertex Buffer Usage");
+            return 0;
+        }
+    }
+    
+    OpenGLVertexBuffer::OpenGLVertexBuffer(uint32_t size, VertexBufferUsage usage):mUsage(usage)
+    {
+        glCreateBuffers(1,&mRendererID);
+        glBindBuffer(GL_ARRAY_BUFFER, mRendererID);
+        glBufferData(GL_ARRAY_BUFFER, size, nullptr, OpenGLUsage(usage));
+        
+    }
 
-        virtual void SetData(const void* data, uint32_t size) override;
+    OpenGLVertexBuffer::OpenGLVertexBuffer(void* vertices, uint32_t size, VertexBufferUsage usage):mUsage(usage)
+    {
+        glCreateBuffers(1,&mRendererID);
+        glBindBuffer(GL_ARRAY_BUFFER, mRendererID);
+        glBufferData(GL_ARRAY_BUFFER, size, vertices, OpenGLUsage(usage));
+    }
 
-        virtual const BufferLayout& GetLayout() const override { return mLayout; }
-        virtual void SetLayout(const BufferLayout& layout) override { mLayout = layout; }
-    private:
-        uint32_t mRendererID;
-        VertexBufferUsage mUsage;
-        BufferLayout mLayout;
-    };
+    OpenGLVertexBuffer::~OpenGLVertexBuffer()
+    {
+        glDeleteBuffers(1,&mRendererID);
+    }
+
+    void OpenGLVertexBuffer::Bind() const
+    {
+        glBindBuffer(GL_ARRAY_BUFFER,mRendererID);
+    }
+
+    void OpenGLVertexBuffer::Unbind() const
+    {
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+    }
+
+    void OpenGLVertexBuffer::SetData(const void* data, uint32_t size)
+    {
+        glBindBuffer(GL_ARRAY_BUFFER, mRendererID);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, size, data);
+    }
 }

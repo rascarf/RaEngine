@@ -1,10 +1,11 @@
 #pragma once
-#include "Renderer/Buffer.h"
+#include "Renderer/VertexBuffer.h"
 
 namespace ReEngine
 {
     class OpenGLVertexBuffer : public VertexBuffer
     {
+    public:
         OpenGLVertexBuffer(uint32_t size, VertexBufferUsage usage = VertexBufferUsage::Dynamic);
         OpenGLVertexBuffer(void* vertices, uint32_t size, VertexBufferUsage usage = VertexBufferUsage::Static);
         virtual ~OpenGLVertexBuffer();
