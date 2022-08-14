@@ -26,13 +26,13 @@ namespace ReEngine
         virtual void OnEvent(std::shared_ptr<Event> e);
 
         virtual void PushLayer(Layer* InLayer);
-
         virtual void PushOverlay(Layer* Overlay);
 
         bool OnClose(std::shared_ptr<Event> e);
 
         inline static Window* GetWindow() { return m_Window.get(); }
         inline static Application& Get() { return *s_instance; }
+        
 
     private:
         static Application* s_instance;

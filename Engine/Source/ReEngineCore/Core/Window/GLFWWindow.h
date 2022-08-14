@@ -20,6 +20,7 @@ namespace ReEngine
         unsigned GetWindowWidth() const override { return mData.Width; };
         virtual void SetEventCallback(const EventCallBackFunc CallBack) override;
         inline virtual void* GetNativeWindow() override { return m_Window; }
+        [[nodiscard]]virtual Ref<GraphicsContext>GetGraphicsContext() const override{return m_Context;}
 
     private:
 
@@ -36,7 +37,7 @@ namespace ReEngine
         };
 
     private:
-        GraphicsContext* m_Context;
+        Ref<GraphicsContext> m_Context;
         WindowData mData;
         GLFWwindow* m_Window;
         GLFWcursor* m_MouseCursors[9] = { 0 };

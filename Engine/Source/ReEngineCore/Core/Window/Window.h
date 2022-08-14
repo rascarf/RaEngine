@@ -2,6 +2,7 @@
 #include "Core/Core.h"
 #include "Core/PCH.h"
 #include "Event/Event.h"
+#include "Renderer/GraphicsContext.h"
 
 namespace ReEngine
 {
@@ -19,7 +20,6 @@ namespace ReEngine
     class Window
     {
     public:
-
         virtual ~Window() {};
 
         virtual void Update() = 0;
@@ -30,6 +30,7 @@ namespace ReEngine
         virtual void SetEventCallback(const EventCallBackFunc CallBack) = 0;
         static Window* CreateReWindow(const WindowProperty& Property = WindowProperty());
         virtual void* GetNativeWindow() = 0;
+       [[nodiscard]] virtual Ref<GraphicsContext> GetGraphicsContext() const = 0;
         virtual void SetVSync(bool enabled) = 0;
         virtual bool IsVSync() const = 0;
     };

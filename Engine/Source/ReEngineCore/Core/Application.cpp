@@ -8,6 +8,8 @@
 #include "Platform/OpenGL/OpenGLVertexBuffer.h"
 #include "Platform/OpenGL/OpenGLIndexBuffer.h"
 #include "Platform/OpenGL/OpenGLVertexArray.h"
+#include "Renderer/RenderCommand.h"
+#include "Renderer/Renderer.h"
 
 
 namespace ReEngine
@@ -67,11 +69,10 @@ namespace ReEngine
         OnInit();
         while (mRunning)
         {
-            glClearColor(0.0, 0.0, 1.0, 1.0);
-            glClear(GL_COLOR_BUFFER_BIT);
-            
-            VArray->Bind();
-            glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, nullptr);
+            RenderCommand::SetClearColor(glm::vec4(0.0, 0.0, 1.0, 1.0));
+            RenderCommand::Clear();
+
+            // Renderer::Submit(VArray);
 
             for (auto it = mLayerStack.end(); it != mLayerStack.begin(); )
                 (*(--it))->OnUpdate();

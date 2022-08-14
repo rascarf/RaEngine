@@ -1,10 +1,9 @@
 #pragma once
-#include "Core/Core.h"
-#include "Core/PCH.h"
+
 #include "Shader.h"
-#include "VertexArray.h"
-#include "glm/glm.hpp"
 #include "Renderer/GraphicsContext.h"
+#include "RenderCommand.h"
+
 
 namespace ReEngine
 {
