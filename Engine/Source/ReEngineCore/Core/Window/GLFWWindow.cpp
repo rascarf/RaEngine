@@ -27,7 +27,7 @@ namespace ReEngine
     {
     }
 
-    void GLWindow::Update()
+    void GLWindow::Update(Timestep ts)
     {
         glfwPollEvents();
         m_Context->SwapBuffers();

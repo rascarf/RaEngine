@@ -7,7 +7,9 @@
 #include "Layer/ImGuiLayer.h"
 #include <ThirdParty/Glad/include/glad/glad.h>
 
+#include "Platform/OpenGL/OpenGLShader.h"
 #include "Platform/OpenGL/OpenGLVertexArray.h"
+#include "Renderer/Shader.h"
 
 namespace ReEngine
 {
@@ -40,10 +42,9 @@ namespace ReEngine
         ImGuiLayer* m_UI;
         bool mRunning = true;
         LayerStack mLayerStack;
+        float m_LastTime;
         
-
-        unsigned int m_VertexArray, m_VertexBuffer, m_Indices;
-
+        Ref<OpenGLShader> mShader;
         Ref<OpenGLVertexArray> VArray;
     };
 

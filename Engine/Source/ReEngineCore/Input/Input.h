@@ -8,6 +8,7 @@ namespace ReEngine
     public:
         inline static bool IsKeyPressed(int keycode) { return s_Instance->IsKeyPressedImpl(keycode); }
         inline static bool IsMouseButtonPressed(int button) { return s_Instance->IsMouseButtonPressedImpl(button); }
+        inline static bool IsMouseButtonReleased(int button){return s_Instance->IsMouseButtonReleased(button);}
         inline static float GetMouseX() { return s_Instance->GetMouseXImpl(); }
         inline static float GetMouseY() { return s_Instance->GetMouseYImpl(); }
         inline static glm::vec2 GetMousePos() { return s_Instance->GetMousePosImpl(); }
@@ -15,12 +16,13 @@ namespace ReEngine
     protected:
         virtual bool IsKeyPressedImpl(int keycode) = 0;
         virtual bool IsMouseButtonPressedImpl(int button) = 0;
+        virtual bool IsMouseButtonReleaseImpl(int button) = 0;
         virtual float GetMouseXImpl() = 0;
         virtual float GetMouseYImpl() = 0;
         virtual glm::vec2 GetMousePosImpl() = 0;
 
     private:
-        static Input* s_Instance; // ÕâÀïµÄs_InstanceÊôÓÚÊµÀı£¬ËùÒÔÕâÒ²¿ÉÒÔ
+        static Input* s_Instance; // è¿™é‡Œçš„s_Instanceå±äºå®ä¾‹ï¼Œæ‰€ä»¥è¿™ä¹Ÿå¯ä»¥
     };
 
     class WindowsInput : public Input
@@ -28,6 +30,7 @@ namespace ReEngine
     protected:
         virtual bool IsKeyPressedImpl(int keycode) override;
         virtual bool IsMouseButtonPressedImpl(int button) override;
+        virtual bool IsMouseButtonReleaseImpl(int button)override;
         virtual glm::vec2 GetMousePosImpl() override;
         virtual float GetMouseXImpl() override;
         virtual float GetMouseYImpl() override;

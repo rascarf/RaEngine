@@ -2,23 +2,23 @@
 #include "Event.h"
 #include "Core/PCH.h"
 
-//ÊÂ¼ş·Ö·¢Æ÷
-//½«Ò»¸öÊÂ¼şºÍÒ»¸öº¯Êı°ó¶¨
-//Õâ¸öº¯Êı»áreturnÒ»¸öboolean£¬À´¾ö¶¨ÊÇ·ñÏû·ÑÕâ¸öÊÂ¼ş
+//äº‹ä»¶åˆ†å‘å™¨
+//å°†ä¸€ä¸ªäº‹ä»¶å’Œä¸€ä¸ªå‡½æ•°ç»‘å®š
+//è¿™ä¸ªå‡½æ•°ä¼šreturnä¸€ä¸ªbooleanï¼Œæ¥å†³å®šæ˜¯å¦æ¶ˆè´¹è¿™ä¸ªäº‹ä»¶
 namespace ReEngine
 {
     class EventDispatcher
     {
-        //ÕâÀïµÄTÊÇÊµÀı»¯ºóµÄEvent
+        //è¿™é‡Œçš„Tæ˜¯å®ä¾‹åŒ–åçš„Event
         template<typename T>
         using EventFunc = std::function<bool(T)>;
 
     public:
-        //¹¹Ôìº¯Êı£º½«EventºÍDispatcher°ó¶¨
-        //¸ù¾İÊÂ¼şÉú³ÉDispathcher£¬Ê¹ÓÃDispatcherÅÉ·¢ÊÂ¼ş
+        //æ„é€ å‡½æ•°ï¼šå°†Eventå’ŒDispatcherç»‘å®š
+        //æ ¹æ®äº‹ä»¶ç”ŸæˆDispathcherï¼Œä½¿ç”¨Dispatcheræ´¾å‘äº‹ä»¶
         EventDispatcher(std::shared_ptr<Event> InEvent):mEvent(InEvent){}
 
-        //ÊäÈëµÄº¯ÊıÓÃ·Âº¯Êı·â×°
+        //è¾“å…¥çš„å‡½æ•°ç”¨ä»¿å‡½æ•°å°è£…
         template<typename T, typename F>
         bool DispatchEvent(F&& Func)
         {
@@ -28,7 +28,6 @@ namespace ReEngine
             {
                 mEvent->Handled = Func(std::dynamic_pointer_cast<T>(mEvent));
                 return true;
-
             }
 
             return false;

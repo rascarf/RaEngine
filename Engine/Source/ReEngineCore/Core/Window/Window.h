@@ -22,7 +22,7 @@ namespace ReEngine
     public:
         virtual ~Window() {};
 
-        virtual void Update() = 0;
+        virtual void Update(Timestep Ts) = 0;
 
         virtual unsigned int GetWindowWidth() const = 0;
         virtual unsigned int GetWindowHeight() const = 0;
@@ -30,7 +30,8 @@ namespace ReEngine
         virtual void SetEventCallback(const EventCallBackFunc CallBack) = 0;
         static Window* CreateReWindow(const WindowProperty& Property = WindowProperty());
         virtual void* GetNativeWindow() = 0;
-       [[nodiscard]] virtual Ref<GraphicsContext> GetGraphicsContext() const = 0;
+        [[nodiscard]] virtual Ref<GraphicsContext> GetGraphicsContext() const = 0;
+        [[nodiscard]] virtual float GetTime() = 0;
         virtual void SetVSync(bool enabled) = 0;
         virtual bool IsVSync() const = 0;
     };

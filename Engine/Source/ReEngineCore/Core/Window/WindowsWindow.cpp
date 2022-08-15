@@ -22,7 +22,7 @@ namespace ReEngine
         ShutDown();
     }
 
-    void WindowsWindow::Update()
+    void WindowsWindow::Update(Timestep ts)
     {
         MSG msg = { 0 };
 

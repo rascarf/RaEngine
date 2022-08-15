@@ -15,7 +15,7 @@ namespace ReEngine
         virtual void OnAttach() override;
         virtual void OnDetach() override;
         virtual void OnEvent(std::shared_ptr<Event> e) override;
-        virtual void OnUpdate() override;
+        virtual void OnUpdate(Timestep ts) override;
         virtual void Begin() override;
         virtual void End() override;
         virtual void OnUIRender() override;

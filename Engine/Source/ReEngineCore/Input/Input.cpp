@@ -21,6 +21,13 @@ namespace ReEngine
         return state == GLFW_PRESS;
     }
 
+    bool WindowsInput::IsMouseButtonReleaseImpl(int button)
+    {
+        auto window = static_cast<GLFWwindow*>(Application::GetWindow()->GetNativeWindow());
+        auto state = glfwGetMouseButton(window, button);
+        return state == GLFW_RELEASE;
+    }
+    
     glm::vec2 ReEngine::WindowsInput::GetMousePosImpl()
     {
         auto window = static_cast<GLFWwindow*>(Application::GetWindow()->GetNativeWindow());

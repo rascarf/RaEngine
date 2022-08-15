@@ -13,7 +13,7 @@ namespace ReEngine
         GLWindow(const WindowProperty& Props);
         virtual ~GLWindow() override;
 
-        void Update() override;
+        void Update(Timestep ts) override;
         bool IsVSync() const override;
         void SetVSync(bool enabled) override;
         unsigned GetWindowHeight() const override { return mData.Height; }
@@ -21,7 +21,7 @@ namespace ReEngine
         virtual void SetEventCallback(const EventCallBackFunc CallBack) override;
         inline virtual void* GetNativeWindow() override { return m_Window; }
         [[nodiscard]]virtual Ref<GraphicsContext>GetGraphicsContext() const override{return m_Context;}
-
+        [[nodiscard]]inline virtual float GetTime() override{return glfwGetTime();}
     private:
 
         virtual  void Init(const WindowProperty& props);

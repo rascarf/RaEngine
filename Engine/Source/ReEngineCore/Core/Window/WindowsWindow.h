@@ -19,7 +19,7 @@ namespace ReEngine
         WindowsWindow(const ReEngine::WindowProperty& WindowProperty);
         virtual ~WindowsWindow();
 
-        virtual void Update() override;
+        virtual void Update(Timestep ts) override;
 
         inline virtual unsigned int GetWindowHeight() const override;
         inline virtual unsigned int GetWindowWidth() const override;

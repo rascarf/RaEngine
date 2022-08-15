@@ -42,9 +42,9 @@ void ReEngine::ImGuiLayer::OnEvent(std::shared_ptr<Event> e)
     dispatcher.DispatchEvent<WindowResizeEvent>(RE_BIND_EVENT_FN(WindowResizeEvent,ImGuiLayer::OnWindowResizeEvent));
 }
 
-void ReEngine::ImGuiLayer::OnUpdate()
+void ReEngine::ImGuiLayer::OnUpdate(Timestep ts)
 {
-    Layer::OnUpdate();
+    Layer::OnUpdate(ts);
 }
 
 void ReEngine::ImGuiLayer::Begin()
