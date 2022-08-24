@@ -3,7 +3,7 @@
 
 namespace ReEngine
 {
-    template<template T>
+    template<typename T>
     class SingletonTemplate
     {
     protected:
