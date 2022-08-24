@@ -10,16 +10,16 @@ ReEngine::LayerStack::~LayerStack()
 {
     for(auto& Layer : mLayerStack)
     {
-        delete Layer;
+        Layer.reset();
     }
 }
 
-void ReEngine::LayerStack::PushLayer(Layer* InLayer)
+void ReEngine::LayerStack::PushLayer(Ref<Layer> InLayer)
 {
     mLayerStack.emplace(mLayerStack.begin() + LayerInsertIndex, InLayer);
 }
 
-void ReEngine::LayerStack::PopLayer(Layer* InLayer)
+void ReEngine::LayerStack::PopLayer(Ref<Layer> InLayer)
 {
     auto it = std::find(mLayerStack.begin(), mLayerStack.end(), InLayer);
     if(it != mLayerStack.end())
@@ -29,12 +29,12 @@ void ReEngine::LayerStack::PopLayer(Layer* InLayer)
     }
 }
 
-void ReEngine::LayerStack::PushOverlay(Layer* Overlay)
+void ReEngine::LayerStack::PushOverlay(Ref<Layer> Overlay)
 {
     mLayerStack.emplace_back(Overlay);
 }
 
-void ReEngine::LayerStack::PopOverlay(Layer* Overlay)
+void ReEngine::LayerStack::PopOverlay(Ref<Layer> Overlay)
 {
     auto it = std::find(mLayerStack.begin(), mLayerStack.end(), Overlay);
     if (it != mLayerStack.end())

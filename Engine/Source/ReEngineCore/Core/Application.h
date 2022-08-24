@@ -10,44 +10,39 @@
 #include "Platform/OpenGL/OpenGLShader.h"
 #include "Platform/OpenGL/OpenGLVertexArray.h"
 #include "Renderer/RHI/Shader.h"
+#include "Core/SIngletonTemplate.h"
 
 namespace ReEngine
 {
-    class Application
+    class Application : public SingletonTemplate<Application>
     {
     public:
-        Application();
+        Application() = default;
 
-        virtual ~Application();
+        virtual ~Application(){};
 
         void Run();
 
-        virtual void OnInit() {}
+        virtual void OnInit();
         virtual void OnShutdown() {}
         virtual void OnUpdate() {}
         virtual void OnEvent(std::shared_ptr<Event> e);
 
-        virtual void PushLayer(Layer* InLayer);
-        virtual void PushOverlay(Layer* Overlay);
+        virtual void PushLayer(Ref<Layer> InLayer);
+        virtual void PushOverlay(Ref<Layer> Overlay);
 
-        bool OnClose(std::shared_ptr<Event> e);
+        bool OnClose(Ref<Event> e);
 
-        inline static Window* GetWindow() { return m_Window.get(); }
-        inline static Application& Get() { return *s_instance; }
-        
-
+        [[nodiscard]]Window& GetWindow() { return *m_Window; }
+    
     private:
-        static Application* s_instance;
-        static std::unique_ptr<Window> m_Window;
-        ImGuiLayer* m_UI;
-        bool mRunning = true;
+        Scope<Window> m_Window;
         LayerStack mLayerStack;
+        bool mRunning = true;
         float m_LastTime;
         
+        Ref<ImGuiLayer> m_UI;
         Ref<OpenGLShader> mShader;
         Ref<OpenGLVertexArray> VArray;
     };
-
-    //单例模式
-    Application* CreateApplication();
 }

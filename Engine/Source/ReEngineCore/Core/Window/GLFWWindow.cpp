@@ -76,7 +76,6 @@ namespace ReEngine
         m_Context = GraphicsContext::Create(m_Window);
         m_Context->Init();
         
-
         glfwSetWindowUserPointer(m_Window, &mData);
         SetVSync(true);
 

@@ -141,9 +141,9 @@ namespace ReEngine
     {
     }
 
-    Window* Window::CreateReWindow(const WindowProperty& Property)
+    Scope<Window> Window::CreateReWindow(const WindowProperty& Property)
     {
-        return new GLWindow(Property); // GLFW
+        return std::make_unique<GLWindow>(Property); // GLFW
         // return new WindowsWindow(Property); // Win
     }
 

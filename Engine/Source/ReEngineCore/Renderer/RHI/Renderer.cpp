@@ -41,7 +41,7 @@ namespace ReEngine
 
    Ref<GraphicsContext> Renderer::GetContext()
    {
-      return Application::Get().GetWindow()->GetGraphicsContext();
+      return Application::GetInstance().GetWindow().GetGraphicsContext();
    }
 
 
