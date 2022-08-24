@@ -24,7 +24,7 @@ namespace ReEngine
         void PopLayer(Ref<Layer> InLayer);
 
         bool OnWindowClose(Ref<Event> e);
-        bool OnWindowResize(Ref<Event> e);
+        bool OnWindowResize(Ref<WindowResizeEvent> e);
 
         [[nodiscard]]Window& GetWindow() { return *m_Window; }
 

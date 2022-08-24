@@ -62,7 +62,7 @@ namespace ReEngine
     {
         EventDispatcher Dispatcher(e);
         Dispatcher.DispatchEvent<WindowCloseEvent>([&](std::shared_ptr<Event> e) {return OnWindowClose(e); });
-        Dispatcher.DispatchEvent<WindowResizeEvent>([&](std::shared_ptr<Event> e) {return OnWindowResize(e); });
+        Dispatcher.DispatchEvent<WindowResizeEvent>([&](std::shared_ptr<WindowResizeEvent> e) {return OnWindowResize(e); });
 
         for (auto it = mLayerStack.end(); it != mLayerStack.begin(); )
         {
@@ -90,8 +90,10 @@ namespace ReEngine
         InLayer->OnDetach();
     }
 
-    bool Application::OnWindowResize(Ref<Event> e)
+    bool Application::OnWindowResize(Ref<WindowResizeEvent> e)
     {
+        
+        RE_INFO("({0},{1})",e->GetWidth(),e->GetHeight());
         return false;
     }
 
