@@ -15,7 +15,7 @@
 
 namespace ReEngine
 {
-    void Application::OnInit()
+    void Application::Init()
     {
         m_Window = Window::CreateReWindow(WindowProperty("ReEngine"));
         
@@ -30,7 +30,6 @@ namespace ReEngine
     
     void Application::Run()
     {
-        OnInit();
         while (mRunning)
         {
             float CurrentTime = m_Window->GetTime();
@@ -47,14 +46,23 @@ namespace ReEngine
 
             m_Window->Update(Ts);
         }
-
-        OnShutdown();
     }
-    
+
+    void Application::Shutdown()
+    {
+        mRunning = false;
+    }
+
+    void Application::Clean()
+    {
+        
+    }
+
     void Application::OnEvent(std::shared_ptr<Event> e)
     {
         EventDispatcher Dispatcher(e);
-        Dispatcher.DispatchEvent<WindowCloseEvent>([&](std::shared_ptr<Event> e) {return OnClose(e); });
+        Dispatcher.DispatchEvent<WindowCloseEvent>([&](std::shared_ptr<Event> e) {return OnWindowClose(e); });
+        Dispatcher.DispatchEvent<WindowResizeEvent>([&](std::shared_ptr<Event> e) {return OnWindowResize(e); });
 
         for (auto it = mLayerStack.end(); it != mLayerStack.begin(); )
         {
@@ -76,7 +84,18 @@ namespace ReEngine
         Overlay->OnAttach();
     }
 
-    bool Application::OnClose(std::shared_ptr<Event> e)
+    void Application::PopLayer(Ref<Layer> InLayer)
+    {
+        mLayerStack.PopLayer(InLayer);
+        InLayer->OnDetach();
+    }
+
+    bool Application::OnWindowResize(Ref<Event> e)
+    {
+        return false;
+    }
+
+    bool Application::OnWindowClose(std::shared_ptr<Event> e)
     {
         mRunning = false;
         return true;

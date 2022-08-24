@@ -1,10 +1,8 @@
 #pragma once
 #include "ReEngine.h"
 
-class SandBox :public ReEngine::Application
+namespace ReEngine
 {
-public:
-    SandBox();
+    void AppInit(Application& app);
     
-    ~SandBox();
-};
+}

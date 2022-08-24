@@ -7,9 +7,6 @@
 #include "Layer/ImGuiLayer.h"
 #include <ThirdParty/Glad/include/glad/glad.h>
 
-#include "Platform/OpenGL/OpenGLShader.h"
-#include "Platform/OpenGL/OpenGLVertexArray.h"
-#include "Renderer/RHI/Shader.h"
 #include "Core/SIngletonTemplate.h"
 
 namespace ReEngine
@@ -18,23 +15,25 @@ namespace ReEngine
     {
     public:
         Application() = default;
-
         virtual ~Application(){};
+        
+        void OnEvent(std::shared_ptr<Event> e);
 
-        void Run();
+        void PushLayer(Ref<Layer> InLayer);
+        void PushOverlay(Ref<Layer> Overlay);
+        void PopLayer(Ref<Layer> InLayer);
 
-        virtual void OnInit();
-        virtual void OnShutdown() {}
-        virtual void OnUpdate() {}
-        virtual void OnEvent(std::shared_ptr<Event> e);
-
-        virtual void PushLayer(Ref<Layer> InLayer);
-        virtual void PushOverlay(Ref<Layer> Overlay);
-
-        bool OnClose(Ref<Event> e);
+        bool OnWindowClose(Ref<Event> e);
+        bool OnWindowResize(Ref<Event> e);
 
         [[nodiscard]]Window& GetWindow() { return *m_Window; }
-    
+
+    public:
+        void Init();
+        void Run();
+        void Shutdown();
+        void Clean();
+        
     private:
         Scope<Window> m_Window;
         LayerStack mLayerStack;
@@ -42,7 +41,8 @@ namespace ReEngine
         float m_LastTime;
         
         Ref<ImGuiLayer> m_UI;
-        Ref<OpenGLShader> mShader;
-        Ref<OpenGLVertexArray> VArray;
+
+    private:   
+        friend void AppInit(Application& app);
     };
 }

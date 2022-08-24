@@ -1,10 +1,9 @@
-#include "SandBox.h"
+#include "ReEngine.h"
 
-SandBox::SandBox()
+namespace ReEngine
 {
-}
-
-SandBox::~SandBox()
-{
-
+    void AppInit(Application& app)
+    {
+        app.Init();
+    }
 }
