@@ -4,6 +4,8 @@
 #include <unordered_map>
 #include <filesystem>
 #include <glm/glm.hpp>
+
+#include "Core/Core.h"
 namespace ReEngine
 {
 	enum class ShaderUniformType
@@ -66,10 +68,10 @@ namespace ReEngine
 		virtual void SetUniform(const std::string& fullname, const glm::mat4& value) {};
 
 		virtual const std::string& GetName() const = 0;
-		static Shader& Create(const std::filesystem::path& filepath);
-		static Shader& Create(const std::string& filepath);
-		static Shader& Create(const std::string& name, const std::string& vertexSrc, const std::string& fragmentSrc);
-
+		static Ref<Shader> Create(const std::filesystem::path& filepath);
+		static Ref<Shader> Create(const std::string& filepath);
+		static Ref<Shader> Create(const std::string& name, const std::string& vertexSrc, const std::string& fragmentSrc);
+		
 	};
 
 

@@ -10,15 +10,15 @@ namespace ReEngine
         SingletonTemplate() = default;
 
     public:
-        [[nodiscard]] static T& GetInstance()noexcept(std::is_nothrow_constructible::value)
+        [[nodiscard]] static T& GetInstance()noexcept(std::is_nothrow_constructible<T>::value)
         {
             static T instance;
             return instance;
         }
 
         virtual ~SingletonTemplate() noexcept = default;
-        PublicSingleton(const PublicSingleton&) = delete;
-        PublicSingleton& operator=(const PublicSingleton&) = delete;
+        SingletonTemplate(const SingletonTemplate&) = delete;
+        SingletonTemplate& operator=(const SingletonTemplate&) = delete;
 
     };
 }

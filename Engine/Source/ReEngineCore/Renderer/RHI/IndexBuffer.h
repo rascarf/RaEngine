@@ -19,4 +19,5 @@ namespace ReEngine
         static Ref<IndexBuffer> Create(uint32_t count);
         static Ref<IndexBuffer> Create(uint32_t* indices, uint32_t count);
     };
+    
 }
