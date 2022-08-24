@@ -39,11 +39,6 @@ namespace ReEngine
             for (auto it = mLayerStack.end(); it != mLayerStack.begin(); )
                 (*(--it))->OnUpdate(Ts);
 
-            m_UI->Begin();
-            for (const auto& it : mLayerStack)
-                it->OnUIRender();
-            m_UI->End();
-
             m_Window->Update(Ts);
         }
     }

@@ -24,37 +24,24 @@ ReEngine::ImGuiLayer::~ImGuiLayer()
 void ReEngine::ImGuiLayer::OnEvent(std::shared_ptr<Event> e)
 {
     EventDispatcher dispatcher(e);
-    //
-    // dispatcher.DispatchEvent<MouseButtonPressedEvent>(RE_BIND_EVENT_FN(MouseButtonPressedEvent, ImGuiLayer::OnMouseButtonPressedEvent));
-    //
-    // dispatcher.DispatchEvent<MouseButtonReleasedEvent>(RE_BIND_EVENT_FN(MouseButtonReleasedEvent, ImGuiLayer::OnMouseButtonReleasedEvent));
-    //
-    // dispatcher.DispatchEvent<MouseMoveEvent>(RE_BIND_EVENT_FN(MouseMoveEvent, ImGuiLayer::OnMouseMovedEvent));
-    //
-    // dispatcher.DispatchEvent<MouseScrollEvent>(RE_BIND_EVENT_FN(MouseScrollEvent,ImGuiLayer::OnMouseScrolledEvent));
-    //
-    // dispatcher.DispatchEvent<KeyPressedEvent>(RE_BIND_EVENT_FN(KeyPressedEvent,ImGuiLayer::OnKeyPressedEvent));
-    //
-    // dispatcher.DispatchEvent<KeyReleasedEvent>(RE_BIND_EVENT_FN(KeyReleasedEvent,ImGuiLayer::OnKeyReleasedEvent));
-    //
-    // dispatcher.DispatchEvent<KeyTypedEvent>(RE_BIND_EVENT_FN(KeyTypedEvent, ImGuiLayer::OnKeyTypedEvent));
-    //
     dispatcher.DispatchEvent<WindowResizeEvent>(RE_BIND_EVENT_FN(WindowResizeEvent,ImGuiLayer::OnWindowResizeEvent));
 }
 
 void ReEngine::ImGuiLayer::OnUpdate(Timestep ts)
 {
-    Layer::OnUpdate(ts);
+    BeginUIRender();
+    OnUIRender();
+    EndUIRender();
 }
 
-void ReEngine::ImGuiLayer::Begin()
+void ReEngine::ImGuiLayer::BeginUIRender()
 {
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 }
 
-void ReEngine::ImGuiLayer::End()
+void ReEngine::ImGuiLayer::EndUIRender()
 {
     ImGuiIO& io = ImGui::GetIO();
     Application& app = Application::GetInstance();

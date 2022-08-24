@@ -14,9 +14,6 @@ namespace ReEngine
         virtual void OnDetach() {}
         virtual void OnUpdate(Timestep ts) {}
         virtual void OnEvent(std::shared_ptr<Event> e) {}
-        virtual void Begin(){}
-        virtual void End(){}
-        virtual void OnUIRender(){}
 
         inline std::string& GetName() { return DebugName; }
 
