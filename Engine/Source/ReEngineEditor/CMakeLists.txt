@@ -1,5 +1,5 @@
-file(GLOB EditorHeaderFiles CONFIGUE_DEPENDS "*.h" )
-file(GLOB EditorSourceFiles CONFIGUE_DEPENDS "*.cpp" )
+file(GLOB_RECURSE EditorHeaderFiles CONFIGUE_DEPENDS "*.h" )
+file(GLOB_RECURSE EditorSourceFiles CONFIGUE_DEPENDS "*.cpp" )
 
 source_group(TREE ${EngineEditorDir} FILES ${EditorHeaderFiles} ${EditorSourceFiles})
 add_executable(ReEngineEditor ${EditorHeaderFiles} ${EditorSourceFiles})
