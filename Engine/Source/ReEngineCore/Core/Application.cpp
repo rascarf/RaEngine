@@ -13,7 +13,6 @@
 #include "Renderer/RHI/Renderer.h"
 #include "Window/WindowsWindow.h"
 
-
 namespace ReEngine
 {
     Application* Application::s_instance = nullptr;
