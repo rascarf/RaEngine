@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "Renderer/IndexBuffer.h"
+#include "Renderer/RHI/IndexBuffer.h"
 
 namespace ReEngine
 {

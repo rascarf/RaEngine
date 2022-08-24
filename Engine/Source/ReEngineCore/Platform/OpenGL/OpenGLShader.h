@@ -1,5 +1,5 @@
 ﻿#pragma once
-#include "Renderer/Shader.h"
+#include "Renderer/RHI/Shader.h"
 
 typedef unsigned int GLenum;
 namespace ReEngine

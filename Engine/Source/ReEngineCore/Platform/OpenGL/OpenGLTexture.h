@@ -1,7 +1,7 @@
 ﻿#pragma once
 
 #include <glad/glad.h>
-#include "Renderer/Texture.h"
+#include "Renderer/RHI/Texture.h"
 
 namespace ReEngine
 {

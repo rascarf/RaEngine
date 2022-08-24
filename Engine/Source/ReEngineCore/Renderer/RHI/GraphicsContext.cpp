@@ -1,6 +1,6 @@
-﻿#include "Renderer/GraphicsContext.h"
+﻿#include "Renderer/RHI/GraphicsContext.h"
 #include "Platform/OpenGL/OpenGLContext.h"
-#include "Renderer.h"
+#include "Renderer/RHI/Renderer.h"
 
 namespace ReEngine
 {

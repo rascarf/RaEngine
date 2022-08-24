@@ -1,5 +1,5 @@
 #pragma once
-#include "Renderer/VertexBuffer.h"
+#include "Renderer/RHI/VertexBuffer.h"
 
 namespace ReEngine
 {

@@ -9,8 +9,8 @@
 #include "Platform/OpenGL/OpenGLVertexBuffer.h"
 #include "Platform/OpenGL/OpenGLIndexBuffer.h"
 #include "Platform/OpenGL/OpenGLVertexArray.h"
-#include "Renderer/RenderCommand.h"
-#include "Renderer/Renderer.h"
+#include "Renderer/RHI/RenderCommand.h"
+#include "Renderer/RHI/Renderer.h"
 #include "Window/WindowsWindow.h"
 
 

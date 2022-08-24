@@ -1,8 +1,8 @@
 #pragma once
 
-#include "Shader.h"
-#include "Renderer/GraphicsContext.h"
-#include "RenderCommand.h"
+#include "Renderer/RHI/Shader.h"
+#include "Renderer/RHI/GraphicsContext.h"
+#include "Renderer/RHI/RenderCommand.h"
 
 
 namespace ReEngine

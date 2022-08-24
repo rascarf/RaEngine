@@ -9,7 +9,7 @@
 
 #include "Platform/OpenGL/OpenGLShader.h"
 #include "Platform/OpenGL/OpenGLVertexArray.h"
-#include "Renderer/Shader.h"
+#include "Renderer/RHI/Shader.h"
 
 namespace ReEngine
 {
