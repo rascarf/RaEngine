@@ -16,7 +16,7 @@ namespace ReEngine
     public:
         //构造函数：将Event和Dispatcher绑定
         //根据事件生成Dispathcher，使用Dispatcher派发事件
-        EventDispatcher(std::shared_ptr<Event> InEvent):mEvent(InEvent){}
+        EventDispatcher(std::shared_ptr<Event> InEvent):mEvent(std::move(InEvent)){}
 
         //输入的函数用仿函数封装
         template<typename T, typename F>
