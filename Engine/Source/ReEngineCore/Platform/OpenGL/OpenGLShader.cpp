@@ -4,6 +4,7 @@
 #include "glad/glad.h"
 #include "glm/gtc/type_ptr.hpp"
 #include "Log/Log.h"
+#include "Resource/AssetManager/AssetManager.h"
 
 namespace ReEngine
 {
@@ -19,7 +20,7 @@ namespace ReEngine
     
     OpenGLShader::OpenGLShader(const std::string& filepath)
     {
-        std::string source = ReadFile(filepath);
+        std::string source = ReadFile(AssetManager::GetInstance().GetFullPath(filepath).string());
         auto shaderSources = PreProcess(source);
         Compile(shaderSources);
 
