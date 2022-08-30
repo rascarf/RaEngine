@@ -3,6 +3,7 @@
 #include "Camera/OrthographicCamera.h"
 #include "ReEngineCore/Layer/Layer.h"
 #include "Renderer/RHI/Shader.h"
+#include "Renderer/RHI/Texture.h"
 #include "Renderer/RHI/VertexArray.h"
 
 
@@ -21,8 +22,12 @@ public:
 private:
     ReEngine::Ref<ReEngine::Shader> mShader;
     ReEngine::Ref<ReEngine::Shader> mBlueShader;
+    ReEngine::Ref<ReEngine::Shader> mTetxureShader;
+    
     ReEngine::Ref<ReEngine::VertexArray> mVertexArray;
     ReEngine::Ref<ReEngine::VertexArray> mSquareVA;
+    ReEngine::Ref<ReEngine::VertexArray> mTetxureVA;
+    ReEngine::Ref<ReEngine::Texture2D> mTexture;
 
     ReEngine::OrthographicCamera m_Camera;
     glm::vec3 m_CameraPosition;

@@ -30,6 +30,11 @@ namespace ReEngine
 
         if(data)
         {
+            mIsLoaded = true;
+
+            mWidth = Width;
+            mHeight = Height;
+            
             GLenum internalFormat = 0, dataFormat = 0;
             if (Channels == 4)
             {
@@ -81,6 +86,7 @@ namespace ReEngine
     void OpenGLTexture2D::SetData(void* data, uint32_t size)
     {
         uint32_t bpp = mDataFormat == GL_RGBA ? 4 : 3;  // bytes per pixel
+        RE_CORE_ASSERT(size == mWidth * mHeight * bpp, "Data must be entire texture!");
         glTextureSubImage2D(mRendererID, 0, 0, 0, mWidth, mHeight, mDataFormat, GL_UNSIGNED_BYTE, data);
     }
 

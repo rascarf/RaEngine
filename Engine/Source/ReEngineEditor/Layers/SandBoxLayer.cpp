@@ -105,6 +105,61 @@ SandBoxLayer::SandBoxLayer():Layer("SandBoxLayer"),m_Camera(-1.6f, 1.6f, -0.9f, 
 		)";
 
 	mBlueShader = ReEngine::Shader::Create("TestSqure",blueShaderVertexSrc, blueShaderFragmentSrc);
+
+	std::string textureShaderVertexSrc = R"(
+			#version 330 core
+			
+			layout(location = 0) in vec3 a_Position;
+			layout(location = 1) in vec2 a_TexCoord;
+
+			uniform mat4 u_ViewProjection;
+			uniform mat4 u_Transform;
+
+			out vec2 v_TexCoord;
+
+			void main()
+			{
+				v_TexCoord = a_TexCoord;
+				gl_Position = u_ViewProjection * u_Transform * vec4(a_Position, 1.0);	
+			}
+		)";
+
+	std::string textureShaderFragmentSrc = R"(
+			#version 330 core
+			
+			layout(location = 0) out vec4 color;
+
+			in vec2 v_TexCoord;
+			
+			uniform sampler2D u_Texture;
+
+			void main()
+			{
+				color = texture(u_Texture, v_TexCoord);
+			}
+		)";
+
+	mTetxureVA = ReEngine::VertexArray::Create();
+	float TexturesquareVertices[5 * 4] = {
+		-0.5f, -0.5f, 0.0f, 0.0f, 0.0f,
+		 0.5f, -0.5f, 0.0f, 1.0f, 0.0f,
+		 0.5f,  0.5f, 0.0f, 1.0f, 1.0f,
+		-0.5f,  0.5f, 0.0f, 0.0f, 1.0f
+	};
+	ReEngine::Ref<ReEngine::VertexBuffer> TexturesquareVB;
+	TexturesquareVB = ReEngine::VertexBuffer::Create(TexturesquareVertices, sizeof(TexturesquareVertices));
+	TexturesquareVB->SetLayout({
+			{ ReEngine::ShaderDataType::Float3, "a_Position" },
+			{ ReEngine::ShaderDataType::Float2, "a_TexCoord" }
+		});
+	mTetxureVA->AddVertexBuffer(TexturesquareVB);
+	mTetxureVA->SetIndexBuffer(squareIB);
+	
+	mTetxureShader = ReEngine::Shader::Create("TextureShader",textureShaderVertexSrc, textureShaderFragmentSrc);
+	mTexture = ReEngine::Texture2D::Create(std::string("assets/Textures/Checkerboard.png"));
+
+	mTetxureShader->Bind();
+	mTetxureShader->SetInt("u_Texture", 0);
 }
 
 SandBoxLayer::~SandBoxLayer()
@@ -153,7 +208,11 @@ void SandBoxLayer::OnUpdate(ReEngine::Timestep ts)
 	m_Camera.SetRotation(m_CameraRotation);
 
 	ReEngine::Renderer::BeginScene(m_Camera);
-	ReEngine::Renderer::Submit(mBlueShader, mSquareVA);
+	// ReEngine::Renderer::Submit(mBlueShader, mSquareVA);
+
+	mTexture->Bind();
+	ReEngine::Renderer::Submit(mTetxureShader, mTetxureVA);
 	ReEngine::Renderer::Submit(mShader, mVertexArray);
+	
 	ReEngine::Renderer::EndScene();
 }
