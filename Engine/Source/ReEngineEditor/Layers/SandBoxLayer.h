@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "Camera/OrthographicCamera.h"
+#include "Library/ShaderLibrary.h"
 #include "ReEngineCore/Layer/Layer.h"
 #include "Renderer/RHI/Shader.h"
 #include "Renderer/RHI/Texture.h"
@@ -20,6 +21,8 @@ public:
     virtual void OnUpdate(ReEngine::Timestep ts) override;
 
 private:
+    ReEngine::Ref<ReEngine::Library<ReEngine::Shader>> m_ShaderLibrary;
+    
     ReEngine::Ref<ReEngine::Shader> mShader;
     ReEngine::Ref<ReEngine::Shader> mBlueShader;
     ReEngine::Ref<ReEngine::Shader> mTetxureShader;

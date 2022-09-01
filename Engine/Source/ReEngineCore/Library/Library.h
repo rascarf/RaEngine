@@ -5,23 +5,23 @@
 
 namespace ReEngine
 {
-    template <template<typename> typename Derived,typename LibType>
+    template <template <typename> typename Derived,typename LibType>
     class LibraryBase : public SingletonTemplate<Derived<LibType>>
     {
     public:
         void Add(const std::string& name,const Ref<LibType>& mem)
         {
-            RE_CORE_ASSERT(mLibrary.find(name) == mLibrary.end() && "Already have this member in Library!");
+            // RE_CORE_ASSERT(mLibrary.find(name) == mLibrary.end() && "Already have this member in Library!");
             mLibrary[name] = mem;
         }
         void Set(const std::string& name,const Ref<LibType>& mem)
         {
-            RE_CORE_ASSERT(mLibrary.find(name) != mLibrary.end() && "Not have this member in Library!");
+            // RE_CORE_ASSERT(mLibrary.find(name) != mLibrary.end() && "Not have this member in Library!");
             mLibrary[name] = mem;
         }
         [[nodiscard]] Ref<LibType> Get(const std::string& name)
         {
-            HE_CORE_ASSERT(mLibrary.find(name) != mLibrary.end() && "Can't find this member in Library!");
+            // HE_CORE_ASSERT(mLibrary.find(name) != mLibrary.end() && "Can't find this member in Library!");
             return mLibrary[name];
         }
 
@@ -30,9 +30,12 @@ namespace ReEngine
     };
 
     template<typename LibType>
-    class Library:public LibrarayBase<Library,LibType>
+    class Library:public LibraryBase<Library,LibType>
     {
     public:
-        Library();
+        Library()
+        {
+            
+        }
     };
 }

@@ -122,7 +122,7 @@ SandBoxLayer::SandBoxLayer():Layer("SandBoxLayer"),m_Camera(-1.6f, 1.6f, -0.9f, 
 	mTetxureVA->AddVertexBuffer(TexturesquareVB);
 	mTetxureVA->SetIndexBuffer(squareIB);
 	
-	mTetxureShader = ReEngine::Shader::Create(std::string("shaders/texture.glsl"));
+	mTetxureShader = ReEngine::Library<ReEngine::Shader>::GetInstance().Get("TextureShader");
 	mTexture = ReEngine::Texture2D::Create(std::string("assets/Textures/Checkerboard.png"));
 
 	mTetxureShader->Bind();
@@ -175,7 +175,7 @@ void SandBoxLayer::OnUpdate(ReEngine::Timestep ts)
 	m_Camera.SetRotation(m_CameraRotation);
 
 	ReEngine::Renderer::BeginScene(m_Camera);
-	// ReEngine::Renderer::Submit(mBlueShader, mSquareVA);
+	ReEngine::Renderer::Submit(mBlueShader, mSquareVA);
 
 	mTexture->Bind();
 	ReEngine::Renderer::Submit(mTetxureShader, mTetxureVA);
