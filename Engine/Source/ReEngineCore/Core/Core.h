@@ -15,6 +15,7 @@
 
 #define BIT(x) (1 << x)
 #define RE_BIND_EVENT_FN(EventType,CallBackFunc) [&](std::shared_ptr<EventType> e) {return CallBackFunc(e); }
+
 #define RE_XSTRINGIFY_MACRO(x) RE_STRINGIFY_MACRO(x)
 #define RE_STRINGIFY_MACRO(x) #x
 

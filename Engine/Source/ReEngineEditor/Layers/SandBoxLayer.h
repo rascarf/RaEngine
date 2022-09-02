@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "Camera/OrthographicCamera.h"
+#include "Camera/OrthogaraphicCameraController.h"
 #include "Library/ShaderLibrary.h"
 #include "ReEngineCore/Layer/Layer.h"
 #include "Renderer/RHI/Shader.h"
@@ -32,13 +32,11 @@ private:
     ReEngine::Ref<ReEngine::VertexArray> mTetxureVA;
     ReEngine::Ref<ReEngine::Texture2D> mTexture;
 
-    ReEngine::OrthographicCamera m_Camera;
-    glm::vec3 m_CameraPosition;
+    ReEngine::OrthographicCameraController m_CameraController;
+    
     glm::vec3 m_SquareColor = { 0.2f, 0.3f, 0.8f };
 
-    float m_CameraMoveSpeed = 5.0f;
-    float m_CameraRotation = 0.0f;
-    float m_CameraRotationSpeed = 180.0f;
+    
 };
 
 
