@@ -149,6 +149,12 @@ void SandBoxLayer::OnDetach()
 void SandBoxLayer::OnEvent(std::shared_ptr<ReEngine::Event> e)
 {
     m_CameraController.OnEvent(e);
+
+	if(e->GetEventType() == ReEngine::EventType::WindowResize)
+	{
+		ReEngine::Ref<ReEngine::WindowResizeEvent> re = std::dynamic_pointer_cast<ReEngine::WindowResizeEvent>(e);
+		m_CameraController.SetZoomLevel(re->GetHeight() / 720.0f);
+	}
 }
 
 void SandBoxLayer::OnUpdate(ReEngine::Timestep ts)

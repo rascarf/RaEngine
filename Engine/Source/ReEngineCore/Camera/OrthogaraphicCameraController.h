@@ -9,7 +9,7 @@ namespace ReEngine
     class OrthographicCameraController
     {
     public:
-        OrthographicCameraController(float aspectRatio, bool rotation = false);
+        OrthographicCameraController(float aspectRatio, bool rotation = true);
 
         void OnUpdate(Timestep ts);
         void OnEvent(Ref<Event> e);

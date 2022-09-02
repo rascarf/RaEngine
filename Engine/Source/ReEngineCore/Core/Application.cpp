@@ -89,6 +89,9 @@ namespace ReEngine
     {
         
         RE_INFO("({0},{1})",e->GetWidth(),e->GetHeight());
+
+        Renderer::OnWindowResize(e->GetWidth(),e->GetHeight());
+        
         return false;
     }
 
