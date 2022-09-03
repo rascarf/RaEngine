@@ -5,6 +5,7 @@
 SandBoxLayer::SandBoxLayer():Layer("SandBoxLayer"),m_CameraController(1280.0f / 720.0f)
 {
     ReEngine::Renderer::Init();
+	mTexture = ReEngine::Texture2D::Create(std::string("Assets/Textures/Checkerboard.png"));
 }
 
 SandBoxLayer::~SandBoxLayer()
@@ -44,6 +45,7 @@ void SandBoxLayer::OnUpdate(ReEngine::Timestep ts)
 	ReEngine::Renderer2D::BeginScene(m_CameraController.GetCamera());
 
 	ReEngine::Renderer2D::DrawQuad(glm::vec3(0,0,1),glm::vec2(1,1),glm::vec4(0.5,1.0,1.0,1.0));
+	ReEngine::Renderer2D::DrawRotateQuad(glm::vec3(1,0,1),glm::vec2(1,1),50,mTexture);
 	
-	ReEngine::Renderer::EndScene();
+	ReEngine::Renderer2D::EndScene();
 }

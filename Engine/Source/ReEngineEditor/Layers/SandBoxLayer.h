@@ -22,6 +22,7 @@ public:
 
 private:
     ReEngine::OrthographicCameraController m_CameraController;
+    ReEngine::Ref<ReEngine::Texture2D> mTexture;
 };
 
 
