@@ -11,7 +11,7 @@ namespace ReEngine
         mInternalFormat = GL_RGBA8;
         mDataFormat = GL_RGBA;
 
-        glCreateTextures(GL_TEXTURE,1,&mRendererID);
+        glCreateTextures(GL_TEXTURE_2D,1,&mRendererID);
         glTextureStorage2D(mRendererID,1,mInternalFormat,mWidth,mHeight);
 
         glTextureParameteri(mRendererID, GL_TEXTURE_MIN_FILTER, GL_LINEAR);

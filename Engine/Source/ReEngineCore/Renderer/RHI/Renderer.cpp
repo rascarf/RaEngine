@@ -3,6 +3,7 @@
 #include "RenderCommand.h"
 #include "Core/Application.h"
 #include "Platform/OpenGL/OpenGLShader.h"
+#include "Renderer/Renderer2D.h"
 
 namespace ReEngine
 {
@@ -11,6 +12,7 @@ namespace ReEngine
    void Renderer::Init()
    {
       RenderCommand::Init();
+      Renderer2D::Init();
    }
 
    void Renderer::Shutdown()

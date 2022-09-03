@@ -21,22 +21,7 @@ public:
     virtual void OnUpdate(ReEngine::Timestep ts) override;
 
 private:
-    ReEngine::Ref<ReEngine::Library<ReEngine::Shader>> m_ShaderLibrary;
-    
-    ReEngine::Ref<ReEngine::Shader> mShader;
-    ReEngine::Ref<ReEngine::Shader> mBlueShader;
-    ReEngine::Ref<ReEngine::Shader> mTetxureShader;
-    
-    ReEngine::Ref<ReEngine::VertexArray> mVertexArray;
-    ReEngine::Ref<ReEngine::VertexArray> mSquareVA;
-    ReEngine::Ref<ReEngine::VertexArray> mTetxureVA;
-    ReEngine::Ref<ReEngine::Texture2D> mTexture;
-
     ReEngine::OrthographicCameraController m_CameraController;
-    
-    glm::vec3 m_SquareColor = { 0.2f, 0.3f, 0.8f };
-
-    
 };
 
 
