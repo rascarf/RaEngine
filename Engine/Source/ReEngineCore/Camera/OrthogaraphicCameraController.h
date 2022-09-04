@@ -20,6 +20,8 @@ namespace ReEngine
         float GetZoomLevel() const { return mZoomLevel; }
         void SetZoomLevel(float zoomLevel) { mZoomLevel = zoomLevel; }
 
+        void Resize(float width,float height);
+
     private:
         bool OnMouseScrolled(Ref<MouseScrollEvent> e);
         bool OnWindowResized(Ref<WindowResizeEvent> e);

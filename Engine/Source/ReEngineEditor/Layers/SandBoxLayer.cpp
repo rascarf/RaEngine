@@ -106,7 +106,7 @@ void SandBoxLayer::OnUIRender(ReEngine::Timestep ts)
 	
 		if (ImGui::BeginMenuBar())
 		{
-			if (ImGui::BeginMenu("File"))
+			if (ImGui::BeginMenu("Test"))
 			{
 				if (ImGui::MenuItem("Exit")) ReEngine::Application::GetInstance().Shutdown();
 				ImGui::EndMenu();
@@ -115,10 +115,23 @@ void SandBoxLayer::OnUIRender(ReEngine::Timestep ts)
 			ImGui::EndMenuBar();
 		}
 
-		ImGui::Begin("Scene");
-		uint32_t textureID = mFrameBuffer->GetColorAttachmentRendererID();
-		ImGui::Image((void*)(intptr_t)textureID,ImVec2{1280,720},ImVec2{ 0,1 }, ImVec2{1,0});
-		ImGui::End();
+		// ViewPort
+		{
+			ImGui::Begin("ViewPort");
+			ImVec2 ViewPortPanel = ImGui::GetContentRegionAvail();
+			if(ViewPortPanel.x != mViewPortSize.x || ViewPortPanel.y != mViewPortSize.y)
+			{
+				mViewPortSize.x = ViewPortPanel.x;
+				mViewPortSize.y = ViewPortPanel.y;
+				mFrameBuffer->Resize(mViewPortSize.x,mViewPortSize.y);
+
+				m_CameraController.Resize(mViewPortSize.x,mViewPortSize.y);
+			}
+			
+			uint32_t textureID = mFrameBuffer->GetColorAttachmentRendererID();
+			ImGui::Image((void*)(intptr_t)textureID,ImVec2{ViewPortPanel.x,ViewPortPanel.y},ImVec2{ 0,1 }, ImVec2{1,0});
+			ImGui::End();
+		}
 		
 		ImGui::End();
 	}

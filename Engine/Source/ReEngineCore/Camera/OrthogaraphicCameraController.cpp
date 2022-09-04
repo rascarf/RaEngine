@@ -65,6 +65,13 @@ namespace ReEngine
         dispatcher.DispatchEvent<WindowResizeEvent>(RE_BIND_EVENT_FN(WindowResizeEvent,OnWindowResized));
     }
 
+
+    void OrthographicCameraController::Resize(float width, float height)
+    {
+        mAspectRatio = width / height;
+        mCamera.SetProjection(-mAspectRatio * mZoomLevel, mAspectRatio * mZoomLevel, -mZoomLevel, mZoomLevel);
+    }
+
     bool OrthographicCameraController::OnMouseScrolled(Ref<MouseScrollEvent> e)
     {
         mZoomLevel -= e->GetYOffset() * 0.25f;
@@ -75,8 +82,7 @@ namespace ReEngine
 
     bool OrthographicCameraController::OnWindowResized(Ref<WindowResizeEvent> e)
     {
-        mAspectRatio = (float)e->GetWidth() / (float)e->GetHeight();
-        mCamera.SetProjection(-mAspectRatio * mZoomLevel, mAspectRatio * mZoomLevel, -mZoomLevel, mZoomLevel);
+        Resize((float)e->GetWidth(),(float)e->GetHeight());
         return false;
     }
 }
