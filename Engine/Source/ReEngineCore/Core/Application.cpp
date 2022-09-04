@@ -36,8 +36,20 @@ namespace ReEngine
             Timestep Ts = CurrentTime - m_LastTime;
             m_LastTime = CurrentTime;
             
-            for (auto it = mLayerStack.end(); it != mLayerStack.begin(); )
-                (*(--it))->OnUpdate(Ts);
+            // for (auto it = mLayerStack.end(); it != mLayerStack.begin(); )
+            //     (*(--it))->OnUpdate(Ts);
+
+            for(auto it : mLayerStack)
+            {
+                it->OnUpdate(Ts);
+            }
+
+            m_UI->BeginUIRender();
+            for(auto it : mLayerStack)
+            {
+                it->OnUIRender(Ts);
+            }
+            m_UI->EndUIRender();
 
             m_Window->Update(Ts);
         }

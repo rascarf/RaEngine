@@ -17,9 +17,9 @@ namespace ReEngine
         virtual void OnEvent(std::shared_ptr<Event> e) override;
         virtual void OnUpdate(Timestep ts) override;
         
-        void BeginUIRender();
-        void EndUIRender();
-        void OnUIRender();
+        virtual void BeginUIRender();
+        virtual void EndUIRender();
+        virtual void OnUIRender();
 
     private:
         bool OnMouseButtonPressedEvent(std::shared_ptr<MouseButtonPressedEvent> e);

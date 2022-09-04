@@ -144,12 +144,12 @@ static const uint32_t MaxFrameBufferSize = 8192;
     OpenGLFrameBuffer::OpenGLFrameBuffer(const FrameBufferSpecification& spec)
         : mSpecification(spec)
     {
-        for (const auto& it : mSpecification.Attachments.Attachments)
+        for (auto spec : mSpecification.Attachments.Attachments)
         {
-            if (!Utils::IsDepthFormat(it.Format))
-                mColorAttachmentSpecifications.emplace_back(it.Format);
+            if (!Utils::IsDepthFormat(spec.Format))
+                mColorAttachmentSpecifications.emplace_back(spec);
             else
-                mDepthAttachmentSpecification = it.Format;
+                mDepthAttachmentSpecification = spec;
         }
 
         Invalidate();

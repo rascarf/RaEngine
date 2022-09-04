@@ -10,6 +10,8 @@
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_opengl3.h>
 
+#include "Renderer/RHI/FrameBuffer.h"
+
 
 ReEngine::ImGuiLayer::ImGuiLayer():Layer("ImGuiLayer")
 {
@@ -29,9 +31,7 @@ void ReEngine::ImGuiLayer::OnEvent(std::shared_ptr<Event> e)
 
 void ReEngine::ImGuiLayer::OnUpdate(Timestep ts)
 {
-    BeginUIRender();
-    OnUIRender();
-    EndUIRender();
+	
 }
 
 void ReEngine::ImGuiLayer::BeginUIRender()
@@ -63,7 +63,7 @@ void ReEngine::ImGuiLayer::EndUIRender()
 void ReEngine::ImGuiLayer::OnUIRender()
 {
     static bool show = true;
-    ImGui::ShowDemoWindow(&show);
+    // ImGui::ShowDemoWindow(&show);
 }
 
 void ReEngine::ImGuiLayer::OnAttach()
@@ -73,7 +73,6 @@ void ReEngine::ImGuiLayer::OnAttach()
 
     // ImGui::StyleColorsDark();
     ImGui::Spectrum::StyleColorsSpectrum();
-
     ImGuiIO& io = ImGui::GetIO();
 
     io.Fonts->AddFontDefault();

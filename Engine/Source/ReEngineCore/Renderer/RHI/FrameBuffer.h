@@ -38,10 +38,9 @@ namespace ReEngine
     struct FrameBufferSpecification
     {
         uint32_t Width, Height;
-        FramebufferAttachmentSpecification Attachments;
         uint32_t Samples = 1;
-
         bool SwapChainTaget = false;
+        FramebufferAttachmentSpecification Attachments;
     };
 
     class FrameBuffer
