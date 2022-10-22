@@ -2,10 +2,10 @@
 
 #include "imgui.h"
 #include "ReEngine.h"
+#include "ECSFrameWork/Component/CameraComponent.h"
+#include "ECSFrameWork/Component/SpriteRenderComponent.h"
+#include "glm/ext/matrix_clip_space.hpp"
 #include "Renderer/Renderer2D.h"
-
-
-
 
 
 SandBoxLayer::SandBoxLayer():Layer("SandBoxLayer"),m_CameraController(1280.0f / 720.0f)
@@ -26,6 +26,13 @@ void SandBoxLayer::OnAttach()
 	fbSpec.Height = 720.0;
 	fbSpec.Samples = 1;
 	mFrameBuffer = ReEngine::FrameBuffer::Create(fbSpec);
+	
+	mActiveScene = ReEngine::CreateRef<ReEngine::Scene>();
+	mCameraEntity = mActiveScene->CreateEntity("Camera");
+	mCameraEntity.AddComponent<ReEngine::CameraComponnet>(glm::ortho(-16.0f,16.0f,-9.0f,9.0f,-1.0f,1.0f));
+
+	mRenderEntity = mActiveScene->CreateEntity("Sprite");
+	mRenderEntity.AddComponent<ReEngine::SpriteRenderComponent>(glm::vec4(0.5,0.5,0.5,1.0));
 }
 
 void SandBoxLayer::OnDetach()
@@ -50,17 +57,34 @@ void SandBoxLayer::OnEvent(std::shared_ptr<ReEngine::Event> e)
 
 void SandBoxLayer::OnUpdate(ReEngine::Timestep ts)
 {
-	m_CameraController.OnUpdate(ts);
+	// Resize
+	if (ReEngine::FrameBufferSpecification spec = mFrameBuffer->GetSpecification();
+		mViewPortSize.x > 0.0f && mViewPortSize.y > 0.0f &&
+		(spec.Width != mViewPortSize.x || spec.Height != mViewPortSize.y))
 	{
-		mFrameBuffer->Bind();
-		// glBindFramebuffer(GL_FRAMEBUFFER, m_RendererID);
-		ReEngine::RenderCommand::Clear();
-		ReEngine::Renderer2D::BeginScene(m_CameraController.GetCamera());
-		ReEngine::Renderer2D::DrawQuad(glm::vec3(0,0,1),glm::vec2(1,1),glm::vec4(0.5,1.0,1.0,1.0));
-		ReEngine::Renderer2D::EndScene();
-		// glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		mFrameBuffer->UnBind();
+		mFrameBuffer->Resize((uint32_t)mViewPortSize.x, (uint32_t)mViewPortSize.y);
+		m_CameraController.Resize(mViewPortSize.x, mViewPortSize.y);
 	}
+
+	m_CameraController.OnUpdate(ts);
+	
+	mFrameBuffer->Bind();
+	ReEngine::RenderCommand::SetClearColor({ 0.1f, 0.1f, 0.1f, 1 });
+	ReEngine::RenderCommand::Clear();
+	
+	mActiveScene->OnUpdate(ts,m_CameraController.GetCamera());
+	mFrameBuffer->UnBind();
+	
+	// {
+	// 	
+	// 	// glBindFramebuffer(GL_FRAMEBUFFER, m_RendererID);
+	// 	ReEngine::RenderCommand::Clear();
+	// 	ReEngine::Renderer2D::BeginScene(m_CameraController.GetCamera());
+	// 	ReEngine::Renderer2D::DrawQuad(glm::vec3(0,0,1),glm::vec2(1,1),glm::vec4(0.5,1.0,1.0,1.0));
+	// 	ReEngine::Renderer2D::EndScene();
+	// 	// glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	// }
 }
 
 void SandBoxLayer::OnUIRender(ReEngine::Timestep ts)

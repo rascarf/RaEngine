@@ -3,7 +3,7 @@
 
 namespace ReEngine
 {
-    class Camera
+    class Camera //Runtime Camera
     {
     public:
         Camera() = default;

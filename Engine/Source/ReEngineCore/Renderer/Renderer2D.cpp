@@ -119,6 +119,19 @@ namespace ReEngine
         s_Data->TextureSlotIndex = 1;
     }
 
+    void Renderer2D::BeginScene(const Camera& camera,const glm::mat4& transform)
+    {
+        glm::mat4 viewProj = camera.GetProjection() * glm::inverse(transform);
+        
+        s_Data->TextureShader->Bind();
+        s_Data->TextureShader->SetMat4("u_ViewProjection", viewProj);
+
+        s_Data->QuadIndexCount = 0;
+        s_Data->QuadVertexBufferPtr = s_Data->QuadVertexBufferBase;
+
+        s_Data->TextureSlotIndex = 1;
+    }
+
     void Renderer2D::EndScene()
     {
         uint32_t dataSize = (uint32_t)( (uint8_t*)s_Data->QuadVertexBufferPtr - (uint8_t*)s_Data->QuadVertexBufferBase );
@@ -276,7 +289,30 @@ namespace ReEngine
 
         s_Data->QuadIndexCount += 6;
     }
-    
+
+    void Renderer2D::DrawQuad(const glm::mat4& transform, const glm::vec4& color)
+    {
+        constexpr size_t quadVertexCount = 4;
+        const float textureIndex = 0.0f; // White Texture
+        constexpr glm::vec2 textureCoords[] = { { 0.0f, 0.0f }, { 1.0f, 0.0f }, { 1.0f, 1.0f }, { 0.0f, 1.0f } };
+        const float tilingFactor = 1.0f;
+
+        if (s_Data->QuadIndexCount >= Renderer2DData::MaxIndices)
+            FlushAndReset();
+
+        for (size_t i = 0; i < quadVertexCount; i++)
+        {
+            s_Data->QuadVertexBufferPtr->position = transform * s_Data->QuadVertexPositions[i];
+            s_Data->QuadVertexBufferPtr->color = color;
+            s_Data->QuadVertexBufferPtr->texCoord = textureCoords[i];
+            s_Data->QuadVertexBufferPtr->texIndex = textureIndex;
+            s_Data->QuadVertexBufferPtr->tilingFactor = tilingFactor;
+            s_Data->QuadVertexBufferPtr++;
+        }
+
+        s_Data->QuadIndexCount += 6;
+    }
+
     void Renderer2D::DrawRotateQuad(const glm::vec3& position, const glm::vec2& size, float Rotation,const Ref<SubTexture2D>& subtexture, float tilingFactor, const glm::vec4& tintColor)
     {
         constexpr size_t quadVertexCount = 4;

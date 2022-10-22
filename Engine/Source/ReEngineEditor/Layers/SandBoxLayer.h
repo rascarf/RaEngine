@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "Camera/OrthogaraphicCameraController.h"
+#include "ECSFrameWork/Entity/Entity.h"
 #include "Library/ShaderLibrary.h"
 #include "ReEngineCore/Layer/Layer.h"
 #include "Renderer/RHI/Shader.h"
@@ -33,6 +34,10 @@ public:
 private:
     ReEngine::OrthographicCameraController m_CameraController;
     ReEngine::Ref<ReEngine::FrameBuffer> mFrameBuffer;
+
+    ReEngine::Entity mCameraEntity;
+    ReEngine::Ref<ReEngine::Scene> mActiveScene;
+    ReEngine::Entity mRenderEntity;
 
     glm::vec2 mViewPortSize{0.0,0.0};
     
