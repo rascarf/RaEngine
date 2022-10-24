@@ -13,8 +13,9 @@ namespace ReEngine
         CameraComponnet(const glm::mat4& ProjectionMatrix):Camera(ProjectionMatrix){}
 
     public:
-        Camera Camera;
+        SceneCamera Camera;
         bool Primary = true; // TODO: think about moving to Scene
+        bool FixedAspectRatio = false;
     };
     
 

@@ -8,7 +8,7 @@
 #include "Renderer/Renderer2D.h"
 
 
-SandBoxLayer::SandBoxLayer():Layer("SandBoxLayer"),m_CameraController(1280.0f / 720.0f)
+SandBoxLayer::SandBoxLayer():Layer("SandBoxLayer")
 {
     ReEngine::Renderer::Init();
 }
@@ -33,6 +33,8 @@ void SandBoxLayer::OnAttach()
 
 	mRenderEntity = mActiveScene->CreateEntity("Sprite");
 	mRenderEntity.AddComponent<ReEngine::SpriteRenderComponent>(glm::vec4(0.5,0.5,0.5,1.0));
+
+	SceneHierarchyPanel.SetContext(mActiveScene);
 }
 
 void SandBoxLayer::OnDetach()
@@ -42,16 +44,12 @@ void SandBoxLayer::OnDetach()
 
 void SandBoxLayer::OnEvent(std::shared_ptr<ReEngine::Event> e)
 {
-    m_CameraController.OnEvent(e);
-
 	if(e->GetEventType() == ReEngine::EventType::WindowResize)
 	{
 		ReEngine::Ref<ReEngine::WindowResizeEvent> re = std::dynamic_pointer_cast<ReEngine::WindowResizeEvent>(e);
-		m_CameraController.SetZoomLevel(re->GetHeight() / 720.0f);
 	}
 	else if (e->GetEventType() == ReEngine::EventType::KeyPressed)
 	{
-		RE_INFO("{0},{1},{2}",m_CameraController.GetCamera().GetPosition().x,m_CameraController.GetCamera().GetPosition().y,m_CameraController.GetCamera().GetPosition().z);
 	}
 }
 
@@ -63,28 +61,14 @@ void SandBoxLayer::OnUpdate(ReEngine::Timestep ts)
 		(spec.Width != mViewPortSize.x || spec.Height != mViewPortSize.y))
 	{
 		mFrameBuffer->Resize((uint32_t)mViewPortSize.x, (uint32_t)mViewPortSize.y);
-		m_CameraController.Resize(mViewPortSize.x, mViewPortSize.y);
+		mActiveScene->OnViewportResize(mViewPortSize.x,mViewPortSize.y);
 	}
-
-	m_CameraController.OnUpdate(ts);
 	
 	mFrameBuffer->Bind();
-	ReEngine::RenderCommand::SetClearColor({ 0.1f, 0.1f, 0.1f, 1 });
 	ReEngine::RenderCommand::Clear();
 	
-	mActiveScene->OnUpdate(ts,m_CameraController.GetCamera());
+	mActiveScene->OnUpdate(ts);
 	mFrameBuffer->UnBind();
-	
-	// {
-	// 	
-	// 	// glBindFramebuffer(GL_FRAMEBUFFER, m_RendererID);
-	// 	ReEngine::RenderCommand::Clear();
-	// 	ReEngine::Renderer2D::BeginScene(m_CameraController.GetCamera());
-	// 	ReEngine::Renderer2D::DrawQuad(glm::vec3(0,0,1),glm::vec2(1,1),glm::vec4(0.5,1.0,1.0,1.0));
-	// 	ReEngine::Renderer2D::EndScene();
-	// 	// glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-	// }
 }
 
 void SandBoxLayer::OnUIRender(ReEngine::Timestep ts)
@@ -147,15 +131,26 @@ void SandBoxLayer::OnUIRender(ReEngine::Timestep ts)
 			{
 				mViewPortSize.x = ViewPortPanel.x;
 				mViewPortSize.y = ViewPortPanel.y;
-				mFrameBuffer->Resize(mViewPortSize.x,mViewPortSize.y);
-
-				m_CameraController.Resize(mViewPortSize.x,mViewPortSize.y);
 			}
 			
 			uint32_t textureID = mFrameBuffer->GetColorAttachmentRendererID();
 			ImGui::Image((void*)(intptr_t)textureID,ImVec2{ViewPortPanel.x,ViewPortPanel.y},ImVec2{ 0,1 }, ImVec2{1,0});
 			ImGui::End();
 		}
+
+		// Detail
+		{
+			auto& camera = mCameraEntity.GetComponent<ReEngine::CameraComponnet>().Camera;
+			auto OrthoSize = camera.GetOrthoGraphicSize();
+			ImGui::Begin("Detail");
+			if(ImGui::DragFloat("Camera Otho Size",&OrthoSize))
+			{
+				camera.SetOrthoGraphicSize(OrthoSize);
+			}
+			ImGui::End();
+		}
+
+		SceneHierarchyPanel.OnImGuiRender();
 		
 		ImGui::End();
 	}

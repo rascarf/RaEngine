@@ -1,5 +1,6 @@
 ﻿#pragma once
 
+#include "ReEngineEditor/Editor/Panels/SceneHierarchyPanel.h"
 #include "Camera/OrthogaraphicCameraController.h"
 #include "ECSFrameWork/Entity/Entity.h"
 #include "Library/ShaderLibrary.h"
@@ -32,15 +33,16 @@ public:
     virtual void OnUIRender(ReEngine::Timestep ts) override;
 
 private:
-    ReEngine::OrthographicCameraController m_CameraController;
     ReEngine::Ref<ReEngine::FrameBuffer> mFrameBuffer;
 
     ReEngine::Entity mCameraEntity;
     ReEngine::Ref<ReEngine::Scene> mActiveScene;
     ReEngine::Entity mRenderEntity;
 
+    //Panels
+    ReEngine::SceneHierarchyPanel SceneHierarchyPanel;
+
     glm::vec2 mViewPortSize{0.0,0.0};
-    
 };
 
 

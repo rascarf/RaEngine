@@ -23,7 +23,7 @@ namespace ReEngine
 
         void OnRuntimeStart();
         void OnRuntimeStop();
-        void OnUpdate(Timestep ts,OrthographicCamera camera);
+        void OnUpdate(Timestep ts);
 
         void OnUpdateRuntime(Timestep ts);
         void OnUpdateEditor(Timestep ts,EditorCamera& camera);

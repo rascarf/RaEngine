@@ -33,7 +33,7 @@ ReEngine::Entity ReEngine::Scene::CreateEntity(const std::string& name)
 {
     Entity entity = {mRegistry.create(),this};
     entity.AddComponent<TransformComponent>();
-    // entity.AddComponent<TagComponent>(name);
+    entity.AddComponent<TagComponent>(name);
     return entity;
 }
 
@@ -50,7 +50,7 @@ void ReEngine::Scene::OnRuntimeStop()
 {
 }
 
-void ReEngine::Scene::OnUpdate(Timestep ts,OrthographicCamera camera)
+void ReEngine::Scene::OnUpdate(Timestep ts)
 {
     Camera* mainCamera = nullptr;
     glm::mat4 CameraTransform;
@@ -76,8 +76,6 @@ void ReEngine::Scene::OnUpdate(Timestep ts,OrthographicCamera camera)
             auto [transformComponent,spriteRenderComponent] = SpriteRenderGroup.get<TransformComponent,SpriteRenderComponent>(Entity);
             Renderer2D::DrawQuad(transformComponent.GetTransform(),spriteRenderComponent.Color);
         }
-    
-        // Renderer2D::DrawQuad(glm::vec3(0,0,1),glm::vec2(1,1),glm::vec4(0.5,1.0,1.0,1.0));
         
         Renderer2D::EndScene();
     }
@@ -89,6 +87,7 @@ ReEngine::Entity ReEngine::Scene::GetPrimaryEntity(Entity entity)
 }
 
 void ReEngine::Scene::OnUpdateRuntime(Timestep ts)
+
 {
 }
 
@@ -98,6 +97,16 @@ void ReEngine::Scene::OnUpdateEditor(Timestep ts, EditorCamera& camera)
 
 void ReEngine::Scene::OnViewportResize(uint32_t Width, uint32_t Height)
 {
+    // Resize Our Non Fixed Ratio Camera
+    auto view = mRegistry.view<CameraComponnet>();
+    for(auto entity:view)
+    {
+        auto& cameraCop = view.get<CameraComponnet>(entity);
+        if(!cameraCop.FixedAspectRatio)
+        {
+            cameraCop.Camera.SetViewportSize(Width,Height);
+        }
+    }
 }
 
 void ReEngine::Scene::DuplicateEntity(Entity entity)
