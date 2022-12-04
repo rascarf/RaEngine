@@ -21,6 +21,9 @@ namespace ReEngine
         TagComponent(const TagComponent& other) = default;
         TagComponent(const std::string& tag) : Tag(tag) {}
     };
+
+    template<class T>
+    concept Component = std::is_base_of_v<ComponentBase, T>;
 }
 
 

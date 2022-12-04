@@ -49,8 +49,8 @@ namespace ReEngine
         void OnComponentAdded(ReEngine::Entity entity,T& component){};
 
     private:
-        // std::vector<Scope<class System>> mSystems;
         friend class Entity;
+        // std::vector<Scope<class System>> mSystems;
         // friend class SceneSerializer;
         // friend class SceneHierarchyPanel;
     };

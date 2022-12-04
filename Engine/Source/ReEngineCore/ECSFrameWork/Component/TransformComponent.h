@@ -20,10 +20,11 @@ namespace ReEngine
 
         [[nodiscard]] glm::mat4 GetTransform()const
         {
-            glm::mat4 Rotation = glm::toMat4(glm::quat(Rotation));
-
-            //TODO Add Rotation
-            return glm::translate(glm::mat4(1.0),Translation) * glm::scale(glm::mat4(1.0f), Scale);
+            glm::mat4 rotation = glm::rotate(glm::mat4(1.0f), Rotation.x, { 1, 0, 0 })
+                * glm::rotate(glm::mat4(1.0f), Rotation.y, { 0, 1, 0 })
+                * glm::rotate(glm::mat4(1.0f), Rotation.z, { 0, 0, 1 });
+            
+            return glm::translate(glm::mat4(1.0),Translation)* rotation * glm::scale(glm::mat4(1.0f), Scale);
         }
 
         void SetTranslation(float x, float y, float z) { Translation = {x, y, z}; }

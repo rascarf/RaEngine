@@ -35,8 +35,8 @@ public:
 private:
     ReEngine::Ref<ReEngine::FrameBuffer> mFrameBuffer;
 
-    ReEngine::Entity mCameraEntity;
     ReEngine::Ref<ReEngine::Scene> mActiveScene;
+    ReEngine::Entity mCameraEntity;
     ReEngine::Entity mRenderEntity;
 
     //Panels

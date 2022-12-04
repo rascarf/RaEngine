@@ -48,7 +48,7 @@ set(CONSOLE_BINARIES offscreen)
 
 set_target_properties(${GUI_ONLY_BINARIES} ${CONSOLE_BINARIES} PROPERTIES
                       C_STANDARD 99
-                      FOLDER "GLFW3/Examples")
+                      FOLDER "ThirdParty/Examples")
 
 if (GLFW_USE_OSMESA)
     find_package(OSMesa REQUIRED)

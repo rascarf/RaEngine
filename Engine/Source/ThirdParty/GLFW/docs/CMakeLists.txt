@@ -42,5 +42,5 @@ add_custom_command(OUTPUT "html/index.html"
                    VERBATIM)
 
 add_custom_target(docs ALL SOURCES "html/index.html")
-set_target_properties(docs PROPERTIES FOLDER "GLFW3")
+set_target_properties(docs PROPERTIES FOLDER "ThirdParty")
 
