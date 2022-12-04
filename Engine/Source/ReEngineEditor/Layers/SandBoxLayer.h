@@ -2,7 +2,7 @@
 
 #include "ReEngineEditor/Editor/Panels/SceneHierarchyPanel.h"
 #include "Camera/OrthogaraphicCameraController.h"
-#include "ECSFrameWork/Entity/Entity.h"
+#include "FrameWork/Entity/Entity.h"
 #include "Library/ShaderLibrary.h"
 #include "ReEngineCore/Layer/Layer.h"
 #include "Renderer/RHI/Shader.h"

@@ -1,7 +1,7 @@
 ﻿#pragma once
 #include "Core/Core.h"
 #include "Core/PCH.h"
-#include "ECSFrameWork/Scene.h"
+#include "FrameWork/Scene.h"
 
 namespace ReEngine
 {

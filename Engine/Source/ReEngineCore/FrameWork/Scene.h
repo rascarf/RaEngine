@@ -50,8 +50,8 @@ namespace ReEngine
 
     private:
         friend class Entity;
+        friend class SceneSerializer;
         // std::vector<Scope<class System>> mSystems;
-        // friend class SceneSerializer;
         // friend class SceneHierarchyPanel;
     };
 

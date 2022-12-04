@@ -1,11 +1,10 @@
 ﻿#include "SceneHierarchyPanel.h"
 #include "imgui.h"
 #include "imgui_internal.h"
-#include "ECSFrameWork/Component/CameraComponent.h"
-
-#include "ECSFrameWork/Component/Component.h"
-#include "ECSFrameWork/Component/SpriteRenderComponent.h"
-#include "ECSFrameWork/Component/TransformComponent.h"
+#include "FrameWork/Component/CameraComponent.h"
+#include "FrameWork/Component/Component.h"
+#include "FrameWork/Component/SpriteRenderComponent.h"
+#include "FrameWork/Component/TransformComponent.h"
 #include "glm/gtc/type_ptr.hpp"
 
 namespace ReEngine

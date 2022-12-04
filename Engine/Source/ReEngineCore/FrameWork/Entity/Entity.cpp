@@ -1,6 +1,6 @@
 ﻿#include "Entity.h"
 
-#include "ECSFrameWork/Component/Component.h"
+#include "FrameWork/Component/Component.h"
 
 namespace ReEngine
 {

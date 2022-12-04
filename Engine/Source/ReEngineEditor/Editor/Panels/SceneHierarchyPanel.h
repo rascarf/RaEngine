@@ -1,8 +1,8 @@
 ﻿#pragma once
 #include "Core/PCH.h"
 #include "Log/Log.h"
-#include "ECSFrameWork/Scene.h"
-#include "ECSFrameWork/Entity/Entity.h"
+#include "FrameWork/Scene.h"
+#include "FrameWork/Entity/Entity.h"
 
 namespace ReEngine
 {

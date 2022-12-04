@@ -2,9 +2,11 @@
 
 #include "imgui.h"
 #include "ReEngine.h"
-#include "ECSFrameWork/Component/CameraComponent.h"
-#include "ECSFrameWork/Component/SpriteRenderComponent.h"
+#include "FrameWork/Scene.h"
+#include "FrameWork/Component/CameraComponent.h"
+#include "FrameWork/Component/SpriteRenderComponent.h"
 #include "glm/ext/matrix_clip_space.hpp"
+#include "FrameWork/SceneSerialization.h"
 #include "Renderer/Renderer2D.h"
 
 
@@ -26,13 +28,13 @@ void SandBoxLayer::OnAttach()
 	fbSpec.Height = 720.0;
 	fbSpec.Samples = 1;
 	mFrameBuffer = ReEngine::FrameBuffer::Create(fbSpec);
-	
 	mActiveScene = ReEngine::CreateRef<ReEngine::Scene>();
+#if 0
 	mCameraEntity = mActiveScene->CreateEntity("Camera");
 	mCameraEntity.AddComponent<ReEngine::CameraComponnet>(glm::ortho(-16.0f,16.0f,-9.0f,9.0f,-1.0f,1.0f));
-
 	mRenderEntity = mActiveScene->CreateEntity("Sprite");
 	mRenderEntity.AddComponent<ReEngine::SpriteRenderComponent>(glm::vec4(0.5,0.5,0.5,1.0));
+#endif
 
 	SceneHierarchyPanel.SetContext(mActiveScene);
 }
@@ -114,9 +116,22 @@ void SandBoxLayer::OnUIRender(ReEngine::Timestep ts)
 	
 		if (ImGui::BeginMenuBar())
 		{
-			if (ImGui::BeginMenu("Test"))
+			if (ImGui::BeginMenu("Menu"))
 			{
 				if (ImGui::MenuItem("Exit")) ReEngine::Application::GetInstance().Shutdown();
+
+				if (ImGui::MenuItem("Serialize"))
+				{
+					ReEngine::SceneSerializer serializer(mActiveScene);
+					serializer.Serialize("Assets/scenes/Example.Re");
+				}
+
+				if (ImGui::MenuItem("Deserialize"))
+				{
+					ReEngine::SceneSerializer serializer(mActiveScene);
+					serializer.DeSerialize("Assets/scenes/Example.Re");
+				}
+				
 				ImGui::EndMenu();
 			}
 			
@@ -135,18 +150,6 @@ void SandBoxLayer::OnUIRender(ReEngine::Timestep ts)
 			
 			uint32_t textureID = mFrameBuffer->GetColorAttachmentRendererID();
 			ImGui::Image((void*)(intptr_t)textureID,ImVec2{ViewPortPanel.x,ViewPortPanel.y},ImVec2{ 0,1 }, ImVec2{1,0});
-			ImGui::End();
-		}
-
-		// Detail
-		{
-			auto& camera = mCameraEntity.GetComponent<ReEngine::CameraComponnet>().Camera;
-			auto OrthoSize = camera.GetOrthoGraphicSize();
-			ImGui::Begin("Detail");
-			if(ImGui::DragFloat("Camera Otho Size",&OrthoSize))
-			{
-				camera.SetOrthoGraphicSize(OrthoSize);
-			}
 			ImGui::End();
 		}
 
