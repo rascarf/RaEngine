@@ -63,4 +63,7 @@ if(NOT TARGET headers)
     target_include_directories(headers INTERFACE "${ThirdPartyDir}")
     target_include_directories(headers INTERFACE "${ThirdPartyDir}/entt/include")
     target_include_directories(headers INTERFACE "${ThirdPartyDir}/cgltf/include")
+    target_include_directories(headers INTERFACE "${ThirdPartyDir}/Vulkan/include")
 endif()
+
+

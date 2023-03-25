@@ -6,6 +6,6 @@ namespace ReEngine
     {
         app.Init();
         
-        app.PushLayer(CreateRef<SandBoxLayer>());
+       // app.PushLayer(CreateRef<SandBoxLayer>());
     }
 }

@@ -19,8 +19,8 @@ namespace ReEngine
     {
         m_Window = Window::CreateReWindow(WindowProperty("ReEngine"));
         
-        m_UI = std::make_shared<ImGuiLayer>(ImGuiLayer()); 
-        PushOverlay(m_UI);
+        // m_UI = std::make_shared<ImGuiLayer>(ImGuiLayer()); 
+        // PushOverlay(m_UI);
 
         m_Window->SetEventCallback([this](std::shared_ptr<Event> e)
         {
@@ -44,12 +44,12 @@ namespace ReEngine
                 it->OnUpdate(Ts);
             }
 
-            m_UI->BeginUIRender();
-            for(auto it : mLayerStack)
-            {
-                it->OnUIRender(Ts);
-            }
-            m_UI->EndUIRender();
+            // m_UI->BeginUIRender();
+            // for(auto it : mLayerStack)
+            // {
+            //     it->OnUIRender(Ts);
+            // }
+            // m_UI->EndUIRender();
 
             m_Window->Update(Ts);
         }
@@ -102,7 +102,7 @@ namespace ReEngine
         
         RE_INFO("({0},{1})",e->GetWidth(),e->GetHeight());
 
-        Renderer::OnWindowResize(e->GetWidth(),e->GetHeight());
+        // Renderer::OnWindowResize(e->GetWidth(),e->GetHeight());
         
         return false;
     }

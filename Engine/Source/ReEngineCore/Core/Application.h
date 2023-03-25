@@ -40,7 +40,7 @@ namespace ReEngine
         bool mRunning = true;
         float m_LastTime;
         
-        Ref<ImGuiLayer> m_UI;
+        // Ref<ImGuiLayer> m_UI;
 
     private:   
         friend void AppInit(Application& app);

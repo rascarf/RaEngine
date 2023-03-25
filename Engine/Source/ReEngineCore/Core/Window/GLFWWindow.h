@@ -2,7 +2,9 @@
 #include "Core/Window/Window.h"
 #include "Renderer/RHI/GraphicsContext.h"
 
+#define  GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
+
 class GLFWwindow;
 
 namespace ReEngine

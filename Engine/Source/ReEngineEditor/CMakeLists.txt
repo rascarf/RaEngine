@@ -7,6 +7,7 @@ add_executable(ReEngineEditor ${EditorHeaderFiles} ${EditorSourceFiles})
 add_compile_definitions("ENGINE_ROOT_DIR=${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
 
 target_link_libraries(ReEngineEditor PRIVATE ReEngineCore)
+target_link_libraries(ReEngineCore PUBLIC vulkan-1)
 
 target_include_directories(ReEngineEditor PRIVATE
 	"${EngineSourceDir}"
