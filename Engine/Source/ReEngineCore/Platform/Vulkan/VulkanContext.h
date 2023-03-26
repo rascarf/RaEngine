@@ -6,6 +6,8 @@
 #include "vulkan/Include/vulkan/vulkan.h"
 #include "GLFW/glfw3.h"
 #include "Core/Window/Window.h"
+#include "glm/vec2.hpp"
+#include "glm/vec3.hpp"
 
 namespace ReEngine
 {
@@ -41,7 +43,7 @@ namespace ReEngine
         const WindowProperty* WinProperty;
         
         VkInstance Instance;
-        VkPhysicalDevice physicalDevice = VK_NULL_HANDLE; //物理设备
+        VkPhysicalDevice physicalDevice; //物理设备
         VkDevice Device; //逻辑设备
         VkDebugReportCallbackEXT callback;
 
@@ -57,16 +59,30 @@ namespace ReEngine
         std::vector<VkImage> swapChainImages;
         std::vector<VkImageView> SwapChainImageViews;
 
+        VkDescriptorSetLayout descriptorSetLayout;
+        VkDescriptorPool descriptorPool;
+        VkDescriptorSet descriptorSet;
+        
         VkPipelineLayout pipelineLayout;
-        VkRenderPass renderPass;
         VkPipeline graphicsPipeline;
 
+        VkRenderPass renderPass;
+        
         std::vector<VkFramebuffer> swapChainFramebuffers;
         VkCommandPool commandPool;
         std::vector<VkCommandBuffer> commandBuffers;
 
         VkSemaphore imageAvailableSemaphore;
         VkSemaphore renderFinishedSemaphore;
+
+        VkBuffer VertexBuffer;
+        VkDeviceMemory vertexBufferMemory;
+
+        VkBuffer IndexBuffer;
+        VkDeviceMemory IndexBufferMemory;
+
+        VkBuffer uniformBuffer;
+        VkDeviceMemory uniformBufferMemory;
         
         GLFWwindow* m_WindowHandle;
         
@@ -96,9 +112,19 @@ namespace ReEngine
         void CreateCommandPool();
         void CreateCommandBuffers();
         void CreateSemaphores();
-
         void ClearSwapChain();
         
+        uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
+        void CreateVertexBuffer();
+        void CreateIndexBuffer();
+        void createUniformBuffer();
+        void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
+        void CopyBuffer(VkBuffer SrcBuffer,VkBuffer DstBuffer,VkDeviceSize size);
+
+        void CreateDescriptorSetLayout();
+        void UpdateUniformBuffer();
+        void CreateDescriptorPool();
+        void CreateDescriptorSet();
     };
 
     static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugReportFlagsEXT flags,VkDebugReportObjectTypeEXT objType,uint64_t obj,size_t location,int32_t code,const char* layerPrefix,const char* msg,void* userData);
