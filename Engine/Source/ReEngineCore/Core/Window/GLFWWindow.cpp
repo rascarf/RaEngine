@@ -4,8 +4,6 @@
 #include "Event/KeyEvent.h"
 #include "Event/MouseEvent.h"
 #include "Log/Log.h"
-#include "Platform/OpenGL/OpenGLContext.h"
-
 #include "imgui.h"
 
 
@@ -70,10 +68,12 @@ namespace ReEngine
             glfwSetErrorCallback(GLFWErrorCallback);
             s_GLFWInitialized = true;
         }
-
+        
+        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+        
         m_Window = glfwCreateWindow((int)props.Width, (int)props.Height, mData.Title.c_str(), nullptr, nullptr);
-
-        m_Context = GraphicsContext::Create(m_Window);
+        
+        m_Context = GraphicsContext::Create(m_Window,&props);
         m_Context->Init();
         
         glfwSetWindowUserPointer(m_Window, &mData);
@@ -179,8 +179,9 @@ namespace ReEngine
 
     }
 
-    void GLWindow::ShutDonw()
+    void GLWindow::ShutDown()
     {
+        m_Context->Close();
         glfwDestroyWindow(m_Window);
     }
 }

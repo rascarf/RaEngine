@@ -1,6 +1,5 @@
 #pragma once
 #include "Core/Window/Window.h"
-#include "Renderer/RHI/GraphicsContext.h"
 
 #define  GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -26,8 +25,8 @@ namespace ReEngine
         [[nodiscard]]inline virtual float GetTime() override{return glfwGetTime();}
     private:
 
-        virtual  void Init(const WindowProperty& props);
-        virtual void ShutDonw();
+        virtual void Init(const WindowProperty& props);
+        virtual void ShutDown();
 
         struct WindowData
         {

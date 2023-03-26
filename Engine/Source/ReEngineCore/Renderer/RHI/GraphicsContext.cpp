@@ -2,15 +2,16 @@
 #include "Platform/OpenGL/OpenGLContext.h"
 #include "Platform/Vulkan/VulkanContext.h"
 #include "Renderer/RHI/Renderer.h"
+#include "Core/Window/Window.h"
 
 namespace ReEngine
 {
-    Ref<GraphicsContext> GraphicsContext::Create(void* Window)
+    Ref<GraphicsContext> GraphicsContext::Create(void* Window,const WindowProperty* WindowProperty)
     {
         switch (RendererAPI::Current())
         {
             case RendererAPI::RendererAPIType::OpenGL:  return CreateRef<OpenGLContext>(static_cast<GLFWwindow*>(Window));
-            case RendererAPI::RendererAPIType::Vulkan: return CreateRef<VulkanContext>(static_cast<GLFWwindow*>(Window));
+            case RendererAPI::RendererAPIType::Vulkan: return CreateRef<VulkanContext>(static_cast<GLFWwindow*>(Window),WindowProperty);
             case RendererAPI::RendererAPIType::DX12:    return nullptr;
         }
 

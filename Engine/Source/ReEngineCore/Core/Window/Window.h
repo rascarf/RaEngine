@@ -31,6 +31,7 @@ namespace ReEngine
         virtual void* GetNativeWindow() = 0;
         virtual void SetVSync(bool enabled) = 0;
         virtual bool IsVSync() const = 0;
+        virtual void ShutDown() = 0;
         
         [[nodiscard]] virtual float GetTime() = 0;
         [[nodiscard]] virtual Ref<GraphicsContext> GetGraphicsContext() const = 0;

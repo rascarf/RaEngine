@@ -9,6 +9,7 @@
 #include "Platform/OpenGL/OpenGLVertexBuffer.h"
 #include "Platform/OpenGL/OpenGLIndexBuffer.h"
 #include "Platform/OpenGL/OpenGLVertexArray.h"
+#include "Platform/Vulkan/VulkanContext.h"
 #include "Renderer/RHI/RenderCommand.h"
 #include "Renderer/RHI/Renderer.h"
 #include "Window/WindowsWindow.h"
@@ -58,6 +59,7 @@ namespace ReEngine
     void Application::Shutdown()
     {
         mRunning = false;
+        m_Window->ShutDown();
     }
 
     void Application::Clean()
@@ -103,6 +105,10 @@ namespace ReEngine
         RE_INFO("({0},{1})",e->GetWidth(),e->GetHeight());
 
         // Renderer::OnWindowResize(e->GetWidth(),e->GetHeight());
+
+        auto Context = Renderer::GetContext().get();
+        auto VulkanContext = dynamic_cast<ReEngine::VulkanContext*>(Context);
+        VulkanContext-> RecreateSwapChain();
         
         return false;
     }
