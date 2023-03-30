@@ -1,5 +1,3 @@
-#在这里定义一些事件
-# file(COPY ${EngineShadersDir} DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 set(EngineRootDir "${ProjectRootDir}/Engine")
 set(EngineAssetsDir "${EngineRootDir}/Assets")
 set(EngineConfigDir "${EngineRootDir}/Config")
@@ -30,4 +28,11 @@ DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 file(COPY ${EngineResourcesDir}
 DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 
+file(COPY ${EngineSourceDir}/ThirdParty/Vulkan/Lib
+DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+
+set(SHADER_COMPILE_TARGET ReShaderCompile)
+add_subdirectory(Shaders)
 add_subdirectory(Source)
+
+

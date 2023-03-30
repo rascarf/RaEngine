@@ -104,7 +104,7 @@ namespace ReEngine
         VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
         VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR> availablePresentModes);
         VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
-        VkShaderModule CreateShaderModule(const std::vector<char>& code);
+        VkShaderModule CreateShaderModule(const std::vector<unsigned char>& code);
         void CreateImageViews();
         void CreateRenderPass();
         void CreateGraphicsPipeline();

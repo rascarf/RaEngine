@@ -8,7 +8,8 @@
 #include "glm/gtx/transform.hpp"
 #include "Resource/AssetManager/AssetManager.h"
 
-
+#include "Shader_vert.h"
+#include "Shader_frag.h"
 
 const std::vector<const char*> validationLayers = {"VK_LAYER_KHRONOS_validation"};
 const std::vector<const char*> deviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
@@ -625,11 +626,8 @@ namespace ReEngine
     
     void VulkanContext::CreateGraphicsPipeline()
     {
-        auto vertShaderCode = readFile(AssetManager::GetFullPath(std::string("shaders/vert.spv")).string());
-        auto fragShaderCode = readFile(AssetManager::GetFullPath(std::string("shaders/frag.spv")).string());
-
-        VkShaderModule vertShaderModule = CreateShaderModule(vertShaderCode);
-		VkShaderModule fragShaderModule = CreateShaderModule(fragShaderCode);
+        VkShaderModule vertShaderModule = CreateShaderModule(SHADER_VERT);
+		VkShaderModule fragShaderModule = CreateShaderModule(SHADER_FRAG);
 
 		VkPipelineShaderStageCreateInfo vertShaderStageInfo = {};
 		vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -741,7 +739,7 @@ namespace ReEngine
 		vkDestroyShaderModule(Device, vertShaderModule, nullptr);
     }
 
-    VkShaderModule VulkanContext::CreateShaderModule(const std::vector<char>& code)
+    VkShaderModule VulkanContext::CreateShaderModule(const std::vector<unsigned char>& code)
     {
         VkShaderModuleCreateInfo createInfo = {};
         createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;

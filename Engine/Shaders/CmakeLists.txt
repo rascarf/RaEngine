@@ -1,0 +1,51 @@
+# From Pilot
+# Many Thanks for them!!!
+
+set(TARGET_NAME ${SHADER_COMPILE_TARGET})
+
+file(GLOB_RECURSE SHADER_FILES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/*.vert"
+                                            "${CMAKE_CURRENT_SOURCE_DIR}/*.frag"
+                                            "${CMAKE_CURRENT_SOURCE_DIR}/*.comp"
+                                            "${CMAKE_CURRENT_SOURCE_DIR}/*.geom"
+                                            "${CMAKE_CURRENT_SOURCE_DIR}/*.tesc"
+                                            "${CMAKE_CURRENT_SOURCE_DIR}/*.tese"
+                                            "${CMAKE_CURRENT_SOURCE_DIR}/*.mesh"
+                                            "${CMAKE_CURRENT_SOURCE_DIR}/*.task"
+                                            "${CMAKE_CURRENT_SOURCE_DIR}/*.rgen"
+                                            "${CMAKE_CURRENT_SOURCE_DIR}/*.rchit"
+                                            "${CMAKE_CURRENT_SOURCE_DIR}/*.rmiss"
+                                            "${CMAKE_CURRENT_SOURCE_DIR}/*.rcall")
+
+SOURCE_GROUP("shaders" FILES ${SHADER_FILES})
+
+set(SHADER_INCLUDE_FOLDER ${CMAKE_CURRENT_SOURCE_DIR}/include)
+
+set(GENERATED_SHADER_FOLDER "generated")
+if (NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${GENERATED_SHADER_FOLDER})
+  file(MAKE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/${GENERATED_SHADER_FOLDER})
+endif()
+
+if (NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${GENERATED_SHADER_FOLDER}/spv)
+  file(MAKE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/${GENERATED_SHADER_FOLDER}/spv)
+endif()
+
+if (NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${GENERATED_SHADER_FOLDER}/cpp)
+  file(MAKE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/${GENERATED_SHADER_FOLDER}/cpp)
+endif()
+
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/ShaderCompile.cmake)
+
+if(EXISTS "$ENV{VK_SDK_PATH}")
+  set(glslangValidator_executable $ENV{VK_SDK_PATH}/Bin/glslangValidator.exe)
+else()
+  set(glslangValidator_executable ${EngineSourceDir}/ThirdParty/Vulkan/glslangValidator.exe)
+endif()
+
+compile_shader(
+  "${SHADER_FILES}"
+  "${TARGET_NAME}"
+  "${SHADER_INCLUDE_FOLDER}"
+  "${GENERATED_SHADER_FOLDER}"
+  "${glslangValidator_executable}")
+
+  set_target_properties("${TARGET_NAME}" PROPERTIES FOLDER "Shaders" )

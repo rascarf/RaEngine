@@ -1,3 +1,2 @@
-D:\Projects\Vulkan\Bin\glslangValidator.exe -V Shader.vert
-D:\Projects\Vulkan\Bin\glslangValidator.exe -V Shader.frag
+D:\Projects\Vulkan/Bin/glslangValidator.exe -ID:/Projects/ReEngine/Engine/Shaders/include -V100 -o D:/Projects/ReEngine/Engine/Shaders/generated/spv/Shader.vert.spv D:/Projects/ReEngine/Engine/Shaders/Shader.vert
 pause

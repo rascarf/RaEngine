@@ -2,7 +2,6 @@ set(ThirdPartyDir "${EngineSourceDir}/ThirdParty")
 set(EngineCoreDir "${EngineSourceDir}/ReEngineCore")
 set(EngineEditorDir "${EngineSourceDir}/ReEngineEditor")
 
-
 add_subdirectory(ThirdParty)
 add_subdirectory(ReEngineCore)
 add_subdirectory(ReEngineEditor)

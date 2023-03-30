@@ -11,6 +11,8 @@ add_library(
     STATIC ${RuntimeHeaderFiles} ${RuntimeSourceFiles}
 )
 
+set(TARGET_NAME ReEngineCore)
+
 target_include_directories(
     ReEngineCore 
     PRIVATE "${EngineSourceDir}"
@@ -24,6 +26,11 @@ target_compile_definitions(
     PRIVATE IMGUI_IMPL_OPENGL_LOADER_CUSTOM
     "ENGINE_ROOT_DIR=${CMAKE_RUNTIME_OUTPUT_DIRECTORY}"
     )
+
+add_dependencies(${TARGET_NAME} ${SHADER_COMPILE_TARGET})
+target_include_directories(
+  ${TARGET_NAME}
+  PUBLIC ${EngineShadersDir}/generated/cpp)
 
 
 target_link_libraries(ReEngineCore PUBLIC spdlog)

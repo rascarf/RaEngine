@@ -14,11 +14,11 @@ namespace ReEngine
         GLWindow(const WindowProperty& Props);
         virtual ~GLWindow() override;
 
-        void Update(Timestep ts) override;
-        bool IsVSync() const override;
-        void SetVSync(bool enabled) override;
-        unsigned GetWindowHeight() const override { return mData.Height; }
-        unsigned GetWindowWidth() const override { return mData.Width; };
+        virtual void Update(Timestep ts) override;
+        virtual bool IsVSync() const override;
+        virtual void SetVSync(bool enabled) override;
+        virtual unsigned GetWindowHeight() const override { return mData.Height; }
+        virtual unsigned GetWindowWidth() const override { return mData.Width; };
         virtual void SetEventCallback(const EventCallBackFunc CallBack) override;
         inline virtual void* GetNativeWindow() override { return m_Window; }
         [[nodiscard]]virtual Ref<GraphicsContext>GetGraphicsContext() const override{return m_Context;}
