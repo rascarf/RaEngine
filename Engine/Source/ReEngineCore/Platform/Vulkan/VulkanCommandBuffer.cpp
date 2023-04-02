@@ -2,7 +2,8 @@
 
 VulkanCommandBuffer::~VulkanCommandBuffer()
 {
-    
+    vkDestroyFence(m_VulkanDevice->GetInstanceHandle(), Fence, VULKAN_CPU_ALLOCATOR);
+    Fence = VK_NULL_HANDLE;
 }
 
 //使用的时候必须显示地进行Begin和End

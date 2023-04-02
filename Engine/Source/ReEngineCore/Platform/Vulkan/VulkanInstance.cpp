@@ -252,6 +252,11 @@ void VulkanInstance::CreateSurface()
 
 void VulkanInstance::DestorySwapChain()
 {
+    if(m_SwapChain)
+    {
+        m_SwapChain->ShutDown();
+    }
+    
     m_SwapChain = nullptr;
 
     for (int32 i = 0; i < m_BackbufferViews.size(); ++i)

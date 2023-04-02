@@ -11,7 +11,7 @@ namespace ReEngine
         OpenGLContext(GLFWwindow* windowHandle);
 
         virtual void Init() override; // Load OpenGL Context
-        virtual void SwapBuffers() override;
+        virtual void SwapBuffers(Timestep ts) override;
     private:
         GLFWwindow* m_WindowHandle;
     };

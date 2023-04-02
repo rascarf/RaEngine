@@ -1,5 +1,6 @@
 #pragma once
 #include "Core/Core.h"
+#include "Core/Timestep.h"
 
 
 namespace ReEngine
@@ -10,7 +11,7 @@ namespace ReEngine
   {
   public:
       virtual void Init() = 0;
-      virtual void SwapBuffers() = 0;
+      virtual void SwapBuffers(Timestep ts) = 0;
       virtual void Close(){}
 
       static Ref<GraphicsContext> Create(void* Window,const WindowProperty* WindowProperty);

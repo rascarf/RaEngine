@@ -11,10 +11,10 @@ namespace ReEngine
     struct WindowProperty
     {
         std::string  Title;
-        unsigned int Width;
-        unsigned int Height;
+        int32 Width;
+        int32 Height;
 
-        WindowProperty(std::string InTitle = "ReEngine",unsigned int InWidth = 1280,unsigned int InHeight = 720):Title(InTitle),Width(InWidth),Height(InHeight){}
+        WindowProperty(std::string InTitle = "ReEngine", int32 InWidth = 1280, int32 InHeight = 720):Title(InTitle),Width(InWidth),Height(InHeight){}
     };
 
     class Window

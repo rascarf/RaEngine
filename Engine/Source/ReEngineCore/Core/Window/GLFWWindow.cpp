@@ -28,7 +28,7 @@ namespace ReEngine
     void GLWindow::Update(Timestep ts)
     {
         glfwPollEvents();
-        m_Context->SwapBuffers();
+        m_Context->SwapBuffers(ts);
         // ImGuiMouseCursor imgui_cursor = ImGui::GetMouseCursor();
         // glfwSetCursor(m_Window, m_MouseCursors[imgui_cursor] ? m_MouseCursors[imgui_cursor] : m_MouseCursors[ImGuiMouseCursor_Arrow]);
         glfwSetInputMode(m_Window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);

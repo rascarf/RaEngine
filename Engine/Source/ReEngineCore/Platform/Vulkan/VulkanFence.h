@@ -89,6 +89,7 @@ class VulkanSemaphore
 public:
     VulkanSemaphore(VulkanDevice* device);
 
+    void DestorySemaphore();
     virtual ~VulkanSemaphore();
 
     FORCE_INLINE VkSemaphore GetHandle() const

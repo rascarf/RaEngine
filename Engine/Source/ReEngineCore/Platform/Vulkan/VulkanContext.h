@@ -8,23 +8,36 @@
 #include "VulkanInstance.h"
 #include "vulkan/Include/vulkan/vulkan.h"
 #include "VulkanBuffer.h"
+#include "VulkanFrameBuffer.h"
 #include "GLFW/glfw3.h"
+#include "glm/gtx/transform.hpp"
 
 namespace ReEngine
 {
+    struct UniformBufferObject 
+    {
+        glm::mat4 model;
+        glm::mat4 view;
+        glm::mat4 proj;
+    };
+    
     class VulkanContext : public GraphicsContext
     {
     public:
+
+        UniformBufferObject ubo = {};
+        
         VulkanContext(GLFWwindow* windowHandle,const WindowProperty* WinProperty);
 
         virtual void Init() override; 
         virtual void Close() override;
-        virtual void SwapBuffers() override;
+        virtual void SwapBuffers(Timestep ts) override;
         [[nodiscard]]Ref<VulkanInstance> GetVulkanInstance(){ return Instance;}
         
     private:
         Ref<VulkanInstance> Instance;
         Ref<VulkanCommandPool> CommandPool;
+        Ref<VulkanFrameBuffer> FrameBuffer;
 
         VkDescriptorSetLayout descriptorSetLayout;
         VkDescriptorPool descriptorPool;
@@ -32,9 +45,6 @@ namespace ReEngine
         VkPipelineLayout pipelineLayout;
         VkPipeline graphicsPipeline;
 
-        std::vector<VkFramebuffer> swapChainFramebuffers;
-        VkRenderPass renderPass;
-        
         VulkanBuffer* UniformBuffer;
         VulkanBuffer* VertexBuffer;
         VulkanBuffer* IndexBuffer;
@@ -42,11 +52,8 @@ namespace ReEngine
         GLFWwindow* m_WindowHandle;
         const WindowProperty* WinProperty;
         
-        void CreateFrameBuffer();
-        void CreateRenderPass();
         void CreateGraphicsPipeline();
         VkShaderModule CreateShaderModule(const std::vector<unsigned char>& code);
-        void CreateDepthStencil();
         
         void CreateMeshBuffer();
         void createUniformBuffer();
@@ -55,8 +62,7 @@ namespace ReEngine
         void CreateDescriptorSetLayout();
         void CreateDescriptorPool();
         void CreateDescriptorSet();
-        void UpdateUniformBuffer();
-        
+        void UpdateUniformBuffer(Timestep ts);
     };
 }
 

@@ -242,14 +242,6 @@ VulkanSwapChain::VulkanSwapChain(VkInstance instance,std::shared_ptr<VulkanDevic
 
 VulkanSwapChain::~VulkanSwapChain()
 {
-	VkDevice device = m_Device->GetInstanceHandle();
-
-	for (int32 index = 0; index < m_ImageAcquiredSemaphore.size(); ++index) {
-		vkDestroySemaphore(m_Device->GetInstanceHandle(), m_ImageAcquiredSemaphore[index], VULKAN_CPU_ALLOCATOR);
-	}
-    
-	vkDestroySwapchainKHR(device, m_SwapChain, VULKAN_CPU_ALLOCATOR);
-    vkDestroySurfaceKHR(m_Instance, m_Surface, VULKAN_CPU_ALLOCATOR);
 }
 
 int32 VulkanSwapChain::AcquireImageIndex(VkSemaphore* outSemaphore)
@@ -276,6 +268,19 @@ int32 VulkanSwapChain::AcquireImageIndex(VkSemaphore* outSemaphore)
 	m_CurrentImageIndex = (int32)imageIndex;
 
 	return m_CurrentImageIndex;
+}
+
+void VulkanSwapChain::ShutDown()
+{
+	VkDevice device = m_Device->GetInstanceHandle();
+
+	for (int32 index = 0; index < m_ImageAcquiredSemaphore.size(); ++index)
+	{
+		vkDestroySemaphore(m_Device->GetInstanceHandle(), m_ImageAcquiredSemaphore[index], VULKAN_CPU_ALLOCATOR);
+	}
+    
+	vkDestroySwapchainKHR(device, m_SwapChain, VULKAN_CPU_ALLOCATOR);
+	vkDestroySurfaceKHR(m_Instance, m_Surface, VULKAN_CPU_ALLOCATOR);
 }
 
 VulkanSwapChain::SwapStatus VulkanSwapChain::Present(VulkanQueue& gfxQueue, VulkanQueue& presentQueue, VkSemaphore* doneSemaphore)

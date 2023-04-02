@@ -22,7 +22,7 @@ namespace ReEngine
         }
     }
 
-    void OpenGLContext::SwapBuffers()
+    void OpenGLContext::SwapBuffers(Timestep ts)
     {
         glfwSwapBuffers(m_WindowHandle);
     }

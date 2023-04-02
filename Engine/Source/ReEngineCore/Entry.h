@@ -12,6 +12,8 @@ int main(int argc,char** argv)
     ReEngine::AppInit(ReEngine::Application::GetInstance());
 
     ReEngine::Application::GetInstance().Run();
+
+    ReEngine::Application::GetInstance().Shutdown();
 }
 
 

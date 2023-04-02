@@ -66,6 +66,8 @@ public:
         return m_ColorFormat;
     }
 
+    void ShutDown();
+
 protected:
     friend class VulkanViewport;
     friend class VulkanQueue;

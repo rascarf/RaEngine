@@ -35,6 +35,7 @@ namespace ReEngine
         void Clean();
         
     private:
+        WindowProperty m_WindowProperty;
         Scope<Window> m_Window;
         LayerStack mLayerStack;
         bool mRunning = true;

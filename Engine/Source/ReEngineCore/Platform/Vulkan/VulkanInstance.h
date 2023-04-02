@@ -125,7 +125,6 @@ protected:
 	
 	VkDebugReportCallbackEXT			m_Callback;
 	VkSurfaceKHR m_Surface;
-	
 };
 
 FORCE_INLINE VkFormat PixelFormatToVkFormat(PixelFormat format, const bool bIsSRGB)

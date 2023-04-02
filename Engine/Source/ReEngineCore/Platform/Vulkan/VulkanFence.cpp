@@ -17,8 +17,9 @@ VulkanFence::VulkanFence(VulkanDevice* device, VulkanFenceManager* owner, bool c
 
 VulkanFence::~VulkanFence()
 {
-	if (m_VkFence != VK_NULL_HANDLE) {
-		RE_CORE_INFO("Didn't get properly destroyed by FFenceManager!");
+	if (m_VkFence != VK_NULL_HANDLE)
+		{
+		RE_CORE_ERROR("Didn't get properly destroyed by FFenceManager!");
 	}
 }
 
@@ -32,8 +33,14 @@ VulkanFenceManager::VulkanFenceManager()
 
 VulkanFenceManager::~VulkanFenceManager()
 {
-	if (m_UsedFences.size() > 0) {
-		RE_CORE_INFO("No all fences are done!");
+	if (m_UsedFences.size() > 0)
+	{
+		RE_CORE_ERROR("No all fences are done!");
+	}
+
+	if(m_FreeFences.size() > 0 )
+	{
+		RE_CORE_ERROR("No all fences are done!");
 	}
 }
 
@@ -44,11 +51,13 @@ void VulkanFenceManager::Init(VulkanDevice* device)
 
 void VulkanFenceManager::Destory()
 {
-	if (m_UsedFences.size() > 0) {
-		RE_CORE_INFO("No all fences are done!");
+	if (m_UsedFences.size() > 0)
+	{
+		RE_CORE_ERROR("No all fences are done!");
 	}
 
-	for (int32 i = 0; i < m_FreeFences.size(); ++i) {
+	for (int32 i = 0; i < m_FreeFences.size(); ++i)
+	{
 		DestoryFence(m_FreeFences[i]);
 	}
 }
@@ -151,10 +160,20 @@ VulkanSemaphore::VulkanSemaphore(VulkanDevice* device)
 	vkCreateSemaphore(device->GetInstanceHandle(), &createInfo, VULKAN_CPU_ALLOCATOR, &m_VkSemaphore);
 }
 
+void VulkanSemaphore::DestorySemaphore()
+{
+	if(m_VkSemaphore)
+	{
+		vkDestroySemaphore(m_Device->GetInstanceHandle(), m_VkSemaphore, VULKAN_CPU_ALLOCATOR);
+	}
+}
+
 VulkanSemaphore::~VulkanSemaphore()
 {
-	if (m_VkSemaphore == VK_NULL_HANDLE) {
-		RE_CORE_INFO("Failed destory VkSemaphore.");
+	if (m_VkSemaphore == VK_NULL_HANDLE)
+	{
+		RE_CORE_ERROR("Failed destory VkSemaphore.");
 	}
+	
 	vkDestroySemaphore(m_Device->GetInstanceHandle(), m_VkSemaphore, VULKAN_CPU_ALLOCATOR);
 }

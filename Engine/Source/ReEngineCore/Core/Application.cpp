@@ -18,7 +18,7 @@ namespace ReEngine
 {
     void Application::Init()
     {
-        m_Window = Window::CreateReWindow(WindowProperty("ReEngine"));
+        m_Window = Window::CreateReWindow(m_WindowProperty);
         
         // m_UI = std::make_shared<ImGuiLayer>(ImGuiLayer()); 
         // PushOverlay(m_UI);
@@ -58,7 +58,6 @@ namespace ReEngine
 
     void Application::Shutdown()
     {
-        mRunning = false;
         m_Window->ShutDown();
     }
 
