@@ -3,6 +3,16 @@
 #include <memory>
 #include "Assert.h"
 
+typedef unsigned char       uint8;
+typedef unsigned short int  uint16;
+typedef unsigned int        uint32;
+typedef unsigned long long  uint64;
+
+typedef signed char         int8;
+typedef signed short int    int16;
+typedef signed int          int32;
+typedef signed long long    int64;
+
 #ifdef RE_PLATFORM_WINDOWS
     #ifdef RE_BUILD_DLL
         #define RE_API __declspec(dllexport)
@@ -18,6 +28,9 @@
 
 #define RE_XSTRINGIFY_MACRO(x) RE_STRINGIFY_MACRO(x)
 #define RE_STRINGIFY_MACRO(x) #x
+
+#define FORCE_INLINE __inline
+#define CONSTEXPR constexpr
 
 namespace ReEngine
 {

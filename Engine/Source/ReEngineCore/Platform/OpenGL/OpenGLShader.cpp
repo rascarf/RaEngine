@@ -207,7 +207,7 @@ namespace ReEngine
 
                 glDeleteShader(shader);
 
-                RE_CORE_ERROR("{0}", infoLog.data());
+                RE_CORE_INFO("{0}", infoLog.data());
                     break;
             }
 
@@ -238,7 +238,7 @@ namespace ReEngine
             for (auto id : glShaderIDs)
                 glDeleteShader(id);
 
-            RE_CORE_ERROR("{0}", infoLog.data());
+            RE_CORE_INFO("{0}", infoLog.data());
                 return;
         }
 

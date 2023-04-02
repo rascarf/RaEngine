@@ -27,11 +27,6 @@ if(NOT TARGET glfw)
     set_target_properties(GLFW3 PROPERTIES FOLDER ${ThirdPartyFolder}/GLFW)
 endif()
 
-if(NOT TARGET marl)
-    add_subdirectory(marl)
-    set_target_properties(marl PROPERTIES FOLDER ${ThirdPartyFolder}/Marl)
-endif()
-
 if(NOT TARGET glm)
     option(BUILD_STATIC_LIBS "" ON)
     option(BUILD_TESTING "" OFF)

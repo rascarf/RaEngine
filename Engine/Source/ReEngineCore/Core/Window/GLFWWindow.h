@@ -21,7 +21,7 @@ namespace ReEngine
         virtual unsigned GetWindowWidth() const override { return mData.Width; };
         virtual void SetEventCallback(const EventCallBackFunc CallBack) override;
         inline virtual void* GetNativeWindow() override { return m_Window; }
-        [[nodiscard]]virtual Ref<GraphicsContext>GetGraphicsContext() const override{return m_Context;}
+        [[nodiscard]]virtual Ref<GraphicsContext> GetGraphicsContext() const override{return m_Context;}
         [[nodiscard]]inline virtual float GetTime() override{return glfwGetTime();}
     private:
 

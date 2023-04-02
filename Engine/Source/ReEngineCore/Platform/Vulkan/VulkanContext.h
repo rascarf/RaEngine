@@ -1,132 +1,62 @@
 ﻿#pragma once
 #include "Core/PCH.h"
 #include "Renderer/RHI/GraphicsContext.h"
+#include "Renderer/RHI/PixelFormat.h"
 
 #define VK_USE_PLATFORM_WIN32_KHR
+#include "VulkanCommandPool.h"
+#include "VulkanInstance.h"
 #include "vulkan/Include/vulkan/vulkan.h"
+#include "VulkanBuffer.h"
 #include "GLFW/glfw3.h"
-#include "Core/Window/Window.h"
-#include "glm/vec2.hpp"
-#include "glm/vec3.hpp"
 
 namespace ReEngine
 {
-    struct QueueFamilyIndices
-    {
-        int GraphicsFamily = -1;
-        int PresentFamily = -1;
-        bool isComplete()
-        {
-            return GraphicsFamily >= 0 && PresentFamily >= 0;
-        }
-    };
-
-    struct SwapChainSupportDetails
-    {
-        VkSurfaceCapabilitiesKHR capabilities;
-        std::vector<VkSurfaceFormatKHR> formats;
-        std::vector<VkPresentModeKHR> presentModes;
-    };
-    
-    
     class VulkanContext : public GraphicsContext
     {
     public:
         VulkanContext(GLFWwindow* windowHandle,const WindowProperty* WinProperty);
 
-        virtual void Init() override; // Load OpenGL Context
+        virtual void Init() override; 
         virtual void Close() override;
         virtual void SwapBuffers() override;
-
-        void RecreateSwapChain();
+        [[nodiscard]]Ref<VulkanInstance> GetVulkanInstance(){ return Instance;}
+        
     private:
-        const WindowProperty* WinProperty;
-        
-        VkInstance Instance;
-        VkPhysicalDevice physicalDevice; //物理设备
-        VkDevice Device; //逻辑设备
-        VkDebugReportCallbackEXT callback;
-
-        //支持计算和呈现Command簇的显卡可能不同
-        VkQueue graphicsQueue; 
-        VkQueue PresentQueue;
-        
-        VkSurfaceKHR surface;
-
-        VkSwapchainKHR swapChain;
-        VkFormat swapChainImageFormat;
-        VkExtent2D swapChainExtent;
-        std::vector<VkImage> swapChainImages;
-        std::vector<VkImageView> SwapChainImageViews;
+        Ref<VulkanInstance> Instance;
+        Ref<VulkanCommandPool> CommandPool;
 
         VkDescriptorSetLayout descriptorSetLayout;
         VkDescriptorPool descriptorPool;
         VkDescriptorSet descriptorSet;
-        
         VkPipelineLayout pipelineLayout;
         VkPipeline graphicsPipeline;
 
+        std::vector<VkFramebuffer> swapChainFramebuffers;
         VkRenderPass renderPass;
         
-        std::vector<VkFramebuffer> swapChainFramebuffers;
-        VkCommandPool commandPool;
-        std::vector<VkCommandBuffer> commandBuffers;
-
-        VkSemaphore imageAvailableSemaphore;
-        VkSemaphore renderFinishedSemaphore;
-
-        VkBuffer VertexBuffer;
-        VkDeviceMemory vertexBufferMemory;
-
-        VkBuffer IndexBuffer;
-        VkDeviceMemory IndexBufferMemory;
-
-        VkBuffer uniformBuffer;
-        VkDeviceMemory uniformBufferMemory;
+        VulkanBuffer* UniformBuffer;
+        VulkanBuffer* VertexBuffer;
+        VulkanBuffer* IndexBuffer;
         
         GLFWwindow* m_WindowHandle;
+        const WindowProperty* WinProperty;
         
-        void InitVulkan();
-        void CreateSurface();
-        std::vector<const char*> GetRequiredExtensions();
-        
-        bool CheckValidationLayerSupport();
-        void SetupDebugCallBack();
-        
-        void createLogicalDevice();
-        void PickPhysicalDevices();
-        bool isDeviceSuitable(VkPhysicalDevice device);
-        bool CheckDeviceExtensionSupport(VkPhysicalDevice device);
-        QueueFamilyIndices FindQueueFamily(VkPhysicalDevice device);
-        
-        void CreateSwapChain();
-        SwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice device);
-        VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
-        VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR> availablePresentModes);
-        VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
-        VkShaderModule CreateShaderModule(const std::vector<unsigned char>& code);
-        void CreateImageViews();
+        void CreateFrameBuffer();
         void CreateRenderPass();
         void CreateGraphicsPipeline();
-        void CreateFrameBuffer();
-        void CreateCommandPool();
-        void CreateCommandBuffers();
-        void CreateSemaphores();
-        void ClearSwapChain();
+        VkShaderModule CreateShaderModule(const std::vector<unsigned char>& code);
+        void CreateDepthStencil();
         
-        uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
-        void CreateVertexBuffer();
-        void CreateIndexBuffer();
+        void CreateMeshBuffer();
         void createUniformBuffer();
-        void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
-        void CopyBuffer(VkBuffer SrcBuffer,VkBuffer DstBuffer,VkDeviceSize size);
+        void CreateCommandBuffers();
 
         void CreateDescriptorSetLayout();
-        void UpdateUniformBuffer();
         void CreateDescriptorPool();
         void CreateDescriptorSet();
+        void UpdateUniformBuffer();
+        
     };
-
-    static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugReportFlagsEXT flags,VkDebugReportObjectTypeEXT objType,uint64_t obj,size_t location,int32_t code,const char* layerPrefix,const char* msg,void* userData);
 }
 

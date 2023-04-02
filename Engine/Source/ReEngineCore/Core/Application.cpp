@@ -108,7 +108,7 @@ namespace ReEngine
 
         auto Context = Renderer::GetContext().get();
         auto VulkanContext = dynamic_cast<ReEngine::VulkanContext*>(Context);
-        VulkanContext-> RecreateSwapChain();
+        // VulkanContext-> RecreateSwapChain();
         
         return false;
     }
