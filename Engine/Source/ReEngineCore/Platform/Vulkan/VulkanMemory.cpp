@@ -280,7 +280,7 @@ void VulkanDeviceMemoryManager::SetupAndPrintMemInfo()
     {
         bool isGPUHeap = ((m_MemoryProperties.memoryHeaps[index].flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT) == VK_MEMORY_HEAP_DEVICE_LOCAL_BIT);
         RE_CORE_INFO(
-            "{0}: Flags 0x{1} Size {3} ({4} MB) {5}",
+            "{0}: Flags 0x{1} Size {3} ({4} MB)",
             index,
             m_MemoryProperties.memoryHeaps[index].flags,
             (uint64)(m_MemoryProperties.memoryHeaps[index].size),
@@ -395,7 +395,7 @@ VulkanResourceHeapPage::VulkanResourceHeapPage(VulkanResourceHeap* owner, Vulkan
 VulkanResourceHeapPage::~VulkanResourceHeapPage()
 {
     if (m_DeviceMemoryAllocation == nullptr) {
-        RE_CORE_INFO("Device memory allocation is null.");
+        RE_CORE_ERROR("Device memory allocation is null.");
     }
 }
 
@@ -413,7 +413,7 @@ void VulkanResourceHeapPage::ReleaseAllocation(VulkanResourceAllocation* allocat
     
     m_UsedSize -= allocation->m_AllocationSize;
     if (m_UsedSize < 0) {
-        RE_CORE_INFO("Used size less than zero.");
+        RE_CORE_ERROR("Used size less than zero.");
     }
     
     if (JoinFreeBlocks()) {
@@ -585,7 +585,7 @@ void VulkanResourceHeap::DumpMemory()
             RE_CORE_INFO("\t\t{0}: ID {1} {2} suballocs, {3}d free chunks ({4} used/{5} free/{6} max) DeviceMemory {7}", index, usedPages[index]->GetID(), (int32)usedPages[index]->m_ResourceAllocations.size(), (int32)usedPages[index]->m_FreeList.size(), usedPages[index]->m_UsedSize, usedPages[index]->m_MaxSize - usedPages[index]->m_UsedSize, usedPages[index]->m_MaxSize, (void*)usedPages[index]->m_DeviceMemoryAllocation->GetHandle());
         }
         
-        RE_CORE_INFO("%d Suballocations for Used/Total: %d/%d = %.2f%%", numSubAllocations, (int32)subAllocUsedMemory, (int32)subAllocAllocatedMemory, subAllocAllocatedMemory > 0 ? 100.0f * (float)subAllocUsedMemory / (float)subAllocAllocatedMemory : 0.0f);
+        RE_CORE_INFO("{0} Suballocations for Used/Total: {1}/{2} = {3}%%", numSubAllocations, (int32)subAllocUsedMemory, (int32)subAllocAllocatedMemory, subAllocAllocatedMemory > 0 ? 100.0f * (float)subAllocUsedMemory / (float)subAllocAllocatedMemory : 0.0f);
     };
     
     DumpPages(m_UsedBufferPages, "Buffer");

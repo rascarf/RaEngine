@@ -120,7 +120,7 @@ void VulkanDevice::CreateDevice()
 		if (!isValidQueue)
 		{
 			auto S = GetQueueInfoString(currProps).c_str();
-			RE_INFO("Skipping unnecessary Queue Family {0}: {1} queues{2}", familyIndex, currProps.queueCount, GetQueueInfoString(currProps).c_str());
+			RE_CORE_INFO("Skipping unnecessary Queue Family {0}: {1} queues{2}", familyIndex, currProps.queueCount, GetQueueInfoString(currProps).c_str());
 			continue;
 		}
 		
@@ -131,7 +131,7 @@ void VulkanDevice::CreateDevice()
 		numPriorities             += currProps.queueCount;
 		queueFamilyInfos.push_back(currQueue);
         
-		RE_INFO("Initializing Queue Family {0}: {1}queues{2}", familyIndex,  currProps.queueCount, GetQueueInfoString(currProps).c_str());
+		RE_CORE_INFO("Initializing Queue Family {0}: {1}queues{2}", familyIndex,  currProps.queueCount, GetQueueInfoString(currProps).c_str());
 	}
     
 	std::vector<float> queuePriorities(numPriorities);
@@ -152,7 +152,7 @@ void VulkanDevice::CreateDevice()
 	VkResult result = vkCreateDevice(m_PhysicalDevice, &deviceInfo, VULKAN_CPU_ALLOCATOR, &m_Device);
 	if (result == VK_ERROR_INITIALIZATION_FAILED)
 	{
-		RE_INFO("{0}", "Cannot create a Vulkan device. Try updating your video driver to a more recent version.\n");
+		RE_CORE_ERROR("{0}", "Cannot create a Vulkan device. Try updating your video driver to a more recent version.\n");
 		return;
 	}
 
@@ -217,7 +217,7 @@ void VulkanDevice::SetupFormats()
         {
             MapFormatSupport(PF_DepthStencil, VK_FORMAT_D16_UNORM_S8_UINT);
             if (!G_PixelFormats[PF_DepthStencil].supported) {
-                RE_INFO("No stencil texture format supported!");
+                RE_CORE_ERROR("No stencil texture format supported!");
             }
         }
     }
@@ -270,7 +270,7 @@ void VulkanDevice::SetupFormats()
 				{
 					MapFormatSupport(PF_D24, VK_FORMAT_D16_UNORM);
                     if (!G_PixelFormats[PF_D24].supported) {
-                        RE_INFO("{0}", "No Depth texture format supported!");
+                        RE_CORE_ERROR("{0}", "No Depth texture format supported!");
                     }
 				}
 			}
@@ -342,8 +342,9 @@ void VulkanDevice::MapFormatSupport(PixelFormat format, VkFormat vkFormat)
 	formatInfo.platformFormat   = vkFormat;
 	formatInfo.supported        = IsFormatSupported(vkFormat);
 
-	if (!formatInfo.supported) {
-		RE_INFO("PixelFormat(%d) is not supported with Vk format %d", (int32)format, (int32)vkFormat);
+	if (!formatInfo.supported)
+	{
+		RE_CORE_ERROR("PixelFormat(%d) is not supported with Vk format %d", (int32)format, (int32)vkFormat);
 	}
 }
 
@@ -412,7 +413,7 @@ bool VulkanDevice::QueryGPU(int32 deviceIndex)
 void VulkanDevice::InitGPU(int32 deviceIndex)
 {
 	vkGetPhysicalDeviceFeatures(m_PhysicalDevice, &m_PhysicalDeviceFeatures);
-	RE_INFO("Using Device {0}: Geometry %d Tessellation {1}", deviceIndex, m_PhysicalDeviceFeatures.geometryShader, m_PhysicalDeviceFeatures.tessellationShader);
+	RE_CORE_INFO("Using Device {0}: Geometry {1} Tessellation {2}", deviceIndex, m_PhysicalDeviceFeatures.geometryShader, m_PhysicalDeviceFeatures.tessellationShader);
 
 	CreateDevice();
 	SetupFormats();

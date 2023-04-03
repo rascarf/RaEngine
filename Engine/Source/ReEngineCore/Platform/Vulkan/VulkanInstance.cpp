@@ -35,6 +35,8 @@ void VulkanInstance::Shutdown()
 {
     DestorySwapChain();
 
+    vkDestroySurfaceKHR(m_Instance, m_Surface, VULKAN_CPU_ALLOCATOR);
+
 #ifndef NDEBUG
     DestroyDebugCallBack();
 #endif

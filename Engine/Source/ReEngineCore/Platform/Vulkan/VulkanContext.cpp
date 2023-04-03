@@ -63,7 +63,17 @@ namespace ReEngine
     {
         UpdateUniformBuffer(ts);
   		int32 bufferIndex = CommandPool->AcquireBackbufferIndex();
+    	if(bufferIndex < 0)
+    	{
+    		return;
+    	}
+    	
 		CommandPool->Present(bufferIndex);
+    }
+
+    void VulkanContext::RecreateSwapChain()
+    {
+    	Instance->RecreateSwapChain();
     }
 
     struct Vertex {

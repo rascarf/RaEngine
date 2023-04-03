@@ -32,6 +32,7 @@ namespace ReEngine
         virtual void Init() override; 
         virtual void Close() override;
         virtual void SwapBuffers(Timestep ts) override;
+        virtual void RecreateSwapChain();
         [[nodiscard]]Ref<VulkanInstance> GetVulkanInstance(){ return Instance;}
         
     private:

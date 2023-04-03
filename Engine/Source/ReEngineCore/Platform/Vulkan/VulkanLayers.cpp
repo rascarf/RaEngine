@@ -17,67 +17,33 @@ struct VulkanLayerExtension
 	std::vector<VkExtensionProperties> extensionProps;
 };
 
-static const char* G_ValidationLayersInstance[] =
+static const char* G_InstanceValidationLayers[] =
 {
 	"VK_LAYER_KHRONOS_validation",
 	"VK_LAYER_RENDERDOC_Capture",
-// #elif PLATFORM_MAC
-// 	"VK_LAYER_LUNARG_standard_validation",
-//     "VK_LAYER_GOOGLE_unique_objects",
-//     "VK_LAYER_GOOGLE_threading",
-//     "VK_LAYER_LUNARG_core_validation",
-//     "VK_LAYER_LUNARG_parameter_validation",
-//     "VK_LAYER_LUNARG_object_tracker",
-// #elif PLATFORM_IOS
-//     "MoltenVK",
-// #elif PLATFORM_ANDROID
-// 	"VK_LAYER_GOOGLE_threading",
-// 	"VK_LAYER_LUNARG_parameter_validation",
-// 	"VK_LAYER_LUNARG_object_tracker",
-// 	"VK_LAYER_LUNARG_core_validation",
-// 	"VK_LAYER_LUNARG_swapchain",
-// 	"VK_LAYER_GOOGLE_unique_objects",
-// #elif PLATFORM_LINUX
-// 	"VK_LAYER_KHRONOS_validation",
-// #endif
-// 	nullptr
+	nullptr
 };
 
-static const char* G_ValidationLayersDevice[] =
+static const char* G_DeviceValidationLayers[] =
 {
 	"VK_LAYER_KHRONOS_validation",
-// #elif PLATFORM_IOS
-//     "MoltenVK",
-// #elif PLATFORM_MAC
-//     "VK_LAYER_LUNARG_standard_validation",
-//     "VK_LAYER_GOOGLE_unique_objects",
-//     "VK_LAYER_GOOGLE_threading",
-//     "VK_LAYER_LUNARG_core_validation",
-//     "VK_LAYER_LUNARG_parameter_validation",
-//     "VK_LAYER_LUNARG_object_tracker",
-// #elif PLATFORM_ANDROID
-// 	"VK_LAYER_GOOGLE_threading",
-// 	"VK_LAYER_LUNARG_parameter_validation",
-// 	"VK_LAYER_LUNARG_object_tracker",
-// 	"VK_LAYER_LUNARG_core_validation",
-// 	"VK_LAYER_GOOGLE_unique_objects",
-// #elif PLATFORM_LINUX
-// 	"VK_LAYER_KHRONOS_validation",
-// #endif
-// 	nullptr
+	nullptr
 };
 
 static const char* G_InstanceExtensions[] =
 {
+	VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+	VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
 	nullptr
 };
 
 static const char* G_DeviceExtensions[] =
 {
 	VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-	// VK_KHR_SAMPLER_MIRROR_CLAMP_TO_EDGE_EXTENSION_NAME,
 	VK_KHR_MAINTENANCE1_EXTENSION_NAME,
 	nullptr
+	// VK_KHR_SAMPLER_MIRROR_CLAMP_TO_EDGE_EXTENSION_NAME,
+	
 };
 
 static FORCE_INLINE void EnumerateInstanceExtensionProperties(const char* layerName, VulkanLayerExtension& outLayer)
@@ -141,12 +107,15 @@ static FORCE_INLINE void TrimDuplicates(std::vector<const char*>& arr)
 		bool found = false;
 		for (int32 j = i - 1; j >= 0; --j)
 		{
-			if (strcmp(arr[i], arr[j]) == 0) {
+			if (strcmp(arr[i], arr[j]) == 0)
+			{
 				found = true;
 				break;
 			}
 		}
-		if (found) {
+		
+		if (found)
+		{
 			arr.erase(arr.begin() + i);
 		}
 	}
@@ -199,90 +168,94 @@ void VulkanInstance::GetInstanceLayersAndExtensions(std::vector<const char*>& ou
 		globalLayerExtensions.push_back(layer);
 	}
 
-	for (const std::string& name : foundUniqueLayers) 
-	{
-		RE_INFO("- Found instance layer {0}", name.c_str());
-	}
-
-	for (const std::string& name : foundUniqueExtensions)
-		{
-		RE_INFO("- Found instance extension {0}", name.c_str());
-	}
+	//取消注释来展示当前Instance的Extension
+	// for (const std::string& name : foundUniqueLayers) 
+	// {
+	// 	RE_INFO("- Found instance layer {0}", name.c_str());
+	// }
+	//
+	// for (const std::string& name : foundUniqueExtensions)
+	// 	{
+	// 	RE_INFO("- Found instance extension {0}", name.c_str());
+	// }
 	
 #ifdef NDEBUG
 	const bool EnableValidationLayers = false;
 #else
 	const bool EnableValidationLayers = true;
 #endif
-
+	
 	if(EnableValidationLayers)
 	{
-		for (int32 i = 0; G_ValidationLayersInstance[i] != nullptr; ++i) 
+		for (int32 i = 0; G_InstanceValidationLayers[i] != nullptr; ++i) 
 		{
-			const char* currValidationLayer = G_ValidationLayersInstance[i];
+			const char* currValidationLayer = G_InstanceValidationLayers[i];
 			bool found = FindLayerInList(globalLayerExtensions, currValidationLayer);
 			if (found) {
 				outInstanceLayers.push_back(currValidationLayer);
 			} 
 			else
 			{
-				RE_INFO("Unable to find Vulkan instance validation layer {0}", currValidationLayer);
+				RE_CORE_INFO("Unable to find Vulkan instance validation layer {0}", currValidationLayer);
 			}
 		}
 	}
 
-	if (FindLayerExtensionInList(globalLayerExtensions, VK_EXT_DEBUG_REPORT_EXTENSION_NAME)) {
+	if (FindLayerExtensionInList(globalLayerExtensions, VK_EXT_DEBUG_REPORT_EXTENSION_NAME))
+	{
 		outInstanceExtensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
 	}
 	
 	//TODO 这里之后改成按照平台读取
 	//需要打开的Instance拓展
-
 	unsigned int glfwExtensionCount = 0;
 	const char** glfwExtensions;
 	glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 	
 	std::vector<const char*> platformExtensions;
-	platformExtensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
-	platformExtensions.push_back(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
 	platformExtensions.push_back(*glfwExtensions);
 	
-	
-	for (const char* extension : platformExtensions) {
+	for (const char* extension : platformExtensions)
+	{
 		if (FindLayerExtensionInList(globalLayerExtensions, extension))
 		{
 			outInstanceExtensions.push_back(extension);
 		}
 	}
 
-	for (int32 i = 0; G_InstanceExtensions[i] != nullptr; ++i) {
-		if (FindLayerExtensionInList(globalLayerExtensions, G_InstanceExtensions[i])) {
+	for (int32 i = 0; G_InstanceExtensions[i] != nullptr; ++i)
+	{
+		if (FindLayerExtensionInList(globalLayerExtensions, G_InstanceExtensions[i]))
+		{
 			outInstanceExtensions.push_back(G_InstanceExtensions[i]);
 		}
 	}
     
 	TrimDuplicates(outInstanceLayers);
 	if (outInstanceLayers.size() > 0) {
-		RE_INFO("Using instance layers");
-		for (const char* layer : outInstanceLayers) {
-			RE_INFO("* {0}", layer);
+		RE_CORE_INFO("Using instance layers");
+		for (const char* layer : outInstanceLayers)
+		{
+			RE_CORE_INFO("* {0}", layer);
 		}
 	}
 	else
 	{
-		RE_INFO("Not using instance layers");
+		RE_CORE_INFO("Not using instance layers");
 	}
 
 	TrimDuplicates(outInstanceExtensions);
-	if (outInstanceExtensions.size() > 0) {
-		RE_INFO("Using instance extensions");
-		for (const char* extension : outInstanceExtensions) {
-			RE_INFO("* {0}", extension);
+	if (outInstanceExtensions.size() > 0)
+	{
+		RE_CORE_INFO("Using instance extensions");
+		for (const char* extension : outInstanceExtensions)
+		{
+			RE_CORE_INFO("* {0}", extension);
 		}
 	}
 	else
 	{
-		RE_INFO("Not using instance extensions");
+		RE_CORE_INFO("Not using instance extensions");
 	}
 }
 
@@ -314,26 +287,30 @@ void VulkanDevice::GetDeviceExtensionsAndLayers(std::vector<const char*>& outDev
         
 		deviceLayerExtensions[index].AddUniqueExtensionNames(foundUniqueExtensions);
 	}
-    
-	for (const std::string& name : foundUniqueLayers) {
-		RE_INFO("- Found device layer {0}", name.c_str());
-	}
-    
-	for (const std::string& name : foundUniqueExtensions) {
-		RE_INFO("- Found device extension {0}", name.c_str());
-	}
+
+	//取消注释来展示当前设备的Extension
+	// for (const std::string& name : foundUniqueLayers)
+	// {
+	// 	RE_CORE_INFO("- Found device layer {0}", name.c_str());
+	// }
+ //    
+	// for (const std::string& name : foundUniqueExtensions)
+	// {
+	// 	RE_CORE_INFO("- Found device extension {0}", name.c_str());
+	// }
 
 #ifdef NDEBUG
 	const bool EnableValidationLayers = false;
 #else
 	const bool EnableValidationLayers = true;
 #endif
+	
 	if(EnableValidationLayers)
 	{
-		for (uint32 layerIndex = 0; G_ValidationLayersDevice[layerIndex] != nullptr; ++layerIndex)
+		for (uint32 layerIndex = 0; G_DeviceValidationLayers[layerIndex] != nullptr; ++layerIndex)
 		{
 			bool bValidationFound = false;
-			const char* currValidationLayer = G_ValidationLayersDevice[layerIndex];
+			const char* currValidationLayer = G_DeviceValidationLayers[layerIndex];
 			for (int32 index = 1; index < deviceLayerExtensions.size(); ++index)
 			{
 				if (strcmp(deviceLayerExtensions[index].layerProps.layerName, currValidationLayer) == 0)
@@ -345,13 +322,15 @@ void VulkanDevice::GetDeviceExtensionsAndLayers(std::vector<const char*>& outDev
 			}
 			    
 			if (!bValidationFound) {
-				RE_INFO("Unable to find Vulkan device validation layer '{0}'", currValidationLayer);
+				RE_CORE_INFO("Unable to find Vulkan device validation layer '{0}'", currValidationLayer);
 			}
 		}
 	}
-	
+
+	//所有可以加载的Extension
     std::vector<const char*> availableExtensions;
-    for (int32 extIndex = 0; extIndex < deviceLayerExtensions[0].extensionProps.size(); ++extIndex) {
+    for (int32 extIndex = 0; extIndex < deviceLayerExtensions[0].extensionProps.size(); ++extIndex)
+    {
         availableExtensions.push_back(deviceLayerExtensions[0].extensionProps[extIndex].extensionName);
     }
     
@@ -365,7 +344,8 @@ void VulkanDevice::GetDeviceExtensionsAndLayers(std::vector<const char*>& outDev
             }
         }
         
-        if (findLayerIndex < deviceLayerExtensions.size()) {
+        if (findLayerIndex < deviceLayerExtensions.size())
+        {
             deviceLayerExtensions[findLayerIndex].AddUniqueExtensionNames(availableExtensions);
         }
     }
@@ -407,17 +387,17 @@ void VulkanDevice::GetDeviceExtensionsAndLayers(std::vector<const char*>& outDev
     
     if (outDeviceExtensions.size() > 0)
     {
-        RE_INFO("Using device extensions");
+        RE_CORE_INFO("Using device extensions");
         for (const char* extension : outDeviceExtensions) {
-            RE_INFO("* {0}", extension);
+            RE_CORE_INFO("* {0}", extension);
         }
     }
     
     if (outDeviceLayers.size() > 0)
     {
-        RE_INFO("Using device layers");
+        RE_CORE_INFO("Using device layers");
         for (const char* layer : outDeviceLayers) {
-            RE_INFO("* {0}", layer);
+            RE_CORE_INFO("* {0}", layer);
         }
     }
 }

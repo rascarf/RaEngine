@@ -81,6 +81,13 @@ namespace ReEngine
 
         glfwSetWindowSizeCallback(m_Window, [](GLFWwindow* window, int width, int height)
             {
+                //当放到后台的时候，阻塞所有事件
+                while(width == 0 || height == 0)
+                {
+                    glfwWaitEvents();
+                    glfwGetFramebufferSize(window, &width, &height);
+                }
+            
                 WindowData&  data  = *(WindowData*)glfwGetWindowUserPointer(window);
                 auto event = std::make_shared<WindowResizeEvent>(width, height);
 

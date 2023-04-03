@@ -55,7 +55,7 @@ VulkanSwapChain::VulkanSwapChain(VkInstance instance,std::shared_ptr<VulkanDevic
 		}
 		else
 		{
-			RE_INFO("Requested PixelFormat {0} not supported by this Vulkan implementation!", (uint32)outPixelFormat);
+			RE_CORE_ERROR("Requested PixelFormat {0} not supported by this Vulkan implementation!", (uint32)outPixelFormat);
 			outPixelFormat = PF_Unknown;
 		}
 	}
@@ -70,7 +70,7 @@ VulkanSwapChain::VulkanSwapChain(VkInstance instance,std::shared_ptr<VulkanDevic
 				{
 					outPixelFormat = (PixelFormat)pfIndex;
 					currFormat     = formats[index];
-					RE_INFO("No swapchain format requested, picking up VulkanFormat %d", (uint32)currFormat.format);
+					RE_CORE_ERROR("No swapchain format requested, picking up VulkanFormat {0}", (uint32)currFormat.format);
 					break;
 				}
 			}
@@ -84,7 +84,7 @@ VulkanSwapChain::VulkanSwapChain(VkInstance instance,std::shared_ptr<VulkanDevic
 	
 	if (outPixelFormat == PF_Unknown)
 	{
-		RE_INFO("Can't find a proper pixel format for the swapchain, trying to pick up the first available");
+		RE_CORE_ERROR("Can't find a proper pixel format for the swapchain, trying to pick up the first available");
 		VkFormat platformFormat = PixelFormatToVkFormat(outPixelFormat, false);
 		bool supported = false;
 		for (int32 index = 0; index < formats.size(); ++index)
@@ -108,25 +108,25 @@ VulkanSwapChain::VulkanSwapChain(VkInstance instance,std::shared_ptr<VulkanDevic
     bool foundPresentModeImmediate = false;
     bool foundPresentModeFIFO      = false;
     
-    RE_INFO("Found {0} present mode.", (int32)numFoundPresentModes);
+    RE_CORE_INFO("Found {0} present mode.", (int32)numFoundPresentModes);
     for (int32 index = 0; index < (int32)numFoundPresentModes; ++index)
     {
         switch (foundPresentModes[index])
         {
             case VK_PRESENT_MODE_MAILBOX_KHR:
                 foundPresentModeMailbox = true;
-                RE_INFO("- VK_PRESENT_MODE_MAILBOX_KHR ({0})", (int32)VK_PRESENT_MODE_MAILBOX_KHR);
+                RE_CORE_INFO("- VK_PRESENT_MODE_MAILBOX_KHR ({0})", (int32)VK_PRESENT_MODE_MAILBOX_KHR);
                 break;
             case VK_PRESENT_MODE_IMMEDIATE_KHR:
                 foundPresentModeImmediate = true;
-                RE_INFO("- VK_PRESENT_MODE_IMMEDIATE_KHR ({0})", (int32)VK_PRESENT_MODE_IMMEDIATE_KHR);
+                RE_CORE_INFO("- VK_PRESENT_MODE_IMMEDIATE_KHR ({0})", (int32)VK_PRESENT_MODE_IMMEDIATE_KHR);
                 break;
             case VK_PRESENT_MODE_FIFO_KHR:
                 foundPresentModeFIFO = true;
-                RE_INFO("- VK_PRESENT_MODE_FIFO_KHR ({0})", (int32)VK_PRESENT_MODE_FIFO_KHR);
+                RE_CORE_INFO("- VK_PRESENT_MODE_FIFO_KHR ({0})", (int32)VK_PRESENT_MODE_FIFO_KHR);
                 break;
             default:
-                RE_INFO("- VkPresentModeKHR ({0})", (int32)foundPresentModes[index]);
+                RE_CORE_INFO("- VkPresentModeKHR ({0})", (int32)foundPresentModes[index]);
                 break;
         }
     }
@@ -143,16 +143,16 @@ VulkanSwapChain::VulkanSwapChain(VkInstance instance,std::shared_ptr<VulkanDevic
     }
     else
     {
-        RE_INFO("Couldn't find desired PresentMode! Using {0}", (int32)foundPresentModes[0]);
+        RE_CORE_INFO("Couldn't find desired PresentMode! Using {0}", (int32)foundPresentModes[0]);
         presentMode = foundPresentModes[0];
     }
     
-    RE_INFO("Selected VkPresentModeKHR mode {0}", presentMode);
+    RE_CORE_INFO("Selected VkPresentModeKHR mode {0}", presentMode);
 
 	VkSurfaceCapabilitiesKHR surfProperties;
 	VERIFYVULKANRESULT_EXPANDED(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(m_Device->GetPhysicalHandle(), m_Surface, &surfProperties));
     
-    RE_INFO("Surface minSize:{0}x{1} maxSize:{2}x{3}",
+    RE_CORE_INFO("Surface minSize:{0}x{1} maxSize:{2}x{3}",
          (int32)surfProperties.minImageExtent.width, (int32)surfProperties.minImageExtent.height,
          (int32)surfProperties.maxImageExtent.width, (int32)surfProperties.maxImageExtent.height
     );
@@ -204,14 +204,14 @@ VulkanSwapChain::VulkanSwapChain(VkInstance instance,std::shared_ptr<VulkanDevic
 	VERIFYVULKANRESULT(vkGetPhysicalDeviceSurfaceSupportKHR(m_Device->GetPhysicalHandle(), m_Device->GetPresentQueue()->GetFamilyIndex(), m_Surface, &supportsPresent));
     if (!supportsPresent)
     {
-        RE_INFO("Present queue not support.");
+        RE_CORE_INFO("Present queue not support.");
     }
 
 	VkBool32 GfxPresent;
 	VERIFYVULKANRESULT(vkGetPhysicalDeviceSurfaceSupportKHR(m_Device->GetPhysicalHandle(), m_Device->GetGraphicsQueue()->GetFamilyIndex(), m_Surface, &GfxPresent));
 	if (!GfxPresent)
 	{
-		RE_INFO("Gfx queue not support.");
+		RE_CORE_INFO("Gfx queue not support.");
 	}
 	
 	// 创建SwapChain
@@ -237,7 +237,7 @@ VulkanSwapChain::VulkanSwapChain(VkInstance instance,std::shared_ptr<VulkanDevic
 	
 	m_PresentID   = 0;
 	m_ColorFormat = currFormat.format;
-    RE_INFO("SwapChain: Backbuffer:{0} Format:{1} ColorSpace:{2} Size:{3}x{4} Present:{5}", m_SwapChainInfo.minImageCount, m_SwapChainInfo.imageFormat, m_SwapChainInfo.imageColorSpace, m_SwapChainInfo.imageExtent.width, m_SwapChainInfo.imageExtent.height, m_SwapChainInfo.presentMode);
+    RE_CORE_INFO("SwapChain: Backbuffer:{0} Format:{1} ColorSpace:{2} Size:{3}x{4} Present:{5}", m_SwapChainInfo.minImageCount, m_SwapChainInfo.imageFormat, m_SwapChainInfo.imageColorSpace, m_SwapChainInfo.imageExtent.width, m_SwapChainInfo.imageExtent.height, m_SwapChainInfo.presentMode);
 }
 
 VulkanSwapChain::~VulkanSwapChain()
@@ -251,14 +251,18 @@ int32 VulkanSwapChain::AcquireImageIndex(VkSemaphore* outSemaphore)
 	const int32 prev  = m_SemaphoreIndex;
 
 	m_SemaphoreIndex  = (m_SemaphoreIndex + 1) % m_ImageAcquiredSemaphore.size();
+	//这是一个操作，GPU需要从队列中获取图像，这个需要时间，也就是说当GPU完成了这一步，会向m_ImageAcquiredSemaphore[m_SemaphoreIndex]发出signal，等待这个signal的都可以运行
+	//
 	VkResult result   = vkAcquireNextImageKHR(device, m_SwapChain, ((uint64)	0xffffffffffffffff), m_ImageAcquiredSemaphore[m_SemaphoreIndex], VK_NULL_HANDLE, &imageIndex);
 
-	if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+	if (result == VK_ERROR_OUT_OF_DATE_KHR)
+	{
 		m_SemaphoreIndex = prev;
 		return (int32)SwapStatus::OutOfDate;
 	}
 
-	if (result == VK_ERROR_SURFACE_LOST_KHR) {
+	if (result == VK_ERROR_SURFACE_LOST_KHR)
+	{
 		m_SemaphoreIndex = prev;
 		return (int32)SwapStatus::SurfaceLost;
 	}
@@ -280,7 +284,6 @@ void VulkanSwapChain::ShutDown()
 	}
     
 	vkDestroySwapchainKHR(device, m_SwapChain, VULKAN_CPU_ALLOCATOR);
-	vkDestroySurfaceKHR(m_Instance, m_Surface, VULKAN_CPU_ALLOCATOR);
 }
 
 VulkanSwapChain::SwapStatus VulkanSwapChain::Present(VulkanQueue& gfxQueue, VulkanQueue& presentQueue, VkSemaphore* doneSemaphore)
@@ -332,7 +335,7 @@ void VulkanDevice::SetupPresentQueue(VkSurfaceKHR surface)
 		VERIFYVULKANRESULT(vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, familyIndex, surface, &supportsPresent))
 		if (supportsPresent)
 		{
-			RE_INFO("Queue Family {0}: Supports Present", familyIndex);
+			RE_CORE_INFO("Queue Family {0}: Supports Present", familyIndex);
 		}
 		return (supportsPresent == VK_TRUE);
 	};

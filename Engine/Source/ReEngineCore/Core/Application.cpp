@@ -100,11 +100,12 @@ namespace ReEngine
 
     bool Application::OnWindowResize(Ref<WindowResizeEvent> e)
     {
-        
         RE_INFO("({0},{1})",e->GetWidth(),e->GetHeight());
 
         // Renderer::OnWindowResize(e->GetWidth(),e->GetHeight());
-
+        // m_WindowProperty.Height = e->GetHeight();
+        // m_WindowProperty.Height = e->GetWidth();
+        
         auto Context = Renderer::GetContext().get();
         auto VulkanContext = dynamic_cast<ReEngine::VulkanContext*>(Context);
         // VulkanContext-> RecreateSwapChain();

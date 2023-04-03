@@ -125,6 +125,8 @@ protected:
 	
 	VkDebugReportCallbackEXT			m_Callback;
 	VkSurfaceKHR m_Surface;
+
+	friend VulkanContext;
 };
 
 FORCE_INLINE VkFormat PixelFormatToVkFormat(PixelFormat format, const bool bIsSRGB)

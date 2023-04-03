@@ -27,6 +27,7 @@ void VulkanCommandPool::Init(VulkanContext* Context)
 
 void VulkanCommandPool::Present(int backBufferIndex)
 {
+    if(backBufferIndex < 0) backBufferIndex = 0;
     VkSubmitInfo submitInfo = {};
     submitInfo.sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     submitInfo.pWaitDstStageMask    = &m_WaitStageMask;
@@ -37,18 +38,22 @@ void VulkanCommandPool::Present(int backBufferIndex)
     submitInfo.pCommandBuffers      = &(m_CommandBuffers[backBufferIndex]);
     submitInfo.commandBufferCount   = 1;
 
+    //Fence保证在队列没有提交完成之前，cpu不会执行下面的代码，挡住的是CPU，不是GPU，Semaphore才是挡住GPU
     vkResetFences(m_Device, 1, &(m_Fences[backBufferIndex]));
 
     VERIFYVULKANRESULT(vkQueueSubmit(m_PresentQueue, 1, &submitInfo, m_Fences[backBufferIndex]));
     
     vkWaitForFences(m_Device, 1, &(m_Fences[backBufferIndex]), true, ((uint64)	0xffffffffffffffff));
     
-    // present
+    // present会等待RenderComplete Semaphore
     m_SwapChain->Present(*m_VulkanDevice->GetGraphicsQueue(),*m_VulkanDevice->GetPresentQueue() , &m_RenderComplete);
 }
 
 int32 VulkanCommandPool::AcquireBackbufferIndex()
 {
+    //当前帧的序号
+    //这一帧提交等待的semaphore
+    //渲染指令提交会固定signal RenderComplete
     int32 backBufferIndex = m_SwapChain->AcquireImageIndex(&m_PresentComplete);
     return backBufferIndex;
 }
