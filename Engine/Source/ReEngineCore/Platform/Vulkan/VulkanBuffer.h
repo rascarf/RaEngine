@@ -1,4 +1,5 @@
 ﻿#pragma once
+#include "VulkanCommandBuffer.h"
 #include "VulkanCommonDefine.h"
 #include "VulkanDevice.h"
 #include "VulkanInstance.h"
@@ -39,7 +40,8 @@ public:
 public:
     //创建Buffer
     static VulkanBuffer* CreateBuffer(std::shared_ptr<VulkanDevice> device, VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags memoryPropertyFlags, VkDeviceSize size, void *data = nullptr);
-    static void TransferBuffer(const VulkanInstance& Instance,const VulkanCommandPool& CommandPool,VulkanBuffer* SrcBuffer,VulkanBuffer* DstBuffer,VkDeviceSize size);
+    static void TransferBuffer(const Ref<VulkanDevice>& Device,const VulkanCommandPool& CommandPool,VulkanBuffer* SrcBuffer, VulkanBuffer* DstBuffer, VkDeviceSize size);
+    static void TransferBuffer(const Ref<VulkanDevice>& Device,VulkanCommandBuffer* CommandPool,VulkanBuffer* SrcBuffer, VulkanBuffer* DstBuffer, VkDeviceSize size);
 
     //开始数据映射
     VkResult Map(VkDeviceSize size = VK_WHOLE_SIZE, VkDeviceSize offset = 0);

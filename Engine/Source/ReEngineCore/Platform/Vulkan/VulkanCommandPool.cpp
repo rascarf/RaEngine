@@ -3,6 +3,7 @@
 #include "VulkanCommandBuffer.h"
 #include "Core/Application.h"
 #include "VulkanContext.h"
+#include "Renderer/RHI/Renderer.h"
 
 namespace ReEngine
 {
@@ -55,6 +56,14 @@ int32 VulkanCommandPool::AcquireBackbufferIndex()
     //这一帧提交等待的semaphore
     //渲染指令提交会固定signal RenderComplete
     int32 backBufferIndex = m_SwapChain->AcquireImageIndex(&m_PresentComplete);
+
+    if(backBufferIndex < 0 )
+    {
+        auto Context = Renderer::GetContext().get();
+        auto VulkanContext = dynamic_cast<ReEngine::VulkanContext*>(Context);
+        VulkanContext-> RecreateSwapChain();
+    }
+    
     return backBufferIndex;
 }
 
@@ -165,5 +174,9 @@ void VulkanCommandPool::CreatePipelineCache()
     VERIFYVULKANRESULT(vkCreatePipelineCache(device, &createInfo, VULKAN_CPU_ALLOCATOR, &m_PipelineCache));
 }
 
+void VulkanCommandPool::RecreateSwapChain()
+{
+    
+}
 }
 

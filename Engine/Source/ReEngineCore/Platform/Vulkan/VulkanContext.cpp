@@ -12,6 +12,7 @@
 #include "VulkanBuffer.h"
 #include "VulkanCommandPool.h"
 #include "VulkanInstance.h"
+#include "VulkanVertexBuffer.h"
 #include "Core/Timestep.h"
 #include "Resource/AssetManager/AssetManager.h"
 
@@ -73,44 +74,30 @@ namespace ReEngine
 
     void VulkanContext::RecreateSwapChain()
     {
+    	const auto Device = Instance->GetDevice()->GetInstanceHandle();
+    	
+    	FrameBuffer->ShutDown();
+    	CommandPool->ShutDown();
+    	
+
+    	vkDestroyPipeline(Device, graphicsPipeline, nullptr);
+    	vkDestroyPipelineLayout(Device, pipelineLayout, nullptr);
+    	
     	Instance->RecreateSwapChain();
+    	FrameBuffer->Init(this);
+    	CommandPool->Init(this);
+
+    	CreateDescriptorSetLayout();
+    	CreateDescriptorPool();
+    	CreateDescriptorSet();
+    	CreateGraphicsPipeline();
+    	CreateCommandBuffers();
     }
 
-    struct Vertex {
-        glm::vec3 pos;
-        glm::vec3 color;
-
-        static VkVertexInputBindingDescription getBindingDescription()
-        {
-            VkVertexInputBindingDescription bindingDescription = {};
-            bindingDescription.binding = 0;
-            bindingDescription.stride = sizeof(Vertex);
-            bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-                
-            return bindingDescription;
-        }
-
-        static std::array<VkVertexInputAttributeDescription, 2> getAttributeDescriptions()
-        {
-            std::array<VkVertexInputAttributeDescription, 2> attributeDescriptions = {};
-            attributeDescriptions[0].binding = 0;
-            attributeDescriptions[0].location = 0;
-            attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-            attributeDescriptions[0].offset = offsetof(Vertex, pos);
-
-            attributeDescriptions[1].binding = 0;
-            attributeDescriptions[1].location = 1;
-            attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-            attributeDescriptions[1].offset = offsetof(Vertex, color);
-            
-            return attributeDescriptions;
-        }
-    };
-
-    const std::vector<ReEngine::Vertex> vertices = {
-        {{  1.0f,  1.0f, 0.0f }, {1.0f, 0.0f, 0.0f}},
-        {{ -1.0f,  1.0f, 0.0f }, {0.0f, 1.0f, 0.0f}},
-        {{  0.0f, -1.0f, 0.0f }, {0.0f, 0.0f, 1.0f}},
+    const std::vector<float> vertices = {
+          1.0f,  1.0f, 0.0f , 1.0f, 0.0f, 0.0f,
+         -1.0f,  1.0f, 0.0f , 0.0f, 1.0f, 0.0f,
+          0.0f, -1.0f, 0.0f , 0.0f, 0.0f, 1.0f,
     };
 
     //根据点的个数，可以使用uint16_：65535
@@ -138,15 +125,15 @@ namespace ReEngine
 
 		VkPipelineShaderStageCreateInfo shaderStages[] = { vertShaderStageInfo, fragShaderStageInfo };
 
-        auto BindDescription = Vertex::getBindingDescription();
-        auto AttributeDescription = Vertex::getAttributeDescriptions();
+    	auto VertexDeclare = VertexBuffer->GetInputBinding();
+    	auto InputDeclare = VertexBuffer->GetInputAttributes();
 
 		VkPipelineVertexInputStateCreateInfo vertexInputInfo = {};
 		vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 		vertexInputInfo.vertexBindingDescriptionCount = 1;
-		vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(AttributeDescription.size());
-        vertexInputInfo.pVertexBindingDescriptions = &BindDescription;
-        vertexInputInfo.pVertexAttributeDescriptions = AttributeDescription.data();
+        vertexInputInfo.pVertexBindingDescriptions = &VertexDeclare;
+		vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(InputDeclare.size());
+        vertexInputInfo.pVertexAttributeDescriptions = InputDeclare.data();
 
 		VkPipelineInputAssemblyStateCreateInfo inputAssembly = {};
 		inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -306,13 +293,11 @@ namespace ReEngine
 
             vkCmdBeginRenderPass(CommandPool->m_CommandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
             vkCmdBindPipeline(CommandPool->m_CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
-
-            VkBuffer vertexBuffers[] = {VertexBuffer->Buffer};
-            VkDeviceSize offsets[] = {0};
-            vkCmdBindVertexBuffers(CommandPool->m_CommandBuffers[i], 0, 1, vertexBuffers, offsets);
-            vkCmdBindIndexBuffer(CommandPool->m_CommandBuffers[i],IndexBuffer->Buffer,0,VK_INDEX_TYPE_UINT16); 
             vkCmdBindDescriptorSets(CommandPool->m_CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
-            vkCmdDrawIndexed(CommandPool->m_CommandBuffers[i], static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
+
+        	VertexBuffer->Bind(CommandPool->m_CommandBuffers[i]);
+        	IndexBuffer->BindAndDraw(CommandPool->m_CommandBuffers[i]);
+        	
             vkCmdEndRenderPass(CommandPool->m_CommandBuffers[i]);
 
             if (vkEndCommandBuffer(CommandPool->m_CommandBuffers[i]) != VK_SUCCESS)
@@ -324,41 +309,14 @@ namespace ReEngine
 	
     void VulkanContext::CreateMeshBuffer()
     {
-        VkDeviceSize VertexbufferSize = sizeof(vertices[0]) * vertices.size();
-    	VkDeviceSize IndexbufferSize = sizeof(indices[0]) * indices.size();
-    	
 
-        VulkanBuffer* stagingVertexBuffer = VulkanBuffer::CreateBuffer(
-        	Instance->GetDevice(),
-	        VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-	        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-	        VertexbufferSize,(void*)vertices.data());
-
-    	VulkanBuffer* stagingIndexBuffer = VulkanBuffer::CreateBuffer(
-			Instance->GetDevice(),
-			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-			IndexbufferSize,(void*)indices.data());
+    	auto cmd = VulkanCommandBuffer::Create(Instance->GetDevice(),CommandPool->m_CommandPool);
     	
-    	VertexBuffer = VulkanBuffer::CreateBuffer(
-			Instance->GetDevice(),
-			VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-			VertexbufferSize);
+        VertexBuffer = VulkanVertexBuffer::Create(Instance->GetDevice(),cmd,vertices,{VertexAttribute::VA_Position,VertexAttribute::VA_Color});
+    	IndexBuffer = VulkanIndexBuffer::Create(Instance->GetDevice(),cmd,indices);
 
-    	IndexBuffer = VulkanBuffer::CreateBuffer(
-			Instance->GetDevice(),
-			VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT ,
-			IndexbufferSize);
-
+    	delete cmd;
     	
-        //拷贝StagingBuffer到LocalBuffer
-    	VulkanBuffer::TransferBuffer(*Instance,*CommandPool,stagingVertexBuffer,VertexBuffer,VertexbufferSize);
-    	VulkanBuffer::TransferBuffer(*Instance,*CommandPool,stagingIndexBuffer,IndexBuffer,IndexbufferSize);
-    	
-    	delete stagingVertexBuffer;
-        delete stagingIndexBuffer;
     }
 	
     void VulkanContext::createUniformBuffer()

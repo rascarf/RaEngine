@@ -67,6 +67,8 @@ public:
 
     uint32 GetMemoryTypeFromProperties(uint32 typeBits, VkMemoryPropertyFlags properties);
 
+    void RecreateSwapChain();
+
 private:
 
     void CreateDefaultRes();

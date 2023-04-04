@@ -54,7 +54,7 @@ void VulkanCommandBuffer::Submit(VkSemaphore* SignalSemaphore)
     }
 
     vkResetFences(m_VulkanDevice->GetInstanceHandle(), 1, &Fence);
-    vkQueueSubmit(m_VulkanDevice->GetGraphicsQueue()->GetHandle(), 1, &submitInfo, Fence);
+    vkQueueSubmit(m_VulkanDevice->GetGraphicsQueue()->GetHandle(), 1, &submitInfo, Fence); //TODO 这里可以斟酌下换成多线程提交
     vkWaitForFences(m_VulkanDevice->GetInstanceHandle(), 1, &Fence, true, ((uint64)	0xffffffffffffffff));
 }
 

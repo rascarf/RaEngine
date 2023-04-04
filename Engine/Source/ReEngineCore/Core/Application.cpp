@@ -103,12 +103,12 @@ namespace ReEngine
         RE_INFO("({0},{1})",e->GetWidth(),e->GetHeight());
 
         // Renderer::OnWindowResize(e->GetWidth(),e->GetHeight());
-        // m_WindowProperty.Height = e->GetHeight();
-        // m_WindowProperty.Height = e->GetWidth();
+        m_WindowProperty.Height = e->GetHeight();
+        m_WindowProperty.Width = e->GetWidth();
         
         auto Context = Renderer::GetContext().get();
         auto VulkanContext = dynamic_cast<ReEngine::VulkanContext*>(Context);
-        // VulkanContext-> RecreateSwapChain();
+        VulkanContext-> RecreateSwapChain();
         
         return false;
     }

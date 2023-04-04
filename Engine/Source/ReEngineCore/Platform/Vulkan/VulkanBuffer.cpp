@@ -93,9 +93,9 @@ void VulkanBuffer::CopyFrom(void* data, VkDeviceSize size)
     memcpy(Mapped, data, size);
 }
 
-void VulkanBuffer::TransferBuffer(const VulkanInstance& Instance,const VulkanCommandPool& CommandPool,VulkanBuffer* SrcBuffer, VulkanBuffer* DstBuffer, VkDeviceSize size)
+void VulkanBuffer::TransferBuffer(const Ref<VulkanDevice>& Device,const VulkanCommandPool& CommandPool,VulkanBuffer* SrcBuffer, VulkanBuffer* DstBuffer, VkDeviceSize size)
 {
-    VulkanCommandBuffer* cmdBuffer = VulkanCommandBuffer::Create(Instance.GetDevice(), CommandPool.m_CommandPool);
+    VulkanCommandBuffer* cmdBuffer = VulkanCommandBuffer::Create(Device, CommandPool.m_CommandPool);
     cmdBuffer->Begin();
     VkBufferCopy copyRegion = {};
     copyRegion.size = size;
@@ -103,6 +103,16 @@ void VulkanBuffer::TransferBuffer(const VulkanInstance& Instance,const VulkanCom
     cmdBuffer->End();
     cmdBuffer->Submit();
     delete cmdBuffer;
+}
+
+void VulkanBuffer::TransferBuffer(const Ref<VulkanDevice>& Device, VulkanCommandBuffer* CommandBuffer,VulkanBuffer* SrcBuffer, VulkanBuffer* DstBuffer, VkDeviceSize size)
+{
+    CommandBuffer->Begin();
+    VkBufferCopy copyRegion = {};
+    copyRegion.size = size;
+    vkCmdCopyBuffer(CommandBuffer->CmdBuffer, SrcBuffer->Buffer, DstBuffer->Buffer, 1, &copyRegion);
+    CommandBuffer->End();
+    CommandBuffer->Submit();
 }
 
 VkResult VulkanBuffer::Flush(VkDeviceSize size, VkDeviceSize offset)

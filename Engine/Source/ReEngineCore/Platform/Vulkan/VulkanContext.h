@@ -9,6 +9,8 @@
 #include "vulkan/Include/vulkan/vulkan.h"
 #include "VulkanBuffer.h"
 #include "VulkanFrameBuffer.h"
+#include "VulkanIndexBuffer.h"
+#include "VulkanVertexBuffer.h"
 #include "GLFW/glfw3.h"
 #include "glm/gtx/transform.hpp"
 
@@ -47,8 +49,8 @@ namespace ReEngine
         VkPipeline graphicsPipeline;
 
         VulkanBuffer* UniformBuffer;
-        VulkanBuffer* VertexBuffer;
-        VulkanBuffer* IndexBuffer;
+        VulkanVertexBuffer* VertexBuffer;
+        VulkanIndexBuffer* IndexBuffer;
         
         GLFWwindow* m_WindowHandle;
         const WindowProperty* WinProperty;
