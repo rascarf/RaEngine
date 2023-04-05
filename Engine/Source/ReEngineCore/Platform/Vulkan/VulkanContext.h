@@ -7,12 +7,15 @@
 #include "VulkanCommandPool.h"
 #include "VulkanInstance.h"
 #include "vulkan/Include/vulkan/vulkan.h"
-#include "VulkanBuffer.h"
-#include "VulkanFrameBuffer.h"
-#include "VulkanIndexBuffer.h"
-#include "VulkanVertexBuffer.h"
+
+
 #include "GLFW/glfw3.h"
 #include "glm/gtx/transform.hpp"
+#include "VulkanBuffers/VulkanBuffer.h"
+#include "VulkanBuffers/VulkanFrameBuffer.h"
+#include "VulkanBuffers/VulkanIndexBuffer.h"
+#include "VulkanBuffers/VulkanVertexBuffer.h"
+#include "VulkanUI/VulkanImGui.h"
 
 namespace ReEngine
 {
@@ -26,7 +29,6 @@ namespace ReEngine
     class VulkanContext : public GraphicsContext
     {
     public:
-
         UniformBufferObject ubo = {};
         
         VulkanContext(GLFWwindow* windowHandle,const WindowProperty* WinProperty);
@@ -48,12 +50,14 @@ namespace ReEngine
         VkPipelineLayout pipelineLayout;
         VkPipeline graphicsPipeline;
 
-        VulkanBuffer* UniformBuffer;
-        VulkanVertexBuffer* VertexBuffer;
-        VulkanIndexBuffer* IndexBuffer;
+        Ref<VulkanBuffer> UniformBuffer;
+        Ref<VulkanVertexBuffer> VertexBuffer;
+        Ref<VulkanIndexBuffer> IndexBuffer;
         
         GLFWwindow* m_WindowHandle;
         const WindowProperty* WinProperty;
+
+        VulkanImGui* m_GUI;
         
         void CreateGraphicsPipeline();
         VkShaderModule CreateShaderModule(const std::vector<unsigned char>& code);
@@ -66,6 +70,10 @@ namespace ReEngine
         void CreateDescriptorPool();
         void CreateDescriptorSet();
         void UpdateUniformBuffer(Timestep ts);
+
+        void CreateGUI();
+        void DestroyGUI();
+        bool UpdateUI(float time,float delta);
     };
 }
 

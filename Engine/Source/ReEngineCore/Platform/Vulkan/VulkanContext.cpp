@@ -6,13 +6,13 @@
 #include <fstream>
 #include <memory>
 
-
 #include "Shader_vert.h"
 #include "Shader_frag.h"
-#include "VulkanBuffer.h"
+
+#include "imgui/imgui.h"
+
 #include "VulkanCommandPool.h"
 #include "VulkanInstance.h"
-#include "VulkanVertexBuffer.h"
 #include "Core/Timestep.h"
 #include "Resource/AssetManager/AssetManager.h"
 
@@ -30,6 +30,7 @@ namespace ReEngine
         Instance->Init();
     	CommandPool->Init(this);
     	FrameBuffer->Init(this);
+    	CreateGUI();
     	
 		CreateMeshBuffer();
         createUniformBuffer();
@@ -51,10 +52,6 @@ namespace ReEngine
     	vkDestroyPipelineLayout(Device,pipelineLayout,nullptr);
     	vkDestroyPipeline(Device,graphicsPipeline,nullptr);
 
-    	delete VertexBuffer;
-    	delete IndexBuffer;
-    	delete UniformBuffer;
-
     	FrameBuffer->ShutDown();
     	CommandPool->ShutDown();
         Instance->Shutdown();
@@ -62,6 +59,8 @@ namespace ReEngine
 
     void VulkanContext::SwapBuffers(Timestep ts)
     {
+    	bool hovered = UpdateUI(ts.GetMilliseconds(),ts.GetSeconds());
+    	
         UpdateUniformBuffer(ts);
   		int32 bufferIndex = CommandPool->AcquireBackbufferIndex();
     	if(bufferIndex < 0)
@@ -297,6 +296,7 @@ namespace ReEngine
 
         	VertexBuffer->Bind(CommandPool->m_CommandBuffers[i]);
         	IndexBuffer->BindAndDraw(CommandPool->m_CommandBuffers[i]);
+        	m_GUI->BindDrawCmd(CommandPool->m_CommandBuffers[i],FrameBuffer->m_RenderPass);
         	
             vkCmdEndRenderPass(CommandPool->m_CommandBuffers[i]);
 
@@ -309,14 +309,10 @@ namespace ReEngine
 	
     void VulkanContext::CreateMeshBuffer()
     {
-
     	auto cmd = VulkanCommandBuffer::Create(Instance->GetDevice(),CommandPool->m_CommandPool);
     	
         VertexBuffer = VulkanVertexBuffer::Create(Instance->GetDevice(),cmd,vertices,{VertexAttribute::VA_Position,VertexAttribute::VA_Color});
     	IndexBuffer = VulkanIndexBuffer::Create(Instance->GetDevice(),cmd,indices);
-
-    	delete cmd;
-    	
     }
 	
     void VulkanContext::createUniformBuffer()
@@ -342,6 +338,65 @@ namespace ReEngine
     	UniformBuffer->Map();
     	UniformBuffer->CopyFrom(&ubo,sizeof(UniformBufferObject));
     	UniformBuffer->UnMap();
+    }
+
+    void VulkanContext::CreateGUI()
+    {
+    	m_GUI = new VulkanImGui();
+    	m_GUI->Init("assets/fonts/Ubuntu-Regular.ttf",this);
+    }
+
+    void VulkanContext::DestroyGUI()
+    {
+    	m_GUI->Destroy();
+    	delete m_GUI;
+    }
+
+    bool VulkanContext::UpdateUI(float time, float delta)
+    {
+    	m_GUI->StartFrame();
+
+    	bool yes = true;
+	    {
+    		static float f = 0.0f;
+    		static glm::vec3 color(0, 0, 0);
+    		static int counter = 0;
+
+    		bool a = false;
+    		ImGui::SetNextWindowPos(ImVec2(0, 0));
+    		// ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiSetCond_FirstUseEver);
+    		ImGui::Begin("ImGUI!", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
+    		ImGui::Checkbox("AutoRotate", &a);
+
+    		ImGui::Text("This is some useful text.");
+    		ImGui::Checkbox("Demo Window", &yes);
+    		ImGui::Checkbox("Another Window", &yes);
+
+    		ImGui::SliderFloat("float", &f, 0.0f, 1.0f);
+    		ImGui::ColorEdit3("clear color", (float*)&color);
+
+    		if (ImGui::Button("Button"))
+    		{
+    			counter++;
+    		}
+
+    		ImGui::SameLine();
+    		ImGui::Text("counter = %d", counter);
+
+    		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+    		ImGui::End();
+	    }
+
+    	// bool hovered = ImGui::IsAnyWindowHovered() || ImGui::IsAnyItemHovered() || ImGui::IsRootWindowOrAnyChildHovered();
+
+    	m_GUI->EndFrame();
+
+    	if (m_GUI->Update())
+    	{
+    		CreateCommandBuffers();
+    	}
+
+    	return false;
     }
 
     void VulkanContext::CreateDescriptorPool()

@@ -1,6 +1,6 @@
 ﻿#pragma once
-#include "VulkanCommonDefine.h"
-#include "VulkanDevice.h"
+#include "Platform/Vulkan/VulkanCommonDefine.h"
+#include "Platform/Vulkan/VulkanDevice.h"
 
 class VulkanCommandBuffer
 {
@@ -12,7 +12,9 @@ public:
     void End();
 
     void Submit(VkSemaphore* SignalSemaphore = nullptr);
-    static VulkanCommandBuffer* Create(std::shared_ptr<VulkanDevice> vulkanDevice, VkCommandPool commandPool, VkCommandBufferLevel level = VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+    //分配使用单次的
+    static Ref<VulkanCommandBuffer> Create(std::shared_ptr<VulkanDevice> vulkanDevice, VkCommandPool commandPool, VkCommandBufferLevel level = VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 public:
     VkCommandBuffer						CmdBuffer = VK_NULL_HANDLE;
     VkFence								Fence = VK_NULL_HANDLE;
@@ -22,6 +24,5 @@ public:
     std::vector<VkSemaphore>			WaitSemaphores;
 
     bool								IsBegun;
-private:
-    VulkanCommandBuffer(){}
+
 };

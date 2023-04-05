@@ -1,8 +1,8 @@
 ﻿#pragma once
 
 #include "VulkanBuffer.h"
-#include "VulkanCommonDefine.h"
-
+#include "VulkanCommandBuffer.h"
+#include "Platform/Vulkan/VulkanCommandPool.h"
 
 
 FORCE_INLINE int32 VertexAttributeToSize(VertexAttribute attribute)
@@ -147,11 +147,6 @@ class VulkanVertexBuffer
 public:
     ~VulkanVertexBuffer()
     {
-        if(Buffer)
-        {
-            delete Buffer;
-        }
-
         Buffer = nullptr;
     }
 
@@ -164,13 +159,11 @@ public:
 
     std::vector<VkVertexInputAttributeDescription> GetInputAttributes(const std::vector<VertexAttribute>& shaderInputs = std::vector<VertexAttribute>());
 
-    static VulkanVertexBuffer* Create(std::shared_ptr<VulkanDevice> device, VulkanCommandBuffer* cmdBuffer, std::vector<float> vertices, const std::vector<VertexAttribute>& attributes);
+    static Ref<VulkanVertexBuffer> Create(std::shared_ptr<VulkanDevice> device, Ref<VulkanCommandBuffer> cmdBuffer, std::vector<float> vertices, const std::vector<VertexAttribute>& attributes);
     
     VkDevice                        Device = VK_NULL_HANDLE;
-    VulkanBuffer*                   Buffer = nullptr;
     VkDeviceSize                    Offset = 0;
     std::vector<VertexAttribute>    Attributes;
-
+    Ref<VulkanBuffer>               Buffer = nullptr;
 private:
-    VulkanVertexBuffer(){}
 };

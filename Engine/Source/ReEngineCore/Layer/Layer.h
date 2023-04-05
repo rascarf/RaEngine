@@ -13,6 +13,7 @@ namespace ReEngine
         virtual void OnAttach() {}
         virtual void OnDetach() {}
         virtual void OnUpdate(Timestep ts) {}
+        virtual void OnRender(){}
         virtual void OnEvent(std::shared_ptr<Event> e) {}
 
         virtual void OnUIRender(Timestep ts){} 

@@ -5,8 +5,6 @@
 #include "Window/Window.h"
 #include "Layer/LayerStack.h"
 #include "Layer/ImGuiLayer.h"
-#include <ThirdParty/Glad/include/glad/glad.h>
-
 #include "Core/SIngletonTemplate.h"
 
 namespace ReEngine
@@ -27,6 +25,7 @@ namespace ReEngine
         bool OnWindowResize(Ref<WindowResizeEvent> e);
 
         [[nodiscard]]Window& GetWindow() { return *m_Window; }
+        [[nodiscard]]const WindowProperty GetWindowInfo(){return m_WindowProperty;}
 
     public:
         void Init();

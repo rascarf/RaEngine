@@ -3,6 +3,7 @@
 #include "Event/KeyEvent.h"
 #include "Event/MouseEvent.h"
 #include "Layer/Layer.h"
+#include "Platform/Vulkan/VulkanUI/VulkanImGui.h"
 
 namespace ReEngine
 {
@@ -30,6 +31,9 @@ namespace ReEngine
         bool OnKeyReleasedEvent(std::shared_ptr<KeyReleasedEvent> e);
         bool OnKeyTypedEvent(std::shared_ptr<KeyTypedEvent> e);
         bool OnWindowResizeEvent(std::shared_ptr<WindowResizeEvent> e);
+
+    private:
+        VulkanImGui m_GUI;
 
     };
 }

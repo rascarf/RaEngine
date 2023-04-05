@@ -1,25 +1,13 @@
 ﻿#pragma once
 #include "VulkanCommandBuffer.h"
-#include "VulkanCommonDefine.h"
-#include "VulkanDevice.h"
-#include "VulkanInstance.h"
+#include "Platform/Vulkan/VulkanCommandPool.h"
 
 class VulkanBuffer
 {
 public:
     ~VulkanBuffer()
     {
-         if(Buffer != VK_NULL_HANDLE)
-         {
-             vkDestroyBuffer(Device, Buffer, nullptr);
-             Buffer = VK_NULL_HANDLE;
-         }
-        
-         if(Memory != VK_NULL_HANDLE)
-         {
-             vkFreeMemory(Device, Memory, nullptr);
-             Memory = VK_NULL_HANDLE;
-         }
+
     }
 public:
     VkDevice				Device = VK_NULL_HANDLE;
@@ -39,9 +27,9 @@ public:
 
 public:
     //创建Buffer
-    static VulkanBuffer* CreateBuffer(std::shared_ptr<VulkanDevice> device, VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags memoryPropertyFlags, VkDeviceSize size, void *data = nullptr);
+    static Ref<VulkanBuffer> CreateBuffer(std::shared_ptr<VulkanDevice> device, VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags memoryPropertyFlags, VkDeviceSize size, void *data = nullptr);
     static void TransferBuffer(const Ref<VulkanDevice>& Device,const VulkanCommandPool& CommandPool,VulkanBuffer* SrcBuffer, VulkanBuffer* DstBuffer, VkDeviceSize size);
-    static void TransferBuffer(const Ref<VulkanDevice>& Device,VulkanCommandBuffer* CommandPool,VulkanBuffer* SrcBuffer, VulkanBuffer* DstBuffer, VkDeviceSize size);
+    static void TransferBuffer(const Ref<VulkanDevice>& Device, Ref<VulkanCommandBuffer> CommandBuffer,Ref<VulkanBuffer> SrcBuffer, Ref<VulkanBuffer> DstBuffer, VkDeviceSize size);
 
     //开始数据映射
     VkResult Map(VkDeviceSize size = VK_WHOLE_SIZE, VkDeviceSize offset = 0);
@@ -60,8 +48,6 @@ public:
     
     VkResult Flush(VkDeviceSize size = VK_WHOLE_SIZE, VkDeviceSize offset = 0);
     VkResult Invalidate(VkDeviceSize size = VK_WHOLE_SIZE, VkDeviceSize offset = 0);
-
 private:
-    VulkanBuffer(){}
     static void TransferBufferImpl(VkDevice Device,VkCommandPool CommandPool,VkQueue TransferQueue,VkBuffer SrcBuffer, VkBuffer DstBuffer, VkDeviceSize size);
 };

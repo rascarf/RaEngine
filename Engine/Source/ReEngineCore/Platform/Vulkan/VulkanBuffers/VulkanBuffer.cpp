@@ -1,10 +1,10 @@
 ﻿#include "VulkanBuffer.h"
 #include "VulkanCommandBuffer.h"
 
-VulkanBuffer* VulkanBuffer::CreateBuffer(std::shared_ptr<VulkanDevice> device, VkBufferUsageFlags usageFlags,
+Ref<VulkanBuffer> VulkanBuffer::CreateBuffer(std::shared_ptr<VulkanDevice> device, VkBufferUsageFlags usageFlags,
                                          VkMemoryPropertyFlags memoryPropertyFlags, VkDeviceSize size, void* data)
 {
-    VulkanBuffer* dvkBuffer = new VulkanBuffer();
+    Ref<VulkanBuffer> dvkBuffer = CreateRef<VulkanBuffer>();
     VkDevice vkDevice = device->GetInstanceHandle();
     dvkBuffer->Device = vkDevice;
 		
@@ -95,17 +95,16 @@ void VulkanBuffer::CopyFrom(void* data, VkDeviceSize size)
 
 void VulkanBuffer::TransferBuffer(const Ref<VulkanDevice>& Device,const VulkanCommandPool& CommandPool,VulkanBuffer* SrcBuffer, VulkanBuffer* DstBuffer, VkDeviceSize size)
 {
-    VulkanCommandBuffer* cmdBuffer = VulkanCommandBuffer::Create(Device, CommandPool.m_CommandPool);
+    auto cmdBuffer = VulkanCommandBuffer::Create(Device, CommandPool.m_CommandPool);
     cmdBuffer->Begin();
     VkBufferCopy copyRegion = {};
     copyRegion.size = size;
     vkCmdCopyBuffer(cmdBuffer->CmdBuffer, SrcBuffer->Buffer, DstBuffer->Buffer, 1, &copyRegion);
     cmdBuffer->End();
     cmdBuffer->Submit();
-    delete cmdBuffer;
 }
 
-void VulkanBuffer::TransferBuffer(const Ref<VulkanDevice>& Device, VulkanCommandBuffer* CommandBuffer,VulkanBuffer* SrcBuffer, VulkanBuffer* DstBuffer, VkDeviceSize size)
+void VulkanBuffer::TransferBuffer(const Ref<VulkanDevice>& Device, Ref<VulkanCommandBuffer> CommandBuffer,Ref<VulkanBuffer> SrcBuffer, Ref<VulkanBuffer> DstBuffer, VkDeviceSize size)
 {
     CommandBuffer->Begin();
     VkBufferCopy copyRegion = {};

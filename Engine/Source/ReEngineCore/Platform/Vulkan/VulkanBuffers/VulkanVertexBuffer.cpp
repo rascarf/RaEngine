@@ -59,16 +59,16 @@ std::vector<VkVertexInputAttributeDescription> VulkanVertexBuffer::GetInputAttri
     return vertexInputAttributs;
 }
 
-VulkanVertexBuffer* VulkanVertexBuffer::Create(std::shared_ptr<VulkanDevice> device, VulkanCommandBuffer* cmdBuffer,std::vector<float> vertices, const std::vector<VertexAttribute>& attributes)
+Ref<VulkanVertexBuffer> VulkanVertexBuffer::Create(std::shared_ptr<VulkanDevice> device, Ref<VulkanCommandBuffer> cmdBuffer,std::vector<float> vertices, const std::vector<VertexAttribute>& attributes)
 {
-    VulkanVertexBuffer* VertexBuffer = new VulkanVertexBuffer();
+    Ref<VulkanVertexBuffer> VertexBuffer = CreateRef<VulkanVertexBuffer>();
 
     VertexBuffer->Device = device->GetInstanceHandle();
     VertexBuffer->Attributes = attributes;
     
     VkDeviceSize VertexbufferSize = vertices.size() * sizeof(float);
 
-    VulkanBuffer* stagingIndexBuffer = VulkanBuffer::CreateBuffer(
+   auto stagingIndexBuffer = VulkanBuffer::CreateBuffer(
             device,
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
@@ -81,8 +81,6 @@ VulkanVertexBuffer* VulkanVertexBuffer::Create(std::shared_ptr<VulkanDevice> dev
              VertexbufferSize);
 
     VulkanBuffer::TransferBuffer(device,cmdBuffer,stagingIndexBuffer,VertexBuffer->Buffer,VertexbufferSize);
-    
-    delete stagingIndexBuffer;
     
     return VertexBuffer;
 }

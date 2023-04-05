@@ -36,33 +36,30 @@ void ReEngine::ImGuiLayer::OnUpdate(Timestep ts)
 
 void ReEngine::ImGuiLayer::BeginUIRender()
 {
-    ImGui_ImplOpenGL3_NewFrame();
-    ImGui_ImplGlfw_NewFrame();
-    ImGui::NewFrame();
 }
 
 void ReEngine::ImGuiLayer::EndUIRender()
 {
-    ImGuiIO& io = ImGui::GetIO();
-    Application& app = Application::GetInstance();
-    io.DisplaySize = ImVec2(app.GetWindow().GetWindowWidth(), app.GetWindow().GetWindowHeight());
-
-    ImGui::Render();
-    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
-    if(io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-    {
-        GLFWwindow* backup_current_context = glfwGetCurrentContext();
-        ImGui::UpdatePlatformWindows();
-        ImGui::RenderPlatformWindowsDefault();
-        glfwMakeContextCurrent(backup_current_context);
-    }
+    // ImGuiIO& io = ImGui::GetIO();
+    // Application& app = Application::GetInstance();
+    // io.DisplaySize = ImVec2(app.GetWindow().GetWindowWidth(), app.GetWindow().GetWindowHeight());
+    //
+    // ImGui::Render();
+    // ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+    //
+    // if(io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+    // {
+    //     GLFWwindow* backup_current_context = glfwGetCurrentContext();
+    //     ImGui::UpdatePlatformWindows();
+    //     ImGui::RenderPlatformWindowsDefault();
+    //     glfwMakeContextCurrent(backup_current_context);
+    // }
 
 }
 
 void ReEngine::ImGuiLayer::OnUIRender()
 {
-    static bool show = true;
+    // static bool show = true;
     // ImGui::ShowDemoWindow(&show);
 }
 
@@ -93,15 +90,15 @@ void ReEngine::ImGuiLayer::OnAttach()
 
     Application& app = Application::GetInstance();
     GLFWwindow* window = static_cast<GLFWwindow*>(app.GetWindow().GetNativeWindow());
-    ImGui_ImplGlfw_InitForOpenGL(window, true);
-    ImGui_ImplOpenGL3_Init("#version 410");
+    ImGui_ImplGlfw_InitForVulkan(window, true);
+
 }
 
 void ReEngine::ImGuiLayer::OnDetach()
 {
-    ImGui_ImplOpenGL3_Shutdown();
-    ImGui_ImplGlfw_Shutdown();
-    ImGui::DestroyContext();
+    // ImGui_ImplOpenGL3_Shutdown();
+    // ImGui_ImplGlfw_Shutdown();
+    // ImGui::DestroyContext();
 }
 
 bool ReEngine::ImGuiLayer::OnMouseButtonPressedEvent(std::shared_ptr<MouseButtonPressedEvent> e)
@@ -182,7 +179,8 @@ bool ReEngine::ImGuiLayer::OnWindowResizeEvent(std::shared_ptr<WindowResizeEvent
     ImGuiIO& io = ImGui::GetIO();
     io.DisplaySize = ImVec2(e->GetWidth(), e->GetHeight());
     io.DisplayFramebufferScale = ImVec2(1.0f, 1.0f);
-    glViewport(0, 0, e->GetWidth(), e->GetHeight());
+
+    
 
     return false;
 }

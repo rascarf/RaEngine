@@ -36,15 +36,17 @@ namespace ReEngine
             float CurrentTime = m_Window->GetTime();
             Timestep Ts = CurrentTime - m_LastTime;
             m_LastTime = CurrentTime;
-            
-            // for (auto it = mLayerStack.end(); it != mLayerStack.begin(); )
-            //     (*(--it))->OnUpdate(Ts);
 
-            for(auto it : mLayerStack)
-            {
-                it->OnUpdate(Ts);
-            }
+            //更新数据
+            for (auto it = mLayerStack.end(); it != mLayerStack.begin(); )
+                (*(--it))->OnUpdate(Ts);
 
+            // for(auto it : mLayerStack)
+            // {
+            //     it->OnUpdate(Ts);
+            // }
+
+            //把所有层需要的渲染都提交了
             // m_UI->BeginUIRender();
             // for(auto it : mLayerStack)
             // {
@@ -52,6 +54,7 @@ namespace ReEngine
             // }
             // m_UI->EndUIRender();
 
+            //present
             m_Window->Update(Ts);
         }
     }

@@ -1,14 +1,15 @@
 ﻿#include "VulkanIndexBuffer.h"
 
-VulkanIndexBuffer* VulkanIndexBuffer::Create(std::shared_ptr<VulkanDevice> vulkanDevice, VulkanCommandBuffer* cmdBuffer,std::vector<uint16> indices, VkIndexType type)
+Ref<VulkanIndexBuffer> VulkanIndexBuffer::Create(std::shared_ptr<VulkanDevice> vulkanDevice, Ref<VulkanCommandBuffer> cmdBuffer,std::vector<uint16> indices, VkIndexType type)
 {
-    VulkanIndexBuffer* IndexBuffer = new VulkanIndexBuffer();
+    Ref<VulkanIndexBuffer> IndexBuffer = CreateRef<VulkanIndexBuffer>();
+
     IndexBuffer->IndexCount = indices.size();
     IndexBuffer->IndexType = type;
     
     VkDeviceSize IndexbufferSize = sizeof(indices[0]) * indices.size();
 
-    VulkanBuffer* stagingIndexBuffer = VulkanBuffer::CreateBuffer(
+    auto stagingIndexBuffer = VulkanBuffer::CreateBuffer(
             vulkanDevice,
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
@@ -22,8 +23,7 @@ VulkanIndexBuffer* VulkanIndexBuffer::Create(std::shared_ptr<VulkanDevice> vulka
 
     VulkanBuffer::TransferBuffer(vulkanDevice,cmdBuffer,stagingIndexBuffer,IndexBuffer->Buffer,IndexbufferSize);
 
-
-    delete stagingIndexBuffer;
+    
     return IndexBuffer;
 }
 

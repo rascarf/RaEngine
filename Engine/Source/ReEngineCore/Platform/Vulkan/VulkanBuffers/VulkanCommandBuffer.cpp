@@ -58,11 +58,12 @@ void VulkanCommandBuffer::Submit(VkSemaphore* SignalSemaphore)
     vkWaitForFences(m_VulkanDevice->GetInstanceHandle(), 1, &Fence, true, ((uint64)	0xffffffffffffffff));
 }
 
-VulkanCommandBuffer* VulkanCommandBuffer::Create(std::shared_ptr<::VulkanDevice> vulkanDevice,VkCommandPool commandPool, VkCommandBufferLevel level)
+Ref<VulkanCommandBuffer> VulkanCommandBuffer::Create(std::shared_ptr<::VulkanDevice> vulkanDevice,VkCommandPool commandPool, VkCommandBufferLevel level)
 {
     VkDevice device = vulkanDevice->GetInstanceHandle();
 
-    VulkanCommandBuffer* cmdBuffer = new VulkanCommandBuffer();
+    Ref<VulkanCommandBuffer> cmdBuffer = CreateRef<VulkanCommandBuffer>();
+        
     cmdBuffer->m_VulkanDevice = vulkanDevice;
     cmdBuffer->CommandPool  = commandPool;
     cmdBuffer->IsBegun      = false;

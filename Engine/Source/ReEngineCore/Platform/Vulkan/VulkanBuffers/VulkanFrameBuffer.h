@@ -1,6 +1,6 @@
 ﻿#pragma once
-#include "VulkanCommonDefine.h"
-#include "VulkanInstance.h"
+#include "Platform/Vulkan/VulkanCommonDefine.h"
+#include "Platform/Vulkan/VulkanInstance.h"
 
 namespace ReEngine
 {
