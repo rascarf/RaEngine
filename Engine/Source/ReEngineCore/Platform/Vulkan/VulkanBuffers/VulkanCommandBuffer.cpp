@@ -2,8 +2,6 @@
 
 VulkanCommandBuffer::~VulkanCommandBuffer()
 {
-    vkDestroyFence(m_VulkanDevice->GetInstanceHandle(), Fence, VULKAN_CPU_ALLOCATOR);
-    Fence = VK_NULL_HANDLE;
 }
 
 //使用的时候必须显示地进行Begin和End
@@ -53,9 +51,9 @@ void VulkanCommandBuffer::Submit(VkSemaphore* SignalSemaphore)
         submitInfo.pWaitDstStageMask  = WaitFlags.data();
     }
 
-    vkResetFences(m_VulkanDevice->GetInstanceHandle(), 1, &Fence);
-    vkQueueSubmit(m_VulkanDevice->GetGraphicsQueue()->GetHandle(), 1, &submitInfo, Fence); //TODO 这里可以斟酌下换成多线程提交
-    vkWaitForFences(m_VulkanDevice->GetInstanceHandle(), 1, &Fence, true, ((uint64)	0xffffffffffffffff));
+    vkResetFences(m_VulkanDevice.lock()->GetInstanceHandle(), 1, &Fence);
+    vkQueueSubmit(m_VulkanDevice.lock()->GetGraphicsQueue()->GetHandle(), 1, &submitInfo, Fence); //TODO 这里可以斟酌下换成多线程提交
+    vkWaitForFences(m_VulkanDevice.lock()->GetInstanceHandle(), 1, &Fence, true, ((uint64)	0xffffffffffffffff));
 }
 
 Ref<VulkanCommandBuffer> VulkanCommandBuffer::Create(std::shared_ptr<::VulkanDevice> vulkanDevice,VkCommandPool commandPool, VkCommandBufferLevel level)

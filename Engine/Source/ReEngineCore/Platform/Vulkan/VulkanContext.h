@@ -11,6 +11,7 @@
 
 #include "GLFW/glfw3.h"
 #include "glm/gtx/transform.hpp"
+#include "Mesh/VulkanMesh.h"
 #include "VulkanBuffers/VulkanBuffer.h"
 #include "VulkanBuffers/VulkanFrameBuffer.h"
 #include "VulkanBuffers/VulkanIndexBuffer.h"
@@ -32,6 +33,7 @@ namespace ReEngine
         UniformBufferObject ubo = {};
         
         VulkanContext(GLFWwindow* windowHandle,const WindowProperty* WinProperty);
+        ~VulkanContext(){}
 
         virtual void Init() override; 
         virtual void Close() override;
@@ -51,8 +53,7 @@ namespace ReEngine
         VkPipeline graphicsPipeline;
 
         Ref<VulkanBuffer> UniformBuffer;
-        Ref<VulkanVertexBuffer> VertexBuffer;
-        Ref<VulkanIndexBuffer> IndexBuffer;
+        Ref<VulkanModel> Model;
         
         GLFWwindow* m_WindowHandle;
         const WindowProperty* WinProperty;

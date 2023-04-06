@@ -19,7 +19,7 @@ public:
     VkCommandBuffer						CmdBuffer = VK_NULL_HANDLE;
     VkFence								Fence = VK_NULL_HANDLE;
     VkCommandPool						CommandPool = VK_NULL_HANDLE;
-    std::shared_ptr<VulkanDevice>		m_VulkanDevice = nullptr;
+    std::weak_ptr<VulkanDevice>		m_VulkanDevice;
     std::vector<VkPipelineStageFlags>	WaitFlags;
     std::vector<VkSemaphore>			WaitSemaphores;
 

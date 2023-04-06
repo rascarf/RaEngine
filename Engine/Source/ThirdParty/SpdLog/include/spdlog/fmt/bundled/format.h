@@ -2743,10 +2743,12 @@ inline namespace literals {
     fmt::print("Elapsed time: {s:.2f} seconds", "s"_a=1.23);
   \endrst
  */
+    
+/*
 #  if FMT_USE_NONTYPE_TEMPLATE_PARAMETERS
 template <detail_exported::fixed_string Str>
-constexpr auto operator""_a()
-    -> detail::udl_arg<remove_cvref_t<decltype(Str.data[0])>,
+constexpr auto operator""<Str> _a()
+   -> detail::udl_arg<remove_cvref_t<decltype(Str.data[0])>,
                        sizeof(Str.data) / sizeof(decltype(Str.data[0])), Str> {
   return {};
 }
@@ -2754,7 +2756,7 @@ constexpr auto operator""_a()
 constexpr auto operator"" _a(const char* s, size_t) -> detail::udl_arg<char> {
   return {s};
 }
-#  endif
+#  endif*/
 
 /**
   \rst

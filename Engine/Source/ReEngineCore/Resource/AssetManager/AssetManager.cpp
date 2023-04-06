@@ -3,21 +3,10 @@
 bool ReEngine::AssetManager::ReadFile(const std::string& filepath, uint8*& dataPtr, uint32& dataSize)
 {
     auto finalPath = AssetManager::GetFullPath(filepath);
-
-#if PLATFORM_ANDROID
-
-    AAsset* asset = AAssetManager_open(g_AndroidApp->activity->assetManager, finalPath.c_str(), AASSET_MODE_STREAMING);
-    dataSize = AAsset_getLength(asset);
-    dataPtr = new uint8[dataSize];
-    AAsset_read(asset, dataPtr, dataSize);
-    AAsset_close(asset);
-
-#else
-
-    FILE* file = fopen((char const*)finalPath.c_str(), "rb");
+    FILE* file = fopen(finalPath.generic_string().c_str(), "rb");
     if (!file)
     {
-        RE_CORE_ERROR("File not found :{0}", filepath.c_str());
+        RE_CORE_ERROR("File not found model:{0}", finalPath.generic_string());
         return false;
     }
 
@@ -35,8 +24,6 @@ bool ReEngine::AssetManager::ReadFile(const std::string& filepath, uint8*& dataP
     dataPtr = new uint8[dataSize];
     fread(dataPtr, 1, dataSize, file);
     fclose(file);
-
-#endif
-
+    
     return true;
 }

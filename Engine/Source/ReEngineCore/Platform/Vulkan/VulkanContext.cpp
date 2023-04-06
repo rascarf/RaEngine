@@ -124,8 +124,8 @@ namespace ReEngine
 
 		VkPipelineShaderStageCreateInfo shaderStages[] = { vertShaderStageInfo, fragShaderStageInfo };
 
-    	auto VertexDeclare = VertexBuffer->GetInputBinding();
-    	auto InputDeclare = VertexBuffer->GetInputAttributes();
+    	auto VertexDeclare = Model->GetInputBinding();
+    	auto InputDeclare = Model->GetInputAttributes();
 
 		VkPipelineVertexInputStateCreateInfo vertexInputInfo = {};
 		vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -286,7 +286,6 @@ namespace ReEngine
         	clearValues[0].color        = {{0.2f, 0.2f, 0.2f, 1.0f}};
         	clearValues[1].depthStencil = { 1.0f, 0 };
         	
-
             renderPassInfo.clearValueCount = 2;
             renderPassInfo.pClearValues = clearValues;
 
@@ -294,8 +293,11 @@ namespace ReEngine
             vkCmdBindPipeline(CommandPool->m_CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
             vkCmdBindDescriptorSets(CommandPool->m_CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
 
-        	VertexBuffer->Bind(CommandPool->m_CommandBuffers[i]);
-        	IndexBuffer->BindAndDraw(CommandPool->m_CommandBuffers[i]);
+        	for (int32 meshIndex = 0; meshIndex < Model->Meshes.size(); ++meshIndex)
+        	{
+        		Model->Meshes[meshIndex]->BindDraw(CommandPool->m_CommandBuffers[i]);
+        	}
+        	
         	m_GUI->BindDrawCmd(CommandPool->m_CommandBuffers[i],FrameBuffer->m_RenderPass);
         	
             vkCmdEndRenderPass(CommandPool->m_CommandBuffers[i]);
@@ -311,8 +313,10 @@ namespace ReEngine
     {
     	auto cmd = VulkanCommandBuffer::Create(Instance->GetDevice(),CommandPool->m_CommandPool);
     	
-        VertexBuffer = VulkanVertexBuffer::Create(Instance->GetDevice(),cmd,vertices,{VertexAttribute::VA_Position,VertexAttribute::VA_Color});
-    	IndexBuffer = VulkanIndexBuffer::Create(Instance->GetDevice(),cmd,indices);
+		Model = VulkanModel::LoadFromFile("Resources/suzanne.obj",
+			Instance->m_Device,
+			cmd,
+			{ VertexAttribute::VA_Position, VertexAttribute::VA_Normal }); 
     }
 	
     void VulkanContext::createUniformBuffer()
@@ -332,7 +336,7 @@ namespace ReEngine
     void VulkanContext::UpdateUniformBuffer(Timestep ts)
     {
         ubo.model = glm::rotate(ubo.model, ts.GetSeconds() *glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));; 
-        ubo.view = glm::lookAtLH(glm::vec3(0, 0, -5.0f),glm::vec3(0, 0, 0),glm::vec3(0,1.0f,0.0f));
+        ubo.view = glm::lookAtLH(glm::vec3(0, 0, -30.0f),glm::vec3(0, 0, 0),glm::vec3(0,1.0f,0.0f));
     	ubo.proj = glm::perspectiveLH_ZO(glm::radians(45.0f), (float)WinProperty->Width / (float) WinProperty->Height, 0.1f, 1000.0f);
 
     	UniformBuffer->Map();
