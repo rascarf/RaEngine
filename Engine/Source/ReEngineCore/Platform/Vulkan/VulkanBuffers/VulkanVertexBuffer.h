@@ -147,6 +147,7 @@ class VulkanVertexBuffer
 public:
     ~VulkanVertexBuffer()
     {
+        Buffer.reset();
         Buffer = nullptr;
     }
 

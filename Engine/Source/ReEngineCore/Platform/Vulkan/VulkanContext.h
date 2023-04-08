@@ -6,6 +6,7 @@
 #define VK_USE_PLATFORM_WIN32_KHR
 #include "VulkanCommandPool.h"
 #include "VulkanInstance.h"
+#include "VulkanPipelineInfo.h"
 #include "vulkan/Include/vulkan/vulkan.h"
 
 
@@ -33,7 +34,10 @@ namespace ReEngine
         UniformBufferObject ubo = {};
         
         VulkanContext(GLFWwindow* windowHandle,const WindowProperty* WinProperty);
-        ~VulkanContext(){}
+        ~VulkanContext()
+        {
+
+        }
 
         virtual void Init() override; 
         virtual void Close() override;
@@ -45,13 +49,13 @@ namespace ReEngine
         Ref<VulkanInstance> Instance;
         Ref<VulkanCommandPool> CommandPool;
         Ref<VulkanFrameBuffer> FrameBuffer;
+        Ref<VulkanPipeline> GraphicsPipeline;
 
         VkDescriptorSetLayout descriptorSetLayout;
         VkDescriptorPool descriptorPool;
         VkDescriptorSet descriptorSet;
         VkPipelineLayout pipelineLayout;
-        VkPipeline graphicsPipeline;
-
+        
         Ref<VulkanBuffer> UniformBuffer;
         Ref<VulkanModel> Model;
         

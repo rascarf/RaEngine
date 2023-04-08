@@ -218,10 +218,12 @@ protected:
     virtual void DestroyFrameBuffers()
     {
         VkDevice device = g_VulkanInstance->GetDevice()->GetInstanceHandle();
+        
         for (int32 i = 0; i < m_FrameBuffers.size(); ++i)
         {
             vkDestroyFramebuffer(device, m_FrameBuffers[i], VULKAN_CPU_ALLOCATOR);
         }
+        
         m_FrameBuffers.clear();
     }
 

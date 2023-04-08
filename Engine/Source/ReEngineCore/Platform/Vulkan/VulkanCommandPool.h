@@ -30,9 +30,7 @@ public:
     }
 
     virtual ~VulkanCommandPool()
-    {
-
-    }
+    {}
 
     VkDevice GetDeviceHandle()
     {

@@ -18,9 +18,16 @@ public:
     int32   vertexCount = 0;
     int32   triangleNum = 0;
 
-    VulkanPrimitive(){}
+    VulkanPrimitive()
+    {
+        
+    }
 
-    ~VulkanPrimitive(){}
+    ~VulkanPrimitive()
+    {
+        IndexBuffer = nullptr;
+        VertexBuffer = nullptr;
+    }
 
     void BindDraw(VkCommandBuffer CmdBuffer)
     {

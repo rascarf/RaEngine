@@ -59,7 +59,10 @@ public:
         
     }
 
-    ~VulkanMeshNode(){}
+    ~VulkanMeshNode()
+    {
+        
+    }
 
     const glm::mat4& GetLocalMatrix()
     {
@@ -135,6 +138,8 @@ public:
     {
         LinearNodes.clear();
         Meshes.clear();
+        
+        CmdBuffer.reset();
     }
 
     VkVertexInputBindingDescription GetInputBinding();

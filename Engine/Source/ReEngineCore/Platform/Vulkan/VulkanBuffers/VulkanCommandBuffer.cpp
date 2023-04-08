@@ -2,6 +2,7 @@
 
 VulkanCommandBuffer::~VulkanCommandBuffer()
 {
+    vkDestroyFence(m_VulkanDevice.lock()->GetInstanceHandle(),Fence,nullptr);
 }
 
 //使用的时候必须显示地进行Begin和End

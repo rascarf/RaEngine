@@ -9,6 +9,7 @@ public:
 
     ~VulkanIndexBuffer()
     {
+        Buffer.reset();
         Buffer = nullptr;
     }
 

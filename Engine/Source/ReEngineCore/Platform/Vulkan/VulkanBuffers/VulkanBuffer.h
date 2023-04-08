@@ -7,8 +7,18 @@ class VulkanBuffer
 public:
     ~VulkanBuffer()
     {
-        vkFreeMemory(Device,Memory,nullptr);
-        vkDestroyBuffer(Device,Buffer,nullptr);
+        if (Buffer != VK_NULL_HANDLE)
+        {
+            vkDestroyBuffer(Device,Buffer,nullptr);
+            Buffer = VK_NULL_HANDLE;
+        }
+
+        if(Memory != VK_NULL_HANDLE)
+        {
+            vkFreeMemory(Device,Memory,nullptr);
+            Memory = VK_NULL_HANDLE;
+        }
+        
     }
 public:
     VkDevice				Device = VK_NULL_HANDLE;
