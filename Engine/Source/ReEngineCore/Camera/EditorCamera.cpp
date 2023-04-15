@@ -102,7 +102,7 @@ void ReEngine::EditorCamera::SetCenter(const glm::vec3& center)
 void ReEngine::EditorCamera::UpdateProjection()
 {
     mAspectRatio = mViewportWidth / mViewportHeight;
-    mProjection = glm::perspective(glm::radians(mFOV), mAspectRatio, mNearClip, mFarClip);
+    mProjection = glm::perspectiveLH_ZO(glm::radians(mFOV), mAspectRatio, mNearClip, mFarClip);
 }
 
 void ReEngine::EditorCamera::UpdateView()

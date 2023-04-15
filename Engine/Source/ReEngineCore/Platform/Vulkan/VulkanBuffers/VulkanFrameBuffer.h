@@ -213,6 +213,7 @@ protected:
         renderPassInfo.dependencyCount = static_cast<uint32_t>(dependencies.size());
         renderPassInfo.pDependencies   = dependencies.data();
         VERIFYVULKANRESULT(vkCreateRenderPass(device, &renderPassInfo, VULKAN_CPU_ALLOCATOR, &m_RenderPass));
+        
     }
 
     virtual void DestroyFrameBuffers()
@@ -278,6 +279,8 @@ public:
     VkDeviceMemory              m_DepthStencilMemory;
 
     VkRenderPass                m_RenderPass;
+    VkRenderPass                m_UIRenderPass;
+        
     VkSampleCountFlagBits       m_SampleCount;
 
     PixelFormat                 m_DepthFormat;

@@ -2,6 +2,7 @@
 #include "Platform/Vulkan/VulkanCommonDefine.h"
 #include "glm/glm.hpp"
 #include "imgui.h"
+#include "Event/Event.h"
 #include "Platform/Vulkan/VulkanDevice.h"
 
 namespace ReEngine
@@ -105,6 +106,8 @@ namespace ReEngine
         void EndFrame();
 
         void BindDrawCmd(const VkCommandBuffer& commandBuffer, const VkRenderPass& renderPass, int32 subpass = 0, VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT);
+
+        void OnEvent(std::shared_ptr<Event> e);
 
         FORCE_INLINE float GetScale() const
         {

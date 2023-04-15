@@ -3,6 +3,7 @@
 #include "Renderer/RHI/PixelFormat.h"
 
 #define VK_USE_PLATFORM_WIN32_KHR
+#include "assimp/code/Blender/BlenderScene.h"
 #include "vulkan/Include/vulkan/vulkan.h"
 
 #define VULKAN_CPU_ALLOCATOR nullptr
@@ -16,14 +17,28 @@ static  void ZeroVulkanStruct(T& vkStruct, VkStructureType vkType)
     memset(((uint8*)&vkStruct) + sizeof(VkStructureType), 0, sizeof(T) - sizeof(VkStructureType));
 }
 
-#define VERIFYVULKANRESULT(VkFunction)				{ const VkResult scopedResult = VkFunction; if (scopedResult != VK_SUCCESS) { RE_CORE_INFO("VKResult=%d,Function=%s,File=%s,Line=%d", scopedResult, #VkFunction, __FILE__, __LINE__); }}
-#define VERIFYVULKANRESULT_EXPANDED(VkFunction)		{ const VkResult scopedResult = VkFunction; if (scopedResult < VK_SUCCESS)  { RE_CORE_INFO("VKResult=%d,Function=%s,File=%s,Line=%d", scopedResult, #VkFunction, __FILE__, __LINE__); }}
+#define VERIFYVULKANRESULT(VkFunction)				{ const VkResult scopedResult = VkFunction; if (scopedResult != VK_SUCCESS) { RE_CORE_ERROR("VKResult=%d,Function=%s,File=%s,Line=%d", scopedResult, #VkFunction, __FILE__, __LINE__); }}
+#define VERIFYVULKANRESULT_EXPANDED(VkFunction)		{ const VkResult scopedResult = VkFunction; if (scopedResult < VK_SUCCESS)  { RE_CORE_ERROR("VKResult=%d,Function=%s,File=%s,Line=%d", scopedResult, #VkFunction, __FILE__, __LINE__); }}
 
 template< class T >
 static FORCE_INLINE T Clamp(const T x, const T inMin, const T inMax)
 {
     return x < inMin ? inMin : x < inMax ? x : inMax;
 }
+
+enum class ImageLayoutBarrier
+{
+    Undefined,
+    TransferDest,
+    ColorAttachment,
+    DepthStencilAttachment,
+    TransferSource,
+    Present,
+    PixelShaderRead,
+    PixelDepthStencilRead,
+    ComputeGeneralRW,
+    PixelGeneralRW,
+};
 
 enum class VertexAttribute
 {
@@ -119,3 +134,174 @@ FORCE_INLINE VertexAttribute StringToVertexAttribute(const char* name)
 	
     return VertexAttribute::VA_None;
 }
+
+    FORCE_INLINE VkPipelineStageFlags GetImageBarrierFlags(ImageLayoutBarrier target, VkAccessFlags& accessFlags, VkImageLayout& layout)
+    {
+        VkPipelineStageFlags stageFlags = (VkPipelineStageFlags)0;
+        switch (target)
+        {
+            case ImageLayoutBarrier::Undefined:
+            {
+                accessFlags = 0;
+                stageFlags  = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+                layout      = VK_IMAGE_LAYOUT_UNDEFINED;
+                break;
+            }
+
+            case ImageLayoutBarrier::TransferDest:
+            {
+                accessFlags = VK_ACCESS_TRANSFER_WRITE_BIT;
+                stageFlags  = VK_PIPELINE_STAGE_TRANSFER_BIT;
+                layout      = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+                break;
+            }
+
+            case ImageLayoutBarrier::ColorAttachment:
+            {
+                accessFlags = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+                stageFlags  = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+                layout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+                break;
+            }
+
+            case ImageLayoutBarrier::DepthStencilAttachment:
+            {
+                accessFlags = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+                stageFlags  = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+                layout      = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+                break;
+            }
+
+            case ImageLayoutBarrier::TransferSource:
+            {
+                accessFlags = VK_ACCESS_TRANSFER_READ_BIT;
+                stageFlags  = VK_PIPELINE_STAGE_TRANSFER_BIT;
+                layout      = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+                break;
+            }
+
+            case ImageLayoutBarrier::Present:
+            {
+                accessFlags = 0;
+                stageFlags  = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+                layout      = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+                break;
+            }
+
+            case ImageLayoutBarrier::PixelShaderRead:
+            {
+                accessFlags = VK_ACCESS_SHADER_READ_BIT;
+                stageFlags  = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+                layout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                break;
+            }
+
+            case ImageLayoutBarrier::PixelDepthStencilRead:
+            {
+                accessFlags = VK_ACCESS_SHADER_READ_BIT;
+                stageFlags  = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+                layout      = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+                break;
+            }
+
+            case ImageLayoutBarrier::ComputeGeneralRW:
+            {
+                accessFlags = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
+                stageFlags  = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+                layout      = VK_IMAGE_LAYOUT_GENERAL;
+                break;
+            }
+
+            case ImageLayoutBarrier::PixelGeneralRW:
+            {
+                accessFlags = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
+                stageFlags  = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+                layout      = VK_IMAGE_LAYOUT_GENERAL;
+                break;
+            }
+
+            default:
+            {
+                RE_CORE_ERROR("Unknown ImageLayoutBarrier %d", (int32)target);
+                break;
+            }
+        }
+
+        return stageFlags;
+    }
+
+FORCE_INLINE VkImageLayout GetImageLayout(ImageLayoutBarrier target)
+    {
+        VkImageLayout layout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+        switch (target)
+        {
+            case ImageLayoutBarrier::Undefined:
+            {
+                layout = VK_IMAGE_LAYOUT_UNDEFINED;
+                break;
+            }
+
+            case ImageLayoutBarrier::TransferDest:
+            {
+                layout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+                break;
+            }
+
+            case ImageLayoutBarrier::ColorAttachment:
+            {
+                layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+                break;
+            }
+
+            case ImageLayoutBarrier::DepthStencilAttachment:
+            {
+                layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+                break;
+            }
+
+            case ImageLayoutBarrier::TransferSource:
+            {
+                layout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+                break;
+            }
+
+            case ImageLayoutBarrier::Present:
+            {
+                layout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+                break;
+            }
+
+            case ImageLayoutBarrier::PixelShaderRead:
+            {
+                layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                break;
+            }
+
+            case ImageLayoutBarrier::PixelDepthStencilRead:
+            {
+                layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+                break;
+            }
+
+            case ImageLayoutBarrier::ComputeGeneralRW:
+            {
+                layout = VK_IMAGE_LAYOUT_GENERAL;
+                break;
+            }
+
+            case ImageLayoutBarrier::PixelGeneralRW:
+            {
+                layout = VK_IMAGE_LAYOUT_GENERAL;
+                break;
+            }
+
+            default:
+            {
+                RE_CORE_ERROR("Unknown ImageLayoutBarrier %d", (int32)target);
+                break;
+            }
+        }
+
+        return layout;
+    }

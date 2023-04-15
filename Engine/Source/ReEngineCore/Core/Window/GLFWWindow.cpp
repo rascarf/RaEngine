@@ -71,9 +71,6 @@ namespace ReEngine
         
         m_Window = glfwCreateWindow((int)props.Width, (int)props.Height, mData.Title.c_str(), nullptr, nullptr);
         
-        m_Context = GraphicsContext::Create(m_Window,&props);
-        m_Context->Init();
-        
         glfwSetWindowUserPointer(m_Window, &mData);
         SetVSync(true);
 
@@ -182,6 +179,8 @@ namespace ReEngine
         m_MouseCursors[ImGuiMouseCursor_ResizeNWSE] = glfwCreateStandardCursor(GLFW_ARROW_CURSOR);  // FIXME: GLFW doesn't have this.
         m_MouseCursors[ImGuiMouseCursor_Hand] = glfwCreateStandardCursor(GLFW_HAND_CURSOR);
 
+        m_Context = GraphicsContext::Create(m_Window,&props);
+        m_Context->Init();
     }
 
     void GLWindow::ShutDown()

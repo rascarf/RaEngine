@@ -7,6 +7,8 @@
 #include "VulkanCommandPool.h"
 #include "VulkanInstance.h"
 #include "VulkanPipelineInfo.h"
+#include "VulkanTexture.h"
+#include "Camera/EditorCamera.h"
 #include "vulkan/Include/vulkan/vulkan.h"
 
 
@@ -27,23 +29,35 @@ namespace ReEngine
         glm::mat4 view;
         glm::mat4 proj;
     };
+
+    struct ParamBlock
+    {
+        glm::vec3 lightDir;
+        float curvature;
+
+        glm::vec3 lightColor;
+        float exposure;
+
+        glm::vec2 curvatureScaleBias;
+        float blurredLevel;
+        float padding;
+    };
     
     class VulkanContext : public GraphicsContext
     {
     public:
-        UniformBufferObject ubo = {};
+        UniformBufferObject ubo;
+        ParamBlock Param;
         
         VulkanContext(GLFWwindow* windowHandle,const WindowProperty* WinProperty);
-        ~VulkanContext()
-        {
-
-        }
+        virtual ~VulkanContext()override{}
 
         virtual void Init() override; 
         virtual void Close() override;
         virtual void SwapBuffers(Timestep ts) override;
         virtual void RecreateSwapChain();
         [[nodiscard]]Ref<VulkanInstance> GetVulkanInstance(){ return Instance;}
+        [[nodiscard]]GLFWwindow* GetGLFWwindow(){return m_WindowHandle;}
         
     private:
         Ref<VulkanInstance> Instance;
@@ -57,7 +71,14 @@ namespace ReEngine
         VkPipelineLayout pipelineLayout;
         
         Ref<VulkanBuffer> UniformBuffer;
+        Ref<VulkanBuffer> ParamBuffer;
+        
         Ref<VulkanModel> Model;
+        Ref<VulkanTexture> TexDiffuse;
+        Ref<VulkanTexture> TexNomal;
+        Ref<VulkanTexture> TexPreIntegareted;
+        Ref<VulkanTexture> TexCurve;
+        Ref<EditorCamera> Camera;
         
         GLFWwindow* m_WindowHandle;
         const WindowProperty* WinProperty;
@@ -76,9 +97,11 @@ namespace ReEngine
         void CreateDescriptorSet();
         void UpdateUniformBuffer(Timestep ts);
 
+        void OnEvent(std::shared_ptr<Event> e);
         void CreateGUI();
         void DestroyGUI();
         bool UpdateUI(float time,float delta);
     };
+    
 }
 

@@ -90,8 +90,6 @@ void ReEngine::ImGuiLayer::OnAttach()
 
     Application& app = Application::GetInstance();
     GLFWwindow* window = static_cast<GLFWwindow*>(app.GetWindow().GetNativeWindow());
-    ImGui_ImplGlfw_InitForVulkan(window, true);
-
 }
 
 void ReEngine::ImGuiLayer::OnDetach()

@@ -119,13 +119,12 @@ Ref<VulkanMeshNode> VulkanModel::LoadNode(const aiNode* Innode, const aiScene* I
     }
 
     LinearNodes.push_back(Node);
-
-
+    
     // children node
     for (int32 i = 0; i < (int32)Innode->mNumChildren; ++i)
     {
         Ref<VulkanMeshNode> childNode = LoadNode(Innode->mChildren[i], Inscene);
-        childNode->Parent  = Node;
+        childNode->Parent  = std::weak_ptr(Node);
         Node->Children.push_back(childNode);
     }
 

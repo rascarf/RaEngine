@@ -5,6 +5,8 @@
 #include "Renderer/RHI/Renderer.h"
 #include "Resource/AssetManager/AssetManager.h"
 #include "imgui.h"
+#include "backends/imgui_impl_glfw.h"
+#include "Input/Input.h"
 
 static uint32_t g__glsl_shader_vert_spv[] =
 {
@@ -114,6 +116,8 @@ void VulkanImGui::Init(const std::string& font,VulkanContext * Context)
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGui::StyleColorsLight();
+
+    ImGui_ImplGlfw_InitForVulkan(Context->GetGLFWwindow(),true);
     
     const float windowWidth  = (float)Application::GetInstance().GetWindowInfo().Width;
     const float windowHeight = (float)Application::GetInstance().GetWindowInfo().Height;
@@ -127,6 +131,11 @@ void VulkanImGui::Init(const std::string& font,VulkanContext * Context)
     ImGuiIO& io = ImGui::GetIO();
     io.DisplaySize = ImVec2((float)(windowWidth), (float)(windowHeight));
     io.DisplayFramebufferScale = ImVec2(frameWidth / windowWidth, frameHeight / windowHeight);
+
+    io.BackendFlags |= ImGuiBackendFlags_HasMouseCursors;
+    io.BackendFlags |= ImGuiBackendFlags_HasSetMousePos;
+    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+    io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
     
     PrepareFontResources();
     PreparePipelineResources();
@@ -135,6 +144,7 @@ void VulkanImGui::Init(const std::string& font,VulkanContext * Context)
 void VulkanImGui::Destroy()
 {
     VkDevice device = m_VulkanDevice->GetInstanceHandle();
+    ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
     m_VertexBuffer.Destroy();
     m_IndexBuffer.Destroy();
@@ -218,6 +228,7 @@ bool VulkanImGui::Update()
 
 void VulkanImGui::StartFrame()
 {
+    ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 }
 
@@ -301,6 +312,11 @@ void VulkanImGui::BindDrawCmd(const VkCommandBuffer& commandBuffer, const VkRend
     }
 
     m_Updated = false;
+}
+
+void VulkanImGui::OnEvent(std::shared_ptr<Event> e)
+{
+    
 }
 
 void VulkanImGui::PrepareFontResources()

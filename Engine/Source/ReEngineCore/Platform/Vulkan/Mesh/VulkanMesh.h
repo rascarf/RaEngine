@@ -44,10 +44,10 @@ class VulkanMeshNode
 {
 public:
     std::string			name;
-    std::vector<std::weak_ptr<VulkanMesh>> Meshes;
+    std::vector<Ref<VulkanMesh>> Meshes;
 
     std::weak_ptr<VulkanMeshNode> Parent;
-    std::vector<weak_ptr<VulkanMeshNode>> Children;
+    std::vector<Ref<VulkanMeshNode>> Children;
     
     glm::mat4 LocalMatrix;
     glm::mat4 GlobalMatrix;
@@ -88,10 +88,10 @@ public:
             {
                 const glm::mat4& matrix = GetGlobalMatrix();
 
-                glm::vec4 TempMin(Meshes[i].lock()->m_BoundingBox.Min.x,Meshes[i].lock()->m_BoundingBox.Min.y,Meshes[i].lock()->m_BoundingBox.Min.z,1.0);
+                glm::vec4 TempMin(Meshes[i]->m_BoundingBox.Min.x,Meshes[i]->m_BoundingBox.Min.y,Meshes[i]->m_BoundingBox.Min.z,1.0);
                 glm::vec4 mmin = TempMin * matrix;
 
-                glm::vec4 TempMax(Meshes[i].lock()->m_BoundingBox.Max.x,Meshes[i].lock()->m_BoundingBox.Max.y,Meshes[i].lock()->m_BoundingBox.Max.z,1.0);
+                glm::vec4 TempMax(Meshes[i]->m_BoundingBox.Max.x,Meshes[i]->m_BoundingBox.Max.y,Meshes[i]->m_BoundingBox.Max.z,1.0);
                 glm::vec4 mmax = TempMax * matrix;
                 
 
@@ -103,11 +103,11 @@ public:
                 OutBounds.Max.y = max(OutBounds.Max.y, mmax.y);
                 OutBounds.Max.z = max(OutBounds.Max.z, mmax.z);
             }
+        }
 
-            for (int32 i = 0; i < Children.size(); ++i)
-            {
-                Children[i].lock()->CalcBounds(OutBounds);
-            }
+        for (int32 i = 0; i < Children.size(); ++i)
+        {
+            Children[i]->CalcBounds(OutBounds);
         }
     }
 
