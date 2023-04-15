@@ -30,9 +30,9 @@ void ReEngine::EditorCamera::OnUpdate(Timestep ts)
         glm::vec2 deltaMove = { 0.0f, 0.0f };
 
         if (Input::IsKeyPressed(static_cast<uint16_t>(RE_KEY_A)))
-            mFocalPoint -= GetRightDirection() * mCameraSpeed * 0.05f;
-        if (Input::IsKeyPressed(static_cast<uint16_t>(RE_KEY_D)))
             mFocalPoint += GetRightDirection() * mCameraSpeed * 0.05f;
+        if (Input::IsKeyPressed(static_cast<uint16_t>(RE_KEY_D)))
+            mFocalPoint -= GetRightDirection() * mCameraSpeed * 0.05f;
         if (Input::IsKeyPressed(static_cast<uint16_t>(RE_KEY_W)))
             mFocalPoint += GetForwardDirection() * mCameraSpeed * 0.05f;
         if (Input::IsKeyPressed(static_cast<uint16_t>(RE_KEY_S)))
@@ -61,6 +61,7 @@ void ReEngine::EditorCamera::OnUpdate(Timestep ts)
     }
 
     UpdateView();
+    UpdateProjection();
 }
 
 void ReEngine::EditorCamera::OnEvent(Ref<Event> e)
@@ -73,7 +74,7 @@ void ReEngine::EditorCamera::OnEvent(Ref<Event> e)
 }
 
 glm::vec3 ReEngine::EditorCamera::GetUpDirection() const
-{
+{ 
     return glm::rotate(GetOrientation(), glm::vec3(0.0f, 1.0f, 0.0f));
 }
 
@@ -110,8 +111,7 @@ void ReEngine::EditorCamera::UpdateView()
     mPosition = CalculatePosition();
 
     glm::quat orientation = GetOrientation();
-    mViewMatrix = glm::translate(glm::mat4(1.0f), mPosition) * glm::toMat4(orientation);
-    mViewMatrix = glm::inverse(mViewMatrix); 
+    mViewMatrix = glm::lookAtLH(mPosition,mFocalPoint,glm::vec3(0.0f,1.0,0.0f));
 }
 
 bool ReEngine::EditorCamera::OnMouseScroll(Ref<MouseScrollEvent>& e)
@@ -132,7 +132,7 @@ void ReEngine::EditorCamera::MousePan(const glm::vec2& delta)
 void ReEngine::EditorCamera::MouseRotate(const glm::vec2& delta)
 {
     float yawSign = GetUpDirection().y < 0 ? -1.0f : 1.0f;
-    mYaw += yawSign * delta.x * RotationSpeed();
+    mYaw -= yawSign * delta.x * RotationSpeed();
     mPitch += delta.y * RotationSpeed();
 }
 

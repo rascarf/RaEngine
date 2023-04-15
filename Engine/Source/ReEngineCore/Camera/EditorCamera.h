@@ -57,7 +57,7 @@ namespace ReEngine
         float RotationSpeed() const;
         float ZoomSpeed() const;
     public:
-        float mCameraSpeed = 0.05f;
+        float mCameraSpeed = 0.1f;
         
     private:
         float mFOV = 45.0f,mAspectRatio = 1.778f,mNearClip = 0.1f,mFarClip = 1000.0f;

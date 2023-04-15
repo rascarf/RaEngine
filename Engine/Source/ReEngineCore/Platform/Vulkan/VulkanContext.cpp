@@ -284,14 +284,10 @@ namespace ReEngine
 	
     void VulkanContext::UpdateUniformBuffer(Timestep ts)
     {
-    	BoundingBox Box = Model->RootNode->GetBounds();
-
-    	glm::vec3 boundSize   = Box.Max - Box.Min;
-    	glm::vec3 boundCenter = Box.Min + boundSize * 0.5f;
-
+    	Camera->OnUpdate(ts);
     	ubo.model = glm::rotate(ubo.model, ts.GetSeconds() *  glm::radians(45.0f), glm::vec3(0.0f, 1.0f, 0.0f));;
-        ubo.view = glm::lookAtLH(glm::vec3(boundCenter.x, boundCenter.y, boundCenter.z - 50.0f),boundCenter,glm::vec3(0,1.0f,0.0f));
-    	ubo.proj = glm::perspectiveLH_ZO(glm::radians(45.0f), (float)WinProperty->Width / (float) WinProperty->Height, 0.1f, 1000.0f);
+    	ubo.view = Camera->GetViewMatrix();
+    	ubo.proj = Camera->GetProjection();
 
     	UniformBuffer->Map();
     	UniformBuffer->CopyFrom(&ubo,sizeof(UniformBufferObject));
