@@ -48,10 +48,9 @@ namespace ReEngine
         vkDeviceWaitIdle(Device);
 
     	m_GUI->Destroy();
-    	
     	Model.reset();
-    	UniformBuffer.reset();
-    	ParamBuffer.reset();
+
+    	RingBuffer.reset();
     	TexCurve.reset();
     	TexDiffuse.reset();
     	TexNomal.reset();
@@ -69,10 +68,14 @@ namespace ReEngine
 
     void VulkanContext::SwapBuffers(Timestep ts)
     {
+    	RingBuffer->OnBeginFrame();
     	UpdateUI(ts.GetMilliseconds(),ts.GetSeconds());
         UpdateUniformBuffer(ts);
+    	CreateCommandBuffers();
     	
   		const int32 bufferIndex = CommandPool->AcquireBackbufferIndex();
+    	if (bufferIndex < 0 ) return;
+    	
 		CommandPool->Present(bufferIndex < 0 ? 0 : bufferIndex);
     }
 
@@ -204,12 +207,16 @@ namespace ReEngine
 
         	vkCmdSetViewport(CommandPool->m_CommandBuffers[i], 0, 1, &viewport);
         	vkCmdSetScissor(CommandPool->m_CommandBuffers[i], 0, 1, &scissor);
-        	
             vkCmdBindPipeline(CommandPool->m_CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, GraphicsPipeline->Pipeline);
-            vkCmdBindDescriptorSets(CommandPool->m_CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
 
+        	const auto ParamBufferView =  RingBuffer->AllocConstantBuffer(sizeof(ParamBlock),&Param);
+        	
         	for (int32 meshIndex = 0; meshIndex < Model->Meshes.size(); ++meshIndex)
         	{
+        		auto BufferView = RingBuffer->AllocConstantBuffer(sizeof(UniformBufferObject),&ubo);
+        		const uint32_t UniformOffset[2] = {(uint32_t)BufferView.offset,(uint32_t)ParamBufferView.offset};
+        		vkCmdBindDescriptorSets(CommandPool->m_CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 2, UniformOffset);
+        		
         		Model->Meshes[meshIndex]->BindDraw(CommandPool->m_CommandBuffers[i]);
         	}
         	
@@ -256,13 +263,6 @@ namespace ReEngine
     	ubo.model = glm::mat4(1.0f);
     	ubo.view = glm::mat4(1.0f);
     	ubo.proj = glm::mat4(1.0f);
-    	
-    	 UniformBuffer = VulkanBuffer::CreateBuffer(
-    		Instance->GetDevice(),
-    		VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
-			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
-			sizeof(UniformBufferObject),
-			&ubo);
 
     	Param.blurredLevel = 2.0;
     	Param.curvature = 3.5;
@@ -273,13 +273,23 @@ namespace ReEngine
     	Param.lightDir = glm::vec3(1, 0, -1.0);
     	Param.lightDir = normalize(Param.lightDir);
     	Param.padding = 0.0;
+    	
+   //  	 UniformBuffer = VulkanBuffer::CreateBuffer(
+   //  		Instance->GetDevice(),
+   //  		VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
+			// VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
+			// sizeof(UniformBufferObject),
+			// &ubo);
 
-    	ParamBuffer = VulkanBuffer::CreateBuffer(
-    		Instance->GetDevice(),
-			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
-			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
-			sizeof(ParamBlock),
-			&Param);
+    	RingBuffer = CreateRef<VulkanDynamicBufferRing>();
+    	RingBuffer->OnCreate(Instance->GetDevice(),3,200 * 1024 * 1024);
+
+   //  	ParamBuffer = VulkanBuffer::CreateBuffer(
+   //  		Instance->GetDevice(),
+			// VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
+			// VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
+			// sizeof(ParamBlock),
+			// &Param);
     }
 	
     void VulkanContext::UpdateUniformBuffer(Timestep ts)
@@ -289,13 +299,13 @@ namespace ReEngine
     	ubo.view = Camera->GetViewMatrix();
     	ubo.proj = Camera->GetProjection();
 
-    	UniformBuffer->Map();
-    	UniformBuffer->CopyFrom(&ubo,sizeof(UniformBufferObject));
-    	UniformBuffer->UnMap();
+    	// UniformBuffer->Map();
+    	// UniformBuffer->CopyFrom(&ubo,sizeof(UniformBufferObject));
+    	// UniformBuffer->UnMap();
 
-    	ParamBuffer->Map();
-		ParamBuffer->CopyFrom(&Param,sizeof(ParamBlock));
-    	ParamBuffer->UnMap();
+  //   	ParamBuffer->Map();
+		// ParamBuffer->CopyFrom(&Param,sizeof(ParamBlock));
+  //   	ParamBuffer->UnMap();
     }
 
     void VulkanContext::OnEvent(std::shared_ptr<Event> e)
@@ -366,7 +376,7 @@ namespace ReEngine
     void VulkanContext::CreateDescriptorPool()
     {
     	VkDescriptorPoolSize poolSizes[2];
-    	poolSizes[0].type            = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    	poolSizes[0].type            = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
     	poolSizes[0].descriptorCount = 2;
     	poolSizes[1].type            = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
     	poolSizes[1].descriptorCount = 4;
@@ -393,21 +403,16 @@ namespace ReEngine
     void VulkanContext::CreateDescriptorSet()
     {
         VkWriteDescriptorSet descriptorWrite = {};
-    	ZeroVulkanStruct(descriptorWrite, VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
-        descriptorWrite.dstSet = descriptorSet;
-        descriptorWrite.dstBinding = 0;
-        descriptorWrite.descriptorCount = 1;
-        descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        descriptorWrite.pBufferInfo = &(UniformBuffer->Descriptor);
-        vkUpdateDescriptorSets(Instance->GetDevice()->GetInstanceHandle(), 1, &descriptorWrite, 0, nullptr);
+		RingBuffer->SetDescriptorSet(0,sizeof(UniformBufferObject),descriptorSet);
+    	RingBuffer->SetDescriptorSet(1,sizeof(ParamBlock),descriptorSet);
 
-    	ZeroVulkanStruct(descriptorWrite, VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
-    	descriptorWrite.dstSet          = descriptorSet;
-    	descriptorWrite.descriptorCount = 1;
-    	descriptorWrite.descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    	descriptorWrite.pBufferInfo     = &(ParamBuffer->Descriptor);
-    	descriptorWrite.dstBinding      = 1;
-    	vkUpdateDescriptorSets(Instance->GetDevice()->GetInstanceHandle(), 1, &descriptorWrite, 0, nullptr);
+    	// ZeroVulkanStruct(descriptorWrite, VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
+    	// descriptorWrite.dstSet          = descriptorSet;
+    	// descriptorWrite.descriptorCount = 1;
+    	// descriptorWrite.descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    	// descriptorWrite.pBufferInfo     = &(ParamBuffer->Descriptor);
+    	// descriptorWrite.dstBinding      = 1;
+    	// vkUpdateDescriptorSets(Instance->GetDevice()->GetInstanceHandle(), 1, &descriptorWrite, 0, nullptr);
     	
     	std::vector<Ref<VulkanTexture>> Textures =
     	{
@@ -431,13 +436,13 @@ namespace ReEngine
     {
         VkDescriptorSetLayoutBinding uboLayoutBinding[6] = {};
         uboLayoutBinding[0].binding = 0;
-        uboLayoutBinding[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        uboLayoutBinding[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
         uboLayoutBinding[0].descriptorCount = 1;
         uboLayoutBinding[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
         uboLayoutBinding[0].pImmutableSamplers = nullptr; // Optional
 
     	uboLayoutBinding[1].binding 			 = 1;
-    	uboLayoutBinding[1].descriptorType     = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    	uboLayoutBinding[1].descriptorType     = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
     	uboLayoutBinding[1].descriptorCount    = 1;
     	uboLayoutBinding[1].stageFlags 		 = VK_SHADER_STAGE_FRAGMENT_BIT;
     	uboLayoutBinding[1].pImmutableSamplers = nullptr;

@@ -7,15 +7,14 @@
 #include "VulkanCommandPool.h"
 #include "VulkanInstance.h"
 #include "VulkanPipelineInfo.h"
-#include "VulkanTexture.h"
+#include "Platform/Vulkan/VulkanBuffers/VulkanTexture.h"
 #include "Camera/EditorCamera.h"
 #include "vulkan/Include/vulkan/vulkan.h"
-
-
 #include "GLFW/glfw3.h"
 #include "glm/gtx/transform.hpp"
 #include "Mesh/VulkanMesh.h"
 #include "VulkanBuffers/VulkanBuffer.h"
+#include "VulkanBuffers/VulkanDynamicBufferRing.h"
 #include "VulkanBuffers/VulkanFrameBuffer.h"
 #include "VulkanBuffers/VulkanIndexBuffer.h"
 #include "VulkanBuffers/VulkanVertexBuffer.h"
@@ -70,8 +69,9 @@ namespace ReEngine
         VkDescriptorSet descriptorSet;
         VkPipelineLayout pipelineLayout;
         
-        Ref<VulkanBuffer> UniformBuffer;
-        Ref<VulkanBuffer> ParamBuffer;
+        // Ref<VulkanBuffer> UniformBuffer;
+        // Ref<VulkanBuffer> ParamBuffer;
+        Ref<VulkanDynamicBufferRing> RingBuffer;
         
         Ref<VulkanModel> Model;
         Ref<VulkanTexture> TexDiffuse;
@@ -102,6 +102,5 @@ namespace ReEngine
         void DestroyGUI();
         bool UpdateUI(float time,float delta);
     };
-    
 }
 

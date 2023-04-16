@@ -251,8 +251,8 @@ int32 VulkanSwapChain::AcquireImageIndex(VkSemaphore* outSemaphore)
 	const int32 prev  = m_SemaphoreIndex;
 
 	m_SemaphoreIndex  = (m_SemaphoreIndex + 1) % m_ImageAcquiredSemaphore.size();
+	
 	//这是一个操作，GPU需要从队列中获取图像，这个需要时间，也就是说当GPU完成了这一步，会向m_ImageAcquiredSemaphore[m_SemaphoreIndex]发出signal，等待这个signal的都可以运行
-	//
 	VkResult result   = vkAcquireNextImageKHR(device, m_SwapChain, ((uint64)	0xffffffffffffffff), m_ImageAcquiredSemaphore[m_SemaphoreIndex], VK_NULL_HANDLE, &imageIndex);
 
 	if (result == VK_ERROR_OUT_OF_DATE_KHR)
@@ -288,7 +288,8 @@ void VulkanSwapChain::ShutDown()
 
 VulkanSwapChain::SwapStatus VulkanSwapChain::Present(VulkanQueue& gfxQueue, VulkanQueue& presentQueue, VkSemaphore* doneSemaphore)
 {
-	if (m_CurrentImageIndex == -1) {
+	if (m_CurrentImageIndex == -1)
+	{
 		return SwapStatus::Healthy;
 	}
 
@@ -304,15 +305,18 @@ VulkanSwapChain::SwapStatus VulkanSwapChain::Present(VulkanQueue& gfxQueue, Vulk
     
 	VkResult presentResult = vkQueuePresentKHR(presentQueue.GetHandle(), &createInfo);
 
-	if (presentResult == VK_ERROR_OUT_OF_DATE_KHR) {
+	if (presentResult == VK_ERROR_OUT_OF_DATE_KHR)
+	{
 		return SwapStatus::OutOfDate;
 	}
 
-	if (presentResult == VK_ERROR_SURFACE_LOST_KHR) {
+	if (presentResult == VK_ERROR_SURFACE_LOST_KHR)
+	{
 		return SwapStatus::SurfaceLost;
 	}
 
-	if (presentResult != VK_SUCCESS && presentResult != VK_SUBOPTIMAL_KHR) {
+	if (presentResult != VK_SUCCESS && presentResult != VK_SUBOPTIMAL_KHR)
+	{
 		VERIFYVULKANRESULT(presentResult);
 	}
 

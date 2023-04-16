@@ -26,6 +26,11 @@ static FORCE_INLINE T Clamp(const T x, const T inMin, const T inMax)
     return x < inMin ? inMin : x < inMax ? x : inMax;
 }
 
+template<typename T> FORCE_INLINE T AlignUp(T val, T alignment)
+{
+    return (val + alignment - (T)1) & ~(alignment - (T)1);
+}
+
 enum class ImageLayoutBarrier
 {
     Undefined,

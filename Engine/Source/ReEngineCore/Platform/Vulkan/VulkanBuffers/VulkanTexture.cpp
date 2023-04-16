@@ -1,9 +1,8 @@
 ﻿#include "VulkanTexture.h"
-
 #include "ImageLoader.h"
-#include "../../../../../build/Engine/Source/ReEngineCore/Math/Math.h"
+#include "Math/Math.h"
 #include "Resource/AssetManager/AssetManager.h"
-#include "VulkanBuffers/VulkanBuffer.h"
+#include "Platform/Vulkan/VulkanBuffers/VulkanBuffer.h"
 
 void VulkanTexture::UpdateSampler(VkFilter magFilter, VkFilter minFilter, VkSamplerMipmapMode mipmapMode,VkSamplerAddressMode addressModeU, VkSamplerAddressMode addressModeV, VkSamplerAddressMode addressModeW)
 {

@@ -41,7 +41,8 @@ void VulkanCommandPool::Present(int backBufferIndex)
     vkResetFences(m_Device, 1, &(m_Fences[backBufferIndex]));
 
     VERIFYVULKANRESULT(vkQueueSubmit(m_PresentQueue, 1, &submitInfo, m_Fences[backBufferIndex]));
-    
+
+    //TODO 这样摆Fence是有问题的！！
     vkWaitForFences(m_Device, 1, &(m_Fences[backBufferIndex]), true, ((uint64)	0xffffffffffffffff));
     
     // present会等待RenderComplete Semaphore
@@ -53,6 +54,7 @@ int32 VulkanCommandPool::AcquireBackbufferIndex()
     //当前帧的序号
     //这一帧提交等待的semaphore
     //渲染指令提交会固定signal RenderComplete
+    //这一帧需要等待这个PresentCompelete才可以渲染
     int32 backBufferIndex = m_SwapChain->AcquireImageIndex(&m_PresentComplete);
 
     if(backBufferIndex < 0 )

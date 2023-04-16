@@ -1,7 +1,7 @@
 ﻿#pragma once
-#include "VulkanCommonDefine.h"
-#include "VulkanDevice.h"
-#include "VulkanBuffers/VulkanCommandBuffer.h"
+#include "Platform/Vulkan/VulkanCommonDefine.h"
+#include "Platform/Vulkan/VulkanDevice.h"
+#include "Platform/Vulkan/VulkanBuffers/VulkanCommandBuffer.h"
 
 FORCE_INLINE void SetImageBarrierInfo(ImageLayoutBarrier source, ImageLayoutBarrier dest, VkImageMemoryBarrier& inOutBarrier, VkPipelineStageFlags& inOutSourceStage, VkPipelineStageFlags& inOutDestStage)
 {
