@@ -53,6 +53,10 @@ if(NOT TARGET yaml-cpp)
     NoWarning(yaml-cpp)
 endif()
 
+if(NOT TARGET spirv-cross-glsl)
+  add_subdirectory(SPIRV-Cross)
+endif()
+
 if(NOT TARGET assimp)
     OPTION( BUILD_SHARED_LIBS
       "Build package with shared libraries."
@@ -147,4 +151,6 @@ if(NOT TARGET headers)
     target_include_directories(headers INTERFACE "${ThirdPartyDir}/entt/include")
     target_include_directories(headers INTERFACE "${ThirdPartyDir}/cgltf/include")
     target_include_directories(headers INTERFACE "${ThirdPartyDir}/Vulkan/include")
+    target_include_directories(headers INTERFACE "${ThirdPartyDir}/SPIRV-Cross/include")
+    
 endif()

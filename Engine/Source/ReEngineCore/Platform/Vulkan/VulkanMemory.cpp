@@ -2,7 +2,7 @@
 #include "Core/Alignment.h"
 #include "VulkanDevice.h"
 #include "VulkanMemory.h"
-#include "glm/glm/glm.hpp"
+#include "glm/glm.hpp"
 #include <algorithm>
 
 enum

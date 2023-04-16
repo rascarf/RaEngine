@@ -22,7 +22,6 @@ public:
         , m_FrameHeight(0)
         , m_PipelineCache(VK_NULL_HANDLE)
         , m_PresentComplete(VK_NULL_HANDLE)
-        , m_RenderComplete(VK_NULL_HANDLE)
         , m_CommandPool(VK_NULL_HANDLE)
         , m_WaitStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
         , m_SwapChain(VK_NULL_HANDLE)
@@ -99,8 +98,8 @@ public:
     VkPipelineCache                 m_PipelineCache;
 
     std::vector<VkFence>            m_Fences;
+    std::vector<VkSemaphore>        m_RenderComplete;
     VkSemaphore                     m_PresentComplete;
-    VkSemaphore                     m_RenderComplete;
 
     VkCommandPool                   m_CommandPool;
     VkCommandPool                   m_ComputeCommandPool;

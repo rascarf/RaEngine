@@ -3,8 +3,7 @@
 #include "Renderer/RHI/PixelFormat.h"
 
 #define VK_USE_PLATFORM_WIN32_KHR
-#include "assimp/code/Blender/BlenderScene.h"
-#include "vulkan/Include/vulkan/vulkan.h"
+#include "vulkan/vulkan.h"
 
 #define VULKAN_CPU_ALLOCATOR nullptr
 

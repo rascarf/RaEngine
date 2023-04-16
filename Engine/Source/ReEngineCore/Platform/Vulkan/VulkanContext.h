@@ -9,7 +9,7 @@
 #include "VulkanPipelineInfo.h"
 #include "Platform/Vulkan/VulkanBuffers/VulkanTexture.h"
 #include "Camera/EditorCamera.h"
-#include "vulkan/Include/vulkan/vulkan.h"
+#include "vulkan/vulkan.h"
 #include "GLFW/glfw3.h"
 #include "glm/gtx/transform.hpp"
 #include "Mesh/VulkanMesh.h"

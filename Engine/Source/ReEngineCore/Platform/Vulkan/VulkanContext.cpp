@@ -8,9 +8,8 @@
 
 #include "Shader_vert.h"
 #include "Shader_frag.h"
-
+#include "spirv_cross.hpp"
 #include "imgui/imgui.h"
-
 #include "VulkanCommandPool.h"
 #include "VulkanInstance.h"
 #include "Core/Timestep.h"
@@ -104,6 +103,9 @@ namespace ReEngine
     {
         VkShaderModule vertShaderModule = CreateShaderModule(SHADER_VERT);
 		VkShaderModule fragShaderModule = CreateShaderModule(SHADER_FRAG);
+    	
+    	spirv_cross::Compiler Compiler(reinterpret_cast<const uint32_t*>(SHADER_VERT.data()),SHADER_VERT.size() / sizeof(uint32));
+    	spirv_cross::ShaderResources resources = Compiler.get_shader_resources();
     	
     	VulkanPipelineInfo DefaultInfo;
     	DefaultInfo.VertShaderModule = vertShaderModule;

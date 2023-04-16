@@ -43,4 +43,13 @@ target_link_libraries(ReEngineCore PUBLIC Glad)
 target_link_libraries(ReEngineCore PUBLIC yaml-cpp)
 target_link_libraries(ReEngineCore PUBLIC headers)
 target_link_libraries(ReEngineCore PUBLIC ${vulkan_lib})
+
+target_link_libraries(ReEngineCore PUBLIC spirv-cross-glsl)
+target_link_libraries(ReEngineCore PUBLIC spirv-cross-hlsl)
+target_link_libraries(ReEngineCore PUBLIC spirv-cross-cpp)
+target_link_libraries(ReEngineCore PUBLIC spirv-cross-reflect)
+target_link_libraries(ReEngineCore PUBLIC spirv-cross-msl)
+target_link_libraries(ReEngineCore PUBLIC spirv-cross-util)
+target_link_libraries(ReEngineCore PUBLIC spirv-cross-core)
+
 target_link_libraries(ReEngineCore PUBLIC assimp)
