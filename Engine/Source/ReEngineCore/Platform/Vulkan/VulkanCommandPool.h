@@ -113,6 +113,8 @@ public:
     int32                           m_FrameCounter = 0;
     float                           m_LastFrameTime = 0.0f;
     int32                           m_LastFPS = 0;
+    
+    uint32_t m_FrameIndex;
 };
 }
 

@@ -38,12 +38,9 @@ void VulkanCommandPool::Present(int backBufferIndex)
     submitInfo.commandBufferCount   = 1;
 
     //Fence保证在队列没有提交完成之前，cpu不会执行下面的代码，挡住的是CPU，不是GPU，Semaphore才是挡住GPU
-    vkResetFences(m_Device, 1, &(m_Fences[backBufferIndex]));
-
+    vkResetFences(m_Device, 1, &(m_Fences[m_FrameIndex]));
     VERIFYVULKANRESULT(vkQueueSubmit(m_PresentQueue, 1, &submitInfo, m_Fences[backBufferIndex]));
-
-    //TODO 这样摆Fence是有问题的！！
-    vkWaitForFences(m_Device, 1, &(m_Fences[backBufferIndex]), true, ((uint64)	0xffffffffffffffff));
+    vkWaitForFences(m_Device, 1, &(m_Fences[m_FrameIndex]), true, ((uint64)	0xffffffffffffffff));
     
     // present会等待RenderComplete Semaphore
     m_SwapChain->Present(*m_VulkanDevice->GetGraphicsQueue(),*m_VulkanDevice->GetPresentQueue() , &m_RenderComplete);
@@ -59,26 +56,26 @@ int32 VulkanCommandPool::AcquireBackbufferIndex()
 
     if(backBufferIndex < 0 )
     {
+        m_FrameIndex = 0;
         auto Context = Renderer::GetContext().get();
         auto VulkanContext = dynamic_cast<ReEngine::VulkanContext*>(Context);
         VulkanContext-> RecreateSwapChain();
     }
+
+    m_FrameIndex =  backBufferIndex;
     
-    return backBufferIndex;
+    return m_FrameIndex;
 }
 
 uint32 VulkanCommandPool::GetMemoryTypeFromProperties(uint32 typeBits, VkMemoryPropertyFlags properties)
 {
     uint32 memoryTypeIndex = 0;
-   m_VulkanDevice->GetMemoryManager().GetMemoryTypeFromProperties(typeBits, properties, &memoryTypeIndex);
+    m_VulkanDevice->GetMemoryManager().GetMemoryTypeFromProperties(typeBits, properties, &memoryTypeIndex);
     return memoryTypeIndex;
 }
 
 void VulkanCommandPool::CreateDefaultRes()
 {
-    // VulkanCommandBuffer* cmdbuffer = VulkanCommandBuffer::Create(m_Device, m_CommandPool);
-    // DVKDefaultRes::Init(m_Device, cmdbuffer);
-    // delete cmdbuffer;
 }
 
 void VulkanCommandPool::DestroyDefaultRes()

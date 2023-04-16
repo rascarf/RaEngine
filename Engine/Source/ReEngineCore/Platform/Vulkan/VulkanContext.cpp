@@ -68,13 +68,14 @@ namespace ReEngine
 
     void VulkanContext::SwapBuffers(Timestep ts)
     {
-    	RingBuffer->OnBeginFrame();
-    	UpdateUI(ts.GetMilliseconds(),ts.GetSeconds());
-        UpdateUniformBuffer(ts);
-    	CreateCommandBuffers();
-    	
   		const int32 bufferIndex = CommandPool->AcquireBackbufferIndex();
     	if (bufferIndex < 0 ) return;
+
+    	RingBuffer->OnBeginFrame();
+    	UpdateUI(ts.GetMilliseconds(),ts.GetSeconds());
+    	UpdateUniformBuffer(ts);
+    	
+    	CommitCmd();
     	
 		CommandPool->Present(bufferIndex < 0 ? 0 : bufferIndex);
     }
@@ -166,9 +167,78 @@ namespace ReEngine
         {
             RE_CORE_ERROR("Failed to allocate command buffers!");
         }
+    }
+	
+    void VulkanContext::CreateMeshBuffer()
+    {
+    	auto cmd = VulkanCommandBuffer::Create(Instance->GetDevice(),CommandPool->m_CommandPool);
+    	
+		Model = VulkanModel::LoadFromFile("Assets/Mesh/head.obj",
+			Instance->m_Device,
+			cmd,
+			{ VertexAttribute::VA_Position, VertexAttribute::VA_UV0, VertexAttribute::VA_Normal, VertexAttribute::VA_Tangent});
 
-        for (size_t i = 0; i < CommandPool->m_CommandBuffers.size(); i++)
+		TexDiffuse = VulkanTexture::Create2D(
+		"Assets/Textures/head_diffuse.jpg",Instance->m_Device,cmd
+		);
+    	
+    	TexPreIntegareted = VulkanTexture::Create2D(
+"Assets/Textures/preIntegratedLUT.png",Instance->m_Device,cmd
+		);
+    	
+    	TexCurve = VulkanTexture::Create2D(
+"Assets/Textures/curvatureLUT.png",Instance->m_Device,cmd
+		);
+
+    	TexNomal = VulkanTexture::Create2D(
+		"Assets/Textures/head_normal.jpg",Instance->m_Device,cmd
+		);
+    	
+    }
+	
+    void VulkanContext::createUniformBuffer()
+    {
+    	ubo.model = glm::mat4(1.0f);
+    	ubo.view = glm::mat4(1.0f);
+    	ubo.proj = glm::mat4(1.0f);
+
+    	Param.blurredLevel = 2.0;
+    	Param.curvature = 3.5;
+    	Param.curvatureScaleBias.x = 0.101;
+    	Param.curvatureScaleBias.y = -0.001;
+    	Param.exposure = 1.0;
+    	Param.lightColor = glm::vec3(240.0f / 255.0f, 200.0f / 255.0f, 166.0f / 255.0f);
+    	Param.lightDir = glm::vec3(1, 0, -1.0);
+    	Param.lightDir = normalize(Param.lightDir);
+    	Param.padding = 0.0;
+    	
+    	RingBuffer = CreateRef<VulkanDynamicBufferRing>();
+    	RingBuffer->OnCreate(Instance->GetDevice(),3,200 * 1024 * 1024);
+    }
+	
+    void VulkanContext::UpdateUniformBuffer(Timestep ts)
+    {
+    	Camera->OnUpdate(ts);
+    	ubo.model = glm::rotate(ubo.model, ts.GetSeconds() *  glm::radians(45.0f), glm::vec3(0.0f, 1.0f, 0.0f));;
+    	ubo.view = Camera->GetViewMatrix();
+    	ubo.proj = Camera->GetProjection();
+    }
+
+    void VulkanContext::CommitCmd()
+    {
+    	int i = CommandPool->m_FrameIndex;
         {
+    		VkCommandBufferAllocateInfo allocInfo = {};
+    		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    		allocInfo.commandPool = CommandPool->m_CommandPool;
+    		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    		allocInfo.commandBufferCount = 1;
+    	
+    		if (vkAllocateCommandBuffers(Instance->GetDevice()->GetInstanceHandle(), &allocInfo, &CommandPool->m_CommandBuffers[i]) != VK_SUCCESS)
+    		{
+    			RE_CORE_ERROR("Failed to allocate command buffers!");
+    		}
+    		
             VkCommandBufferBeginInfo beginInfo = {};
             beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
             beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
@@ -230,83 +300,6 @@ namespace ReEngine
             }
         }
     }
-	
-    void VulkanContext::CreateMeshBuffer()
-    {
-    	auto cmd = VulkanCommandBuffer::Create(Instance->GetDevice(),CommandPool->m_CommandPool);
-    	
-		Model = VulkanModel::LoadFromFile("Assets/Mesh/head.obj",
-			Instance->m_Device,
-			cmd,
-			{ VertexAttribute::VA_Position, VertexAttribute::VA_UV0, VertexAttribute::VA_Normal, VertexAttribute::VA_Tangent});
-
-		TexDiffuse = VulkanTexture::Create2D(
-		"Assets/Textures/head_diffuse.jpg",Instance->m_Device,cmd
-		);
-    	
-    	TexPreIntegareted = VulkanTexture::Create2D(
-"Assets/Textures/preIntegratedLUT.png",Instance->m_Device,cmd
-		);
-    	
-    	TexCurve = VulkanTexture::Create2D(
-"Assets/Textures/curvatureLUT.png",Instance->m_Device,cmd
-		);
-
-    	TexNomal = VulkanTexture::Create2D(
-		"Assets/Textures/head_normal.jpg",Instance->m_Device,cmd
-		);
-    	
-    }
-	
-    void VulkanContext::createUniformBuffer()
-    {
-    	ubo.model = glm::mat4(1.0f);
-    	ubo.view = glm::mat4(1.0f);
-    	ubo.proj = glm::mat4(1.0f);
-
-    	Param.blurredLevel = 2.0;
-    	Param.curvature = 3.5;
-    	Param.curvatureScaleBias.x = 0.101;
-    	Param.curvatureScaleBias.y = -0.001;
-    	Param.exposure = 1.0;
-    	Param.lightColor = glm::vec3(240.0f / 255.0f, 200.0f / 255.0f, 166.0f / 255.0f);
-    	Param.lightDir = glm::vec3(1, 0, -1.0);
-    	Param.lightDir = normalize(Param.lightDir);
-    	Param.padding = 0.0;
-    	
-   //  	 UniformBuffer = VulkanBuffer::CreateBuffer(
-   //  		Instance->GetDevice(),
-   //  		VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
-			// VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
-			// sizeof(UniformBufferObject),
-			// &ubo);
-
-    	RingBuffer = CreateRef<VulkanDynamicBufferRing>();
-    	RingBuffer->OnCreate(Instance->GetDevice(),3,200 * 1024 * 1024);
-
-   //  	ParamBuffer = VulkanBuffer::CreateBuffer(
-   //  		Instance->GetDevice(),
-			// VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
-			// VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
-			// sizeof(ParamBlock),
-			// &Param);
-    }
-	
-    void VulkanContext::UpdateUniformBuffer(Timestep ts)
-    {
-    	Camera->OnUpdate(ts);
-    	ubo.model = glm::rotate(ubo.model, ts.GetSeconds() *  glm::radians(45.0f), glm::vec3(0.0f, 1.0f, 0.0f));;
-    	ubo.view = Camera->GetViewMatrix();
-    	ubo.proj = Camera->GetProjection();
-
-    	// UniformBuffer->Map();
-    	// UniformBuffer->CopyFrom(&ubo,sizeof(UniformBufferObject));
-    	// UniformBuffer->UnMap();
-
-  //   	ParamBuffer->Map();
-		// ParamBuffer->CopyFrom(&Param,sizeof(ParamBlock));
-  //   	ParamBuffer->UnMap();
-    }
 
     void VulkanContext::OnEvent(std::shared_ptr<Event> e)
     {
@@ -365,11 +358,9 @@ namespace ReEngine
     	
     	m_GUI->EndFrame();
 
-    	if (m_GUI->Update())
-    	{
-    		CreateCommandBuffers();
-    	}
-
+    	//获取渲染数据
+    	m_GUI->Update();
+    	
     	return hovered;
     }
 
@@ -406,14 +397,6 @@ namespace ReEngine
 		RingBuffer->SetDescriptorSet(0,sizeof(UniformBufferObject),descriptorSet);
     	RingBuffer->SetDescriptorSet(1,sizeof(ParamBlock),descriptorSet);
 
-    	// ZeroVulkanStruct(descriptorWrite, VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
-    	// descriptorWrite.dstSet          = descriptorSet;
-    	// descriptorWrite.descriptorCount = 1;
-    	// descriptorWrite.descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    	// descriptorWrite.pBufferInfo     = &(ParamBuffer->Descriptor);
-    	// descriptorWrite.dstBinding      = 1;
-    	// vkUpdateDescriptorSets(Instance->GetDevice()->GetInstanceHandle(), 1, &descriptorWrite, 0, nullptr);
-    	
     	std::vector<Ref<VulkanTexture>> Textures =
     	{
     		TexDiffuse,TexNomal,TexCurve,TexPreIntegareted
