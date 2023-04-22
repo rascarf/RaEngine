@@ -78,7 +78,6 @@ public:
     // static Ref<VulkanTexture> Create2DArray(const std::vector<std::string> filenames, std::shared_ptr<VulkanDevice> vulkanDevice, Ref<VulkanCommandBuffer> cmdBuffer);
     // static Ref<VulkanTexture> Create3D(VkFormat format, const uint8* rgbaData, int32 size, int32 width, int32 height, int32 depth, std::shared_ptr<VulkanDevice> vulkanDevice, Ref<VulkanCommandBuffer> cmdBuffer);
 
-
     /*------------------ 2D ---------------------------*/
     static Ref<VulkanTexture> Create2D(
     const uint8* rgbaData,
@@ -129,6 +128,8 @@ public:
     int32 Depth = 1;
     int32 MipLevels = 0;
 
+    bool IsCubeMap = false;
     int32 LayerCount = 1;
     VkFormat Format = VK_FORMAT_R8G8B8A8_UNORM;
+    VkSampleCountFlagBits NumSamples = VK_SAMPLE_COUNT_1_BIT;
 };

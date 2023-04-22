@@ -30,6 +30,18 @@ template<typename T> FORCE_INLINE T AlignUp(T val, T alignment)
     return (val + alignment - (T)1) & ~(alignment - (T)1);
 }
 
+enum class ResLimit
+{
+    MAX_TEXTURE_MIP_COUNT = 14,
+    MaxImmutableSamplers = 2,
+    MaxVertexElementCount = 16,
+    MaxVertexElementCount_NumBits = 4,
+    MaxSimultaneousRenderTargets = 8,
+    MaxSimultaneousRenderTargets_NumBits = 3,
+    ShaderArrayElementAlignBytes = 16,
+    MaxSimultaneousUAVs = 8
+};
+
 enum class ImageLayoutBarrier
 {
     Undefined,

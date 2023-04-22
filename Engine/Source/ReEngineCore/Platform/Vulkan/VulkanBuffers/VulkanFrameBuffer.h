@@ -279,7 +279,6 @@ public:
     VkDeviceMemory              m_DepthStencilMemory;
 
     VkRenderPass                m_RenderPass;
-    VkRenderPass                m_UIRenderPass;
         
     VkSampleCountFlagBits       m_SampleCount;
 
