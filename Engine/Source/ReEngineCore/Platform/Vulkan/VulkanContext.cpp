@@ -14,6 +14,8 @@
 #include "VulkanInstance.h"
 #include "Core/Timestep.h"
 #include "Resource/AssetManager/AssetManager.h"
+#include "VulkanShader/VulkanShader.h"
+#include "VulkanShader/VulkanShaderModule.h"
 
 namespace ReEngine
 {
@@ -30,13 +32,9 @@ namespace ReEngine
         Instance->Init();
     	CommandPool->Init(this);
     	FrameBuffer->Init(this);
-    	CreateGUI();
     	
+    	CreateGUI();
 		CreateMeshBuffer();
-        createUniformBuffer();
-        CreateDescriptorSetLayout();
-        CreateDescriptorPool();
-        CreateDescriptorSet();
         CreateGraphicsPipeline();
     	CreateCommandBuffers();
     }
@@ -49,16 +47,15 @@ namespace ReEngine
     	m_GUI->Destroy();
     	Model.reset();
 
+
+    	PipeShader.reset();
     	RingBuffer.reset();
+    	
     	TexCurve.reset();
     	TexDiffuse.reset();
     	TexNomal.reset();
     	TexPreIntegareted.reset();
     	GraphicsPipeline.reset();
-    	
-        vkDestroyDescriptorPool(Device, descriptorPool, nullptr);
-        vkDestroyDescriptorSetLayout(Device, descriptorSetLayout, nullptr);
-    	vkDestroyPipelineLayout(Device,pipelineLayout,nullptr);
     	
     	FrameBuffer->ShutDown();
     	CommandPool->ShutDown();
@@ -86,41 +83,20 @@ namespace ReEngine
     	FrameBuffer->ShutDown();
     	CommandPool->ShutDown();
     	
-    	vkDestroyPipelineLayout(Device, pipelineLayout, nullptr);
-    	
     	Instance->RecreateSwapChain();
     	FrameBuffer->Init(this);
     	CommandPool->Init(this);
-
-    	CreateDescriptorSetLayout();
-    	CreateDescriptorPool();
-    	CreateDescriptorSet();
+    	
     	CreateGraphicsPipeline();
     	CreateCommandBuffers();
     }
 
     void VulkanContext::CreateGraphicsPipeline()
     {
-        VkShaderModule vertShaderModule = CreateShaderModule(SHADER_VERT);
-		VkShaderModule fragShaderModule = CreateShaderModule(SHADER_FRAG);
-    	
-    	spirv_cross::Compiler Compiler(reinterpret_cast<const uint32_t*>(SHADER_VERT.data()),SHADER_VERT.size() / sizeof(uint32));
-    	spirv_cross::ShaderResources resources = Compiler.get_shader_resources();
-    	
     	VulkanPipelineInfo DefaultInfo;
-    	DefaultInfo.VertShaderModule = vertShaderModule;
-    	DefaultInfo.FragShaderModule = fragShaderModule;
+		DefaultInfo.VertShaderModule = PipeShader->vertShaderModule->Handle;
+    	DefaultInfo.FragShaderModule = PipeShader->fragShaderModule->Handle;
     	
-		VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
-		pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-		pipelineLayoutInfo.setLayoutCount = 1;
-        pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
-
-		if (vkCreatePipelineLayout(Instance->GetDevice()->GetInstanceHandle(), &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS)
-		{
-			throw std::runtime_error("failed to create pipeline layout!"); 
-		}
-
     	auto VertexInputBinding = Model->GetInputBinding();
     	auto AttributeInputBinding = Model->GetInputAttributes();
 
@@ -130,29 +106,9 @@ namespace ReEngine
 			DefaultInfo,
 			{VertexInputBinding},
 			AttributeInputBinding,
-			pipelineLayout,
+			PipeShader->pipelineLayout,
 			FrameBuffer->m_RenderPass
     	);
-
-		vkDestroyShaderModule(Instance->GetDevice()->GetInstanceHandle(), fragShaderModule, nullptr);
-		vkDestroyShaderModule(Instance->GetDevice()->GetInstanceHandle(), vertShaderModule, nullptr);
-    }
-	
-    VkShaderModule VulkanContext::CreateShaderModule(const std::vector<unsigned char>& code)
-    {
-        VkShaderModuleCreateInfo createInfo = {};
-        createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-        createInfo.codeSize = code.size();
-
-        createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
-
-        VkShaderModule shaderModule;
-        if (vkCreateShaderModule(Instance->GetDevice()->GetInstanceHandle(), &createInfo, nullptr, &shaderModule) != VK_SUCCESS)
-        {
-            RE_CORE_ERROR("failed to create shader module!");
-        }
-
-        return shaderModule;
     }
 	
     void VulkanContext::CreateCommandBuffers()
@@ -196,10 +152,20 @@ namespace ReEngine
 		"Assets/Textures/head_normal.jpg",Instance->m_Device,cmd
 		);
     	
-    }
-	
-    void VulkanContext::createUniformBuffer()
-    {
+    	PipeShader = VulkanShader::Create(Instance->GetDevice(),true,&SHADER_VERT,&SHADER_FRAG,nullptr,nullptr,nullptr,nullptr);
+    	PipeSet = PipeShader->AllocateDescriptorSet();
+
+    	RingBuffer = CreateRef<VulkanDynamicBufferRing>();
+    	RingBuffer->OnCreate(Instance->GetDevice(),3,200 * 1024 * 1024);
+
+    	PipeSet->WriteBuffer("uboMVP",RingBuffer->GetSetDescriptor(sizeof(UniformBufferObject)));
+    	PipeSet->WriteBuffer("params",RingBuffer->GetSetDescriptor(sizeof(ParamBlock)));
+    	
+    	PipeSet->WriteImage("diffuseMap",TexDiffuse);
+    	PipeSet->WriteImage("normalMap",TexNomal);
+    	PipeSet->WriteImage("curvatureMap",TexPreIntegareted);
+    	PipeSet->WriteImage("preIntegratedMap",TexCurve);
+
     	ubo.model = glm::mat4(1.0f);
     	ubo.view = glm::mat4(1.0f);
     	ubo.proj = glm::mat4(1.0f);
@@ -213,9 +179,6 @@ namespace ReEngine
     	Param.lightDir = glm::vec3(1, 0, -1.0);
     	Param.lightDir = normalize(Param.lightDir);
     	Param.padding = 0.0;
-    	
-    	RingBuffer = CreateRef<VulkanDynamicBufferRing>();
-    	RingBuffer->OnCreate(Instance->GetDevice(),3,200 * 1024 * 1024);
     }
 	
     void VulkanContext::UpdateUniformBuffer(Timestep ts)
@@ -287,7 +250,8 @@ namespace ReEngine
         	{
         		auto BufferView = RingBuffer->AllocConstantBuffer(sizeof(UniformBufferObject),&ubo);
         		const uint32_t UniformOffset[2] = {(uint32_t)BufferView.offset,(uint32_t)ParamBufferView.offset};
-        		vkCmdBindDescriptorSets(CommandPool->m_CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 2, UniformOffset);
+        		
+        		vkCmdBindDescriptorSets(CommandPool->m_CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, PipeShader->pipelineLayout, 0, PipeSet->DescriptorSets.size(), PipeSet->DescriptorSets.data(), 2, UniformOffset);
         		
         		Model->Meshes[meshIndex]->BindDraw(CommandPool->m_CommandBuffers[i]);
         	}
@@ -364,92 +328,6 @@ namespace ReEngine
     	m_GUI->Update();
     	
     	return hovered;
-    }
-
-    void VulkanContext::CreateDescriptorPool()
-    {
-    	VkDescriptorPoolSize poolSizes[2];
-    	poolSizes[0].type            = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
-    	poolSizes[0].descriptorCount = 2;
-    	poolSizes[1].type            = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    	poolSizes[1].descriptorCount = 4;
-
-        VkDescriptorPoolCreateInfo poolInfo = {};
-        poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-        poolInfo.poolSizeCount = 2;
-        poolInfo.pPoolSizes = poolSizes;
-        poolInfo.maxSets = 1;
-
-        if (vkCreateDescriptorPool(Instance->GetDevice()->GetInstanceHandle(), &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS)
-        {
-            RE_CORE_ERROR("failed to create descriptor pool!");
-        }
-    	
-    	VkDescriptorSetAllocateInfo allocInfo;
-    	ZeroVulkanStruct(allocInfo, VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO);
-    	allocInfo.descriptorPool     = descriptorPool;
-    	allocInfo.descriptorSetCount = 1;
-    	allocInfo.pSetLayouts        = &descriptorSetLayout;
-    	VERIFYVULKANRESULT(vkAllocateDescriptorSets(Instance->GetDevice()->GetInstanceHandle(), &allocInfo, &descriptorSet));
-    }
-
-    void VulkanContext::CreateDescriptorSet()
-    {
-        VkWriteDescriptorSet descriptorWrite = {};
-		RingBuffer->SetDescriptorSet(0,sizeof(UniformBufferObject),descriptorSet);
-    	RingBuffer->SetDescriptorSet(1,sizeof(ParamBlock),descriptorSet);
-
-    	std::vector<Ref<VulkanTexture>> Textures =
-    	{
-    		TexDiffuse,TexNomal,TexCurve,TexPreIntegareted
-    	};
-
-    	for (int32 i = 0; i < 4; ++i)
-    	{
-    		ZeroVulkanStruct(descriptorWrite, VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
-    		descriptorWrite.dstSet          = descriptorSet;
-    		descriptorWrite.descriptorCount = 1;
-    		descriptorWrite.descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    		descriptorWrite.pBufferInfo     = nullptr;
-    		descriptorWrite.pImageInfo      = &(Textures[i]->DescriptorInfo);
-    		descriptorWrite.dstBinding      = 2 + i;
-    		vkUpdateDescriptorSets(Instance->GetDevice()->GetInstanceHandle(), 1, &descriptorWrite, 0, nullptr);
-    	}
-    }
-
-    void VulkanContext::CreateDescriptorSetLayout()
-    {
-        VkDescriptorSetLayoutBinding uboLayoutBinding[6] = {};
-        uboLayoutBinding[0].binding = 0;
-        uboLayoutBinding[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
-        uboLayoutBinding[0].descriptorCount = 1;
-        uboLayoutBinding[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-        uboLayoutBinding[0].pImmutableSamplers = nullptr; // Optional
-
-    	uboLayoutBinding[1].binding 			 = 1;
-    	uboLayoutBinding[1].descriptorType     = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
-    	uboLayoutBinding[1].descriptorCount    = 1;
-    	uboLayoutBinding[1].stageFlags 		 = VK_SHADER_STAGE_FRAGMENT_BIT;
-    	uboLayoutBinding[1].pImmutableSamplers = nullptr;
-
-    	for(int32 i = 0 ; i < 4 ;i++)
-    	{
-    		uboLayoutBinding[2 + i].binding = 2 + i;
-    		uboLayoutBinding[2 + i].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    		uboLayoutBinding[2 + i].descriptorCount    = 1;
-    		uboLayoutBinding[2 + i].stageFlags 		 = VK_SHADER_STAGE_FRAGMENT_BIT;
-    		uboLayoutBinding[2 + i].pImmutableSamplers = nullptr;
-    	}
-
-        VkDescriptorSetLayoutCreateInfo layoutInfo = {};
-        layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        layoutInfo.bindingCount = 6;
-        layoutInfo.pBindings = uboLayoutBinding;
-
-        if (vkCreateDescriptorSetLayout(Instance->GetDevice()->GetInstanceHandle(), &layoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS)
-        {
-            RE_CORE_ERROR("failed to create descriptor set layout!");
-        }
     }
 
 }

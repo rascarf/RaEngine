@@ -20,6 +20,7 @@ public:
     VkDescriptorBufferInfo AllocConstantBuffer(uint32_t size, void *pData);
     void OnBeginFrame();
     void SetDescriptorSet(int i, uint32_t size, VkDescriptorSet descriptorSet);
+    VkDescriptorBufferInfo* GetSetDescriptor(uint32_t size);
 
 private:
     Ref<VulkanDevice> m_Device = nullptr;
@@ -27,6 +28,8 @@ private:
     uint32_t m_MemTotalSize;
     RingWithTab m_Mem;
     char *m_pData = nullptr;
+
+    std::vector<VkDescriptorBufferInfo> BufferInfos;
 
 #ifdef USE_VMA
     VmaAllocation   m_bufferAlloc = VK_NULL_HANDLE;

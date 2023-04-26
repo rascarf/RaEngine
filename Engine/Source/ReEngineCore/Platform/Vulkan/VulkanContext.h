@@ -18,6 +18,7 @@
 #include "VulkanBuffers/VulkanFrameBuffer.h"
 #include "VulkanBuffers/VulkanIndexBuffer.h"
 #include "VulkanBuffers/VulkanVertexBuffer.h"
+#include "VulkanShader/VulkanShader.h"
 #include "VulkanUI/VulkanImGui.h"
 
 namespace ReEngine
@@ -63,15 +64,10 @@ namespace ReEngine
         Ref<VulkanCommandPool> CommandPool;
         Ref<VulkanFrameBuffer> FrameBuffer;
         Ref<VulkanPipeline> GraphicsPipeline;
-
-        VkDescriptorSetLayout descriptorSetLayout;
-        VkDescriptorPool descriptorPool;
-        VkDescriptorSet descriptorSet;
-        VkPipelineLayout pipelineLayout;
         
-        // Ref<VulkanBuffer> UniformBuffer;
-        // Ref<VulkanBuffer> ParamBuffer;
         Ref<VulkanDynamicBufferRing> RingBuffer;
+        Ref<VulkanShader> PipeShader;
+        Ref<VulkanDescriptorSet> PipeSet;
         
         Ref<VulkanModel> Model;
         Ref<VulkanTexture> TexDiffuse;
@@ -86,15 +82,9 @@ namespace ReEngine
         VulkanImGui* m_GUI;
         
         void CreateGraphicsPipeline();
-        VkShaderModule CreateShaderModule(const std::vector<unsigned char>& code);
         
         void CreateMeshBuffer();
-        void createUniformBuffer();
         void CreateCommandBuffers();
-
-        void CreateDescriptorSetLayout();
-        void CreateDescriptorPool();
-        void CreateDescriptorSet();
         void UpdateUniformBuffer(Timestep ts);
         
         void CommitCmd();

@@ -23,6 +23,7 @@ VkResult VulkanDynamicBufferRing::OnCreate(Ref<VulkanDevice> Device, uint32_t NU
 
 void VulkanDynamicBufferRing::OnDestroy()
 {
+    BufferInfos.clear();
     m_Mem.OnDestroy();
 }
 
@@ -82,4 +83,16 @@ void VulkanDynamicBufferRing::SetDescriptorSet(int BindingIndex, uint32_t size, 
     write.dstBinding = BindingIndex;
 
     vkUpdateDescriptorSets(m_Device->GetInstanceHandle(), 1, &write, 0, NULL);
+}
+
+VkDescriptorBufferInfo* VulkanDynamicBufferRing::GetSetDescriptor(uint32_t size)
+{
+    VkDescriptorBufferInfo out = {};
+    out.buffer = m_Buffer->Buffer;
+    out.offset = 0;
+    out.range = size;
+
+    BufferInfos.push_back(out);
+    
+    return &BufferInfos.back();
 }
