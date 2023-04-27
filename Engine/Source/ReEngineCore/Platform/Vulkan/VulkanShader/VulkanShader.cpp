@@ -116,6 +116,7 @@ void VulkanShader::ProcessShaderModule(Ref<VulkanShaderModule> ShaderModule)
     ShaderCreateInfo.stage = ShaderModule->mShaderStage;
     ShaderCreateInfo.module = ShaderModule->Handle;
     ShaderCreateInfo.pName = "main"; //TODO 这里思考下如何拓展
+    ShaderStageInfos.push_back(ShaderCreateInfo);
 
     spirv_cross::Compiler Compiler((uint32*)ShaderModule->Code->data(), ShaderModule->Code->size() / sizeof(uint32_t));
     spirv_cross::ShaderResources Resources = Compiler.get_shader_resources();

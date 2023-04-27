@@ -36,14 +36,14 @@ Ref<VulkanPipeline> VulkanPipeline::Create(Ref<VulkanDevice> VulkanDeviceRef, Vk
 		dynamicState.pDynamicStates    = dynamicStateEnables.data();
 
 		std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
-		// if (PipelineInfo.shader) //TODO 这里使用Shader反射
-		// {
-		// 	shaderStages = PipelineInfo.shader->shaderStageCreateInfos;
-		// }
-		// else
-		// {
+		if (PipelineInfo.Shader)
+		{
+			shaderStages = PipelineInfo.Shader->ShaderStageInfos;
+		}
+		else
+		{
 			PipelineInfo.FillShaderStages(shaderStages);
-		// }
+		}
 		
 		VkGraphicsPipelineCreateInfo pipelineCreateInfo;
 		ZeroVulkanStruct(pipelineCreateInfo, VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO);

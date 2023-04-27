@@ -211,14 +211,13 @@ public:
     }
     
 public:
-    typedef std::vector<VkImageView> ImageViews;
     VkDevice Device = VK_NULL_HANDLE;
 
     VkFramebuffer FrameBuffer;
     uint32 NumColorRenderTargets = 0;
     uint32 NumColorAttachments = 0;
 
-    ImageViews AttachmentTextureViews;
+    std::vector<VkImageView> AttachmentTextureViews;
     VkImage ColorRenderTargetImages[(int)ResLimit::MaxSimultaneousRenderTargets];
     VkImage DepthStencilRenderTargetImage = VK_NULL_HANDLE;
 

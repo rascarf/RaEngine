@@ -58,6 +58,8 @@ public:
 
 //------------------------------CPU------------------------------------
     bool dynamicUBO = false;
+
+    std::vector<VkPipelineShaderStageCreateInfo> ShaderStageInfos;
     
     //反射出来的所有的Set信息
     VulkanDescriptorSetLayoutsInfo     SetLayoutsInfo;

@@ -46,8 +46,7 @@ namespace ReEngine
 
     	m_GUI->Destroy();
     	Model.reset();
-
-
+    	
     	PipeShader.reset();
     	RingBuffer.reset();
     	
@@ -94,18 +93,14 @@ namespace ReEngine
     void VulkanContext::CreateGraphicsPipeline()
     {
     	VulkanPipelineInfo DefaultInfo;
-		DefaultInfo.VertShaderModule = PipeShader->vertShaderModule->Handle;
-    	DefaultInfo.FragShaderModule = PipeShader->fragShaderModule->Handle;
+		DefaultInfo.Shader = PipeShader;
     	
-    	auto VertexInputBinding = Model->GetInputBinding();
-    	auto AttributeInputBinding = Model->GetInputAttributes();
-
     	GraphicsPipeline = VulkanPipeline::Create(
 			Instance->GetDevice(),
 			CommandPool->m_PipelineCache,
 			DefaultInfo,
-			{VertexInputBinding},
-			AttributeInputBinding,
+			{Model->GetInputBinding()},
+			Model->GetInputAttributes(),
 			PipeShader->pipelineLayout,
 			FrameBuffer->m_RenderPass
     	);
@@ -255,23 +250,29 @@ namespace ReEngine
         		
         		Model->Meshes[meshIndex]->BindDraw(CommandPool->m_CommandBuffers[i]);
         	}
-        	
-        	m_GUI->BindDrawCmd(CommandPool->m_CommandBuffers[i],FrameBuffer->m_RenderPass);
-        	
+    		
             vkCmdEndRenderPass(CommandPool->m_CommandBuffers[i]);
 
+    		VkRenderPassBeginInfo UIrenderPassInfo = {};
+    		UIrenderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    		UIrenderPassInfo.renderPass = FrameBuffer->m_UIRenderPass;
+    		UIrenderPassInfo.framebuffer = FrameBuffer->m_UIFrameBuffers[i];
+    		UIrenderPassInfo.renderArea.offset = { 0, 0 };
+    		UIrenderPassInfo.renderArea.extent = VkExtent2D(Instance->GetSwapChain()->GetWidth(),Instance->GetSwapChain()->GetHeight());
+    		
+    		vkCmdBeginRenderPass(CommandPool->m_CommandBuffers[i], &UIrenderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+    		
+        	m_GUI->BindDrawCmd(CommandPool->m_CommandBuffers[i],FrameBuffer->m_UIRenderPass);
+    		
+    		vkCmdEndRenderPass(CommandPool->m_CommandBuffers[i]);
+    		
             if (vkEndCommandBuffer(CommandPool->m_CommandBuffers[i]) != VK_SUCCESS)
             {
                 throw std::runtime_error("failed to record command buffer!");
             }
         }
     }
-
-    void VulkanContext::OnEvent(std::shared_ptr<Event> e)
-    {
-    	m_GUI->OnEvent(e);
-    }
-
+	
     void VulkanContext::CreateGUI()
     {
     	m_GUI = new VulkanImGui();

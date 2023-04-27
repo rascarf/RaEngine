@@ -88,7 +88,7 @@ namespace ReEngine
         void UpdateUniformBuffer(Timestep ts);
         
         void CommitCmd();
-        void OnEvent(std::shared_ptr<Event> e);
+        
         void CreateGUI();
         void DestroyGUI();
         bool UpdateUI(float time,float delta);

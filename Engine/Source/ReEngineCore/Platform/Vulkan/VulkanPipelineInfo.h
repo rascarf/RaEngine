@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include "VulkanCommonDefine.h"
 #include "VulkanDevice.h"
+#include "VulkanShader/VulkanShader.h"
 
 struct VulkanPipelineInfo
 {
@@ -18,8 +19,7 @@ struct VulkanPipelineInfo
     VkShaderModule	GeomShaderModule = VK_NULL_HANDLE;
 
     //TODO Raytracing Shader
-    // DVKShader*		shader  = nullptr;
-
+	Ref<VulkanShader> Shader;
     int32 SubPass = 0;
     int32 ColorAttachMenst = 1;
     
