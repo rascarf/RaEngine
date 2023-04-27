@@ -20,9 +20,6 @@ namespace ReEngine
     {
         m_Window = Window::CreateReWindow(m_WindowProperty);
         
-        // m_UI = std::make_shared<ImGuiLayer>(ImGuiLayer()); 
-        // PushOverlay(m_UI);
-
         m_Window->SetEventCallback([this](std::shared_ptr<Event> e)
         {
                 OnEvent(e);
@@ -37,25 +34,34 @@ namespace ReEngine
             Timestep Ts = CurrentTime - m_LastTime;
             m_LastTime = CurrentTime;
 
+            m_Window->PollEvent();
+            
             //更新数据
+            auto Context = Renderer::GetContext().get();
+            auto VulkanContext = dynamic_cast<ReEngine::VulkanContext*>(Context);
+            
+            VulkanContext->Acquire();
+            
             for (auto it = mLayerStack.end(); it != mLayerStack.begin(); )
                 (*(--it))->OnUpdate(Ts);
-
-            // for(auto it : mLayerStack)
-            // {
-            //     it->OnUpdate(Ts);
-            // }
-
-            //把所有层需要的渲染都提交了
-            // m_UI->BeginUIRender();
-            // for(auto it : mLayerStack)
-            // {
-            //     it->OnUIRender(Ts);
-            // }
-            // m_UI->EndUIRender();
-
+            
+            VulkanContext->BeginUI();
+            for (auto it = mLayerStack.end(); it != mLayerStack.begin(); )
+                (*(--it))->OnUIRender(Ts);
+            VulkanContext->EndUI();
+            
+            for (auto it = mLayerStack.end(); it != mLayerStack.begin(); )
+                (*(--it))->OnRender();
+            
             //present
+            VulkanContext->SwapBuffers(Ts);
+            
             m_Window->Update(Ts);
+        }
+
+        for (auto it = mLayerStack.end(); it != mLayerStack.begin(); )
+        {
+            (*(--it))->OnDetach();
         }
     }
 
@@ -81,8 +87,6 @@ namespace ReEngine
             if (e->Handled)
                 break;
         }
-
-        
     }
 
     void Application::PushLayer(Ref<Layer> InLayer)

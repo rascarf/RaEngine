@@ -20,6 +20,7 @@ namespace ReEngine
         virtual unsigned GetWindowHeight() const override { return mData.Height; }
         virtual unsigned GetWindowWidth() const override { return mData.Width; };
         virtual void SetEventCallback(const EventCallBackFunc CallBack) override;
+        virtual void PollEvent() override;
         inline virtual void* GetNativeWindow() override { return m_Window; }
         [[nodiscard]]virtual Ref<GraphicsContext> GetGraphicsContext() const override{return m_Context;}
         [[nodiscard]]inline virtual float GetTime() override{return glfwGetTime();}

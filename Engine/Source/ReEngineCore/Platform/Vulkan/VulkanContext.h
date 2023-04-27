@@ -23,75 +23,39 @@
 
 namespace ReEngine
 {
-    struct UniformBufferObject 
-    {
-        glm::mat4 model;
-        glm::mat4 view;
-        glm::mat4 proj;
-    };
-
-    struct ParamBlock
-    {
-        glm::vec3 lightDir;
-        float curvature;
-
-        glm::vec3 lightColor;
-        float exposure;
-
-        glm::vec2 curvatureScaleBias;
-        float blurredLevel;
-        float padding;
-    };
-    
     class VulkanContext : public GraphicsContext
     {
     public:
-        UniformBufferObject ubo;
-        ParamBlock Param;
         
         VulkanContext(GLFWwindow* windowHandle,const WindowProperty* WinProperty);
         virtual ~VulkanContext()override{}
 
         virtual void Init() override; 
         virtual void Close() override;
+        virtual void Acquire();
         virtual void SwapBuffers(Timestep ts) override;
         virtual void RecreateSwapChain();
+        virtual VkCommandBuffer& GetCommandList();
+        virtual int32 GetCurrtIndex();
+        virtual void BeginUI();
+        virtual void EndUI();
         [[nodiscard]]Ref<VulkanInstance> GetVulkanInstance(){ return Instance;}
         [[nodiscard]]GLFWwindow* GetGLFWwindow(){return m_WindowHandle;}
         
-    private:
+    public:
         Ref<VulkanInstance> Instance;
         Ref<VulkanCommandPool> CommandPool;
-        Ref<VulkanFrameBuffer> FrameBuffer;
-        Ref<VulkanPipeline> GraphicsPipeline;
-        
-        Ref<VulkanDynamicBufferRing> RingBuffer;
-        Ref<VulkanShader> PipeShader;
-        Ref<VulkanDescriptorSet> PipeSet;
-        
-        Ref<VulkanModel> Model;
-        Ref<VulkanTexture> TexDiffuse;
-        Ref<VulkanTexture> TexNomal;
-        Ref<VulkanTexture> TexPreIntegareted;
-        Ref<VulkanTexture> TexCurve;
-        Ref<EditorCamera> Camera;
         
         GLFWwindow* m_WindowHandle;
         const WindowProperty* WinProperty;
 
         VulkanImGui* m_GUI;
         
-        void CreateGraphicsPipeline();
-        
-        void CreateMeshBuffer();
         void CreateCommandBuffers();
-        void UpdateUniformBuffer(Timestep ts);
-        
-        void CommitCmd();
         
         void CreateGUI();
         void DestroyGUI();
-        bool UpdateUI(float time,float delta);
+
     };
 }
 

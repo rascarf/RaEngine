@@ -118,6 +118,7 @@ private:
     
 private:
     friend class VulkanInstance;
+    friend class VulkanContext;
 
 private:
     VkDevice                                m_Device;

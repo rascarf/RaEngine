@@ -23,20 +23,14 @@ namespace ReEngine
     {
     	Instance = CreateRef<VulkanInstance>(windowHandle,InWindowProperty);
     	CommandPool = CreateRef<VulkanCommandPool>();
-    	FrameBuffer = CreateRef<VulkanFrameBuffer>(InWindowProperty->Width,InWindowProperty->Height,InWindowProperty->Title.c_str());
-    	Camera = CreateRef<EditorCamera>();
     }
 
     void VulkanContext::Init()
     {
         Instance->Init();
     	CommandPool->Init(this);
-    	FrameBuffer->Init(this);
-    	
-    	CreateGUI();
-		CreateMeshBuffer();
-        CreateGraphicsPipeline();
     	CreateCommandBuffers();
+    	CreateGUI();
     }
 
     void VulkanContext::Close()
@@ -45,65 +39,70 @@ namespace ReEngine
         vkDeviceWaitIdle(Device);
 
     	m_GUI->Destroy();
-    	Model.reset();
-    	
-    	PipeShader.reset();
-    	RingBuffer.reset();
-    	
-    	TexCurve.reset();
-    	TexDiffuse.reset();
-    	TexNomal.reset();
-    	TexPreIntegareted.reset();
-    	GraphicsPipeline.reset();
-    	
-    	FrameBuffer->ShutDown();
+
     	CommandPool->ShutDown();
         Instance->Shutdown();
     }
 
-    void VulkanContext::SwapBuffers(Timestep ts)
+    void VulkanContext::Acquire()
     {
-  		const int32 bufferIndex = CommandPool->AcquireBackbufferIndex();
+    	const int32 bufferIndex = CommandPool->AcquireBackbufferIndex();
     	if (bufferIndex < 0 ) return;
 
-    	RingBuffer->OnBeginFrame();
-    	UpdateUI(ts.GetMilliseconds(),ts.GetSeconds());
-    	UpdateUniformBuffer(ts);
+    	//分配当前帧的CmdList
+    	VkCommandBufferAllocateInfo allocInfo = {};
+    	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    	allocInfo.commandPool = CommandPool->m_CommandPool;
+    	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    	allocInfo.commandBufferCount = 1;
+    
+    	if (vkAllocateCommandBuffers(Instance->GetDevice()->GetInstanceHandle(), &allocInfo, &CommandPool->m_CommandBuffers[GetCurrtIndex()]) != VK_SUCCESS)
+    	{
+    		RE_CORE_ERROR("Failed to allocate command buffers!");
+    	}
+    }
+
+    void VulkanContext::SwapBuffers(Timestep ts)
+    {
+    	if (vkEndCommandBuffer(GetCommandList()) != VK_SUCCESS)
+    	{
+    		throw std::runtime_error("failed to record command buffer!");
+    	}
     	
-    	CommitCmd();
-    	
-		CommandPool->Present(bufferIndex < 0 ? 0 : bufferIndex);
+		CommandPool->Present(GetCurrtIndex() < 0 ? 0 : GetCurrtIndex());
     }
 
     void VulkanContext::RecreateSwapChain()
     {
-    	const auto Device = Instance->GetDevice()->GetInstanceHandle();
-    	
-    	FrameBuffer->ShutDown();
     	CommandPool->ShutDown();
     	
     	Instance->RecreateSwapChain();
-    	FrameBuffer->Init(this);
     	CommandPool->Init(this);
     	
-    	CreateGraphicsPipeline();
     	CreateCommandBuffers();
     }
 
-    void VulkanContext::CreateGraphicsPipeline()
+    VkCommandBuffer& VulkanContext::GetCommandList()
     {
-    	VulkanPipelineInfo DefaultInfo;
-		DefaultInfo.Shader = PipeShader;
-    	
-    	GraphicsPipeline = VulkanPipeline::Create(
-			Instance->GetDevice(),
-			CommandPool->m_PipelineCache,
-			DefaultInfo,
-			{Model->GetInputBinding()},
-			Model->GetInputAttributes(),
-			PipeShader->pipelineLayout,
-			FrameBuffer->m_RenderPass
-    	);
+    	return CommandPool->m_CommandBuffers[GetCurrtIndex()];
+    }
+
+    int32 VulkanContext::GetCurrtIndex()
+    {
+    	return CommandPool->m_FrameIndex;
+    }
+
+    void VulkanContext::BeginUI()
+    {
+    	m_GUI->StartFrame();
+    }
+
+    void VulkanContext::EndUI()
+    {
+    	m_GUI->EndFrame();
+
+    	//获取渲染数据
+    	m_GUI->Update();
     }
 	
     void VulkanContext::CreateCommandBuffers()
@@ -122,157 +121,6 @@ namespace ReEngine
         }
     }
 	
-    void VulkanContext::CreateMeshBuffer()
-    {
-    	auto cmd = VulkanCommandBuffer::Create(Instance->GetDevice(),CommandPool->m_CommandPool);
-    	
-		Model = VulkanModel::LoadFromFile("Assets/Mesh/head.obj",
-			Instance->m_Device,
-			cmd,
-			{ VertexAttribute::VA_Position, VertexAttribute::VA_UV0, VertexAttribute::VA_Normal, VertexAttribute::VA_Tangent});
-
-		TexDiffuse = VulkanTexture::Create2D(
-		"Assets/Textures/head_diffuse.jpg",Instance->m_Device,cmd
-		);
-    	
-    	TexPreIntegareted = VulkanTexture::Create2D(
-"Assets/Textures/preIntegratedLUT.png",Instance->m_Device,cmd
-		);
-    	
-    	TexCurve = VulkanTexture::Create2D(
-"Assets/Textures/curvatureLUT.png",Instance->m_Device,cmd
-		);
-
-    	TexNomal = VulkanTexture::Create2D(
-		"Assets/Textures/head_normal.jpg",Instance->m_Device,cmd
-		);
-    	
-    	PipeShader = VulkanShader::Create(Instance->GetDevice(),true,&SHADER_VERT,&SHADER_FRAG,nullptr,nullptr,nullptr,nullptr);
-    	PipeSet = PipeShader->AllocateDescriptorSet();
-
-    	RingBuffer = CreateRef<VulkanDynamicBufferRing>();
-    	RingBuffer->OnCreate(Instance->GetDevice(),3,200 * 1024 * 1024);
-
-    	PipeSet->WriteBuffer("uboMVP",RingBuffer->GetSetDescriptor(sizeof(UniformBufferObject)));
-    	PipeSet->WriteBuffer("params",RingBuffer->GetSetDescriptor(sizeof(ParamBlock)));
-    	
-    	PipeSet->WriteImage("diffuseMap",TexDiffuse);
-    	PipeSet->WriteImage("normalMap",TexNomal);
-    	PipeSet->WriteImage("curvatureMap",TexPreIntegareted);
-    	PipeSet->WriteImage("preIntegratedMap",TexCurve);
-
-    	ubo.model = glm::mat4(1.0f);
-    	ubo.view = glm::mat4(1.0f);
-    	ubo.proj = glm::mat4(1.0f);
-
-    	Param.blurredLevel = 2.0;
-    	Param.curvature = 3.5;
-    	Param.curvatureScaleBias.x = 0.101;
-    	Param.curvatureScaleBias.y = -0.001;
-    	Param.exposure = 1.0;
-    	Param.lightColor = glm::vec3(240.0f / 255.0f, 200.0f / 255.0f, 166.0f / 255.0f);
-    	Param.lightDir = glm::vec3(1, 0, -1.0);
-    	Param.lightDir = normalize(Param.lightDir);
-    	Param.padding = 0.0;
-    }
-	
-    void VulkanContext::UpdateUniformBuffer(Timestep ts)
-    {
-    	Camera->OnUpdate(ts);
-    	ubo.model = glm::rotate(ubo.model, ts.GetSeconds() *  glm::radians(45.0f), glm::vec3(0.0f, 1.0f, 0.0f));;
-    	ubo.view = Camera->GetViewMatrix();
-    	ubo.proj = Camera->GetProjection();
-    }
-
-    void VulkanContext::CommitCmd()
-    {
-    	int i = CommandPool->m_FrameIndex;
-        {
-    		VkCommandBufferAllocateInfo allocInfo = {};
-    		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    		allocInfo.commandPool = CommandPool->m_CommandPool;
-    		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    		allocInfo.commandBufferCount = 1;
-    	
-    		if (vkAllocateCommandBuffers(Instance->GetDevice()->GetInstanceHandle(), &allocInfo, &CommandPool->m_CommandBuffers[i]) != VK_SUCCESS)
-    		{
-    			RE_CORE_ERROR("Failed to allocate command buffers!");
-    		}
-    		
-            VkCommandBufferBeginInfo beginInfo = {};
-            beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-            beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
-
-            vkBeginCommandBuffer(CommandPool->m_CommandBuffers[i], &beginInfo);
-
-            VkRenderPassBeginInfo renderPassInfo = {};
-            renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-            renderPassInfo.renderPass = FrameBuffer->m_RenderPass;
-            renderPassInfo.framebuffer = FrameBuffer->m_FrameBuffers[i];
-            renderPassInfo.renderArea.offset = { 0, 0 };
-            renderPassInfo.renderArea.extent = VkExtent2D(Instance->GetSwapChain()->GetWidth(),Instance->GetSwapChain()->GetHeight());
-
-        	VkClearValue clearValues[2];
-        	clearValues[0].color        = {{0.2f, 0.2f, 0.2f, 1.0f}};
-        	clearValues[1].depthStencil = { 1.0f, 0 };
-        	
-            renderPassInfo.clearValueCount = 2;
-            renderPassInfo.pClearValues = clearValues;
-        	
-            vkCmdBeginRenderPass(CommandPool->m_CommandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-        	VkViewport viewport = {};
-        	viewport.x        = 0;
-        	viewport.y        = WinProperty->Height;
-        	viewport.width    = WinProperty->Width;
-        	viewport.height   = -(float)WinProperty->Height;    // flip y axis
-        	viewport.minDepth = 0.0f;
-        	viewport.maxDepth = 1.0f;
-		
-        	VkRect2D scissor = {};
-        	scissor.extent.width  = WinProperty->Width;
-        	scissor.extent.height = WinProperty->Height;
-        	scissor.offset.x      = 0;
-        	scissor.offset.y      = 0;
-
-        	vkCmdSetViewport(CommandPool->m_CommandBuffers[i], 0, 1, &viewport);
-        	vkCmdSetScissor(CommandPool->m_CommandBuffers[i], 0, 1, &scissor);
-            vkCmdBindPipeline(CommandPool->m_CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, GraphicsPipeline->Pipeline);
-
-        	const auto ParamBufferView =  RingBuffer->AllocConstantBuffer(sizeof(ParamBlock),&Param);
-        	
-        	for (int32 meshIndex = 0; meshIndex < Model->Meshes.size(); ++meshIndex)
-        	{
-        		auto BufferView = RingBuffer->AllocConstantBuffer(sizeof(UniformBufferObject),&ubo);
-        		const uint32_t UniformOffset[2] = {(uint32_t)BufferView.offset,(uint32_t)ParamBufferView.offset};
-        		
-        		vkCmdBindDescriptorSets(CommandPool->m_CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, PipeShader->pipelineLayout, 0, PipeSet->DescriptorSets.size(), PipeSet->DescriptorSets.data(), 2, UniformOffset);
-        		
-        		Model->Meshes[meshIndex]->BindDraw(CommandPool->m_CommandBuffers[i]);
-        	}
-    		
-            vkCmdEndRenderPass(CommandPool->m_CommandBuffers[i]);
-
-    		VkRenderPassBeginInfo UIrenderPassInfo = {};
-    		UIrenderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    		UIrenderPassInfo.renderPass = FrameBuffer->m_UIRenderPass;
-    		UIrenderPassInfo.framebuffer = FrameBuffer->m_UIFrameBuffers[i];
-    		UIrenderPassInfo.renderArea.offset = { 0, 0 };
-    		UIrenderPassInfo.renderArea.extent = VkExtent2D(Instance->GetSwapChain()->GetWidth(),Instance->GetSwapChain()->GetHeight());
-    		
-    		vkCmdBeginRenderPass(CommandPool->m_CommandBuffers[i], &UIrenderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-    		
-        	m_GUI->BindDrawCmd(CommandPool->m_CommandBuffers[i],FrameBuffer->m_UIRenderPass);
-    		
-    		vkCmdEndRenderPass(CommandPool->m_CommandBuffers[i]);
-    		
-            if (vkEndCommandBuffer(CommandPool->m_CommandBuffers[i]) != VK_SUCCESS)
-            {
-                throw std::runtime_error("failed to record command buffer!");
-            }
-        }
-    }
-	
     void VulkanContext::CreateGUI()
     {
     	m_GUI = new VulkanImGui();
@@ -284,52 +132,5 @@ namespace ReEngine
     	m_GUI->Destroy();
     	delete m_GUI;
     }
-
-    bool VulkanContext::UpdateUI(float time, float delta)
-    {
-    	m_GUI->StartFrame();
-	    {
-    		ImGui::SetNextWindowPos(ImVec2(0, 0));
-    		ImGui::Begin("Texture", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
-    		ImGui::Text("SSS Demo");
-
-    		for (int32 i = 0; i < Model->Meshes.size(); ++i)
-    		{
-    			Ref<VulkanMesh> mesh = Model->Meshes[i];
-    			ImGui::Text("%-20s Tri:%d", mesh->LinkNode.lock()->name.c_str(), mesh->TriangleCount);
-    		}
-
-    		ImGui::SliderFloat("Curvature", &(Param.curvature),       0.0f, 10.0f);
-    		ImGui::SliderFloat2("CurvatureBias", (float*)&(Param.curvatureScaleBias), 0.0f, 1.0f);
-
-    		ImGui::SliderFloat("BlurredLevel", &(Param.blurredLevel), 0.0f, 12.0f);
-    		ImGui::SliderFloat("Exposure", &(Param.exposure),         0.0f, 10.0f);
-
-    		ImGui::SliderFloat3("LightDirection", (float*)&(Param.lightDir), -10.0f, 10.0f);
-    		ImGui::ColorEdit3("LightColor", (float*)&(Param.lightColor));
-
-    		ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-
-    		BoundingBox Box = Model->RootNode->GetBounds();
-    		glm::vec3 boundSize   = Box.Max - Box.Min;
-    		glm::vec3 boundCenter = Box.Min + boundSize * 0.5f;
-    		ImGui::InputFloat3("Mesh", &(boundCenter.r));
-    		
-    		auto CameraPostion = Camera->GetPosition();
-    		ImGui::InputFloat3("CameraPosition", &(CameraPostion.r));
-    		
-    		ImGui::End();
-	    }
-
-    	bool hovered = ImGui::IsAnyItemHovered();
-    	
-    	m_GUI->EndFrame();
-
-    	//获取渲染数据
-    	m_GUI->Update();
-    	
-    	return hovered;
-    }
-
 }
 

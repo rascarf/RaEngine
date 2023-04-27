@@ -39,8 +39,6 @@ namespace ReEngine
         LayerStack mLayerStack;
         bool mRunning = true;
         float m_LastTime;
-        
-        // Ref<ImGuiLayer> m_UI;
 
     private:   
         friend void AppInit(Application& app);

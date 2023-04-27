@@ -25,10 +25,13 @@ namespace ReEngine
     {
     }
 
-    void GLWindow::Update(Timestep ts)
+    void GLWindow::PollEvent()
     {
         glfwPollEvents();
-        m_Context->SwapBuffers(ts);
+    }
+
+    void GLWindow::Update(Timestep ts)
+    {
         glfwSetInputMode(m_Window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
     }
 
