@@ -1,64 +1,19 @@
 ﻿#include "SandBoxLayer.h"
-
+#include "imgui.h"
+#include "ReEngine.h"
+#include "glm/ext/matrix_clip_space.hpp"
+#include "Platform/Vulkan/VulkanContext.h"
 #include <Shader_frag.h>
 #include <Shader_vert.h>
 
-#include "imgui.h"
-#include "ReEngine.h"
-#include "FrameWork/Scene.h"
-#include "FrameWork/Component/CameraComponent.h"
-#include "FrameWork/Component/SpriteRenderComponent.h"
-#include "glm/ext/matrix_clip_space.hpp"
-#include "FrameWork/SceneSerialization.h"
-#include "Renderer/Renderer2D.h"
-#include "Platform/Vulkan/VulkanContext.h"
 
-
-SandBoxLayer::SandBoxLayer():Layer("SandBoxLayer")
+SandBoxLayer::SandBoxLayer()
 {
+	
 }
 
 SandBoxLayer::~SandBoxLayer()
 {
-}
-
-void SandBoxLayer::OnAttach()
-{
-	auto Context = Renderer::GetContext().get();
-	VkContext = dynamic_cast<ReEngine::VulkanContext*>(Context);
-	
-	FrameBuffer = CreateRef<VulkanBackBuffer>(VkContext->WinProperty->Width,VkContext->WinProperty->Height,VkContext->WinProperty->Title.c_str());
-	Camera = CreateRef<EditorCamera>();
-
-	FrameBuffer->Init(VkContext);
-	CreateMeshBuffer();
-	CreateGraphicsPipeline();
-}
-
-void SandBoxLayer::OnDetach()
-{
-	Model.reset();
-    	
-	PipeShader.reset();
-	RingBuffer.reset();
-    	
-	TexCurve.reset();
-	TexDiffuse.reset();
-	TexNomal.reset();
-	TexPreIntegareted.reset();
-	GraphicsPipeline.reset();
-    	
-	FrameBuffer->ShutDown();
-}
-
-void SandBoxLayer::OnEvent(std::shared_ptr<ReEngine::Event> e)
-{
-	if(e->GetEventType() == ReEngine::EventType::WindowResize)
-	{
-		FrameBuffer->ShutDown();
-		FrameBuffer->Init(VkContext);
-		CreateGraphicsPipeline();
-	}
 }
 
 void SandBoxLayer::OnUpdate(ReEngine::Timestep ts)
@@ -162,6 +117,34 @@ void SandBoxLayer::OnUIRender(ReEngine::Timestep ts)
     		
 		ImGui::End();
 	}
+}
+
+void SandBoxLayer::OnChangeWindowSize(std::shared_ptr<ReEngine::Event> e)
+{
+	CreateGraphicsPipeline();
+}
+
+void SandBoxLayer::OnInit()
+{
+	Camera = CreateRef<EditorCamera>();
+	CreateMeshBuffer();
+	CreateGraphicsPipeline();
+}
+
+void SandBoxLayer::OnDeInit()
+{
+	Model.reset();
+    	
+	PipeShader.reset();
+	RingBuffer.reset();
+    	
+	TexCurve.reset();
+	TexDiffuse.reset();
+	TexNomal.reset();
+	TexPreIntegareted.reset();
+	GraphicsPipeline.reset();
+    	
+	FrameBuffer->ShutDown();
 }
 
 void SandBoxLayer::CreateGraphicsPipeline()

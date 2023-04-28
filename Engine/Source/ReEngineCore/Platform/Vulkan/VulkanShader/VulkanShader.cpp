@@ -109,8 +109,6 @@ void VulkanShader::ProcessShaderModule(Ref<VulkanShaderModule> ShaderModule)
         return;
     }
 
-    RE_CORE_INFO("Reflection Generated From Shader");
-
     VkPipelineShaderStageCreateInfo ShaderCreateInfo;
     ZeroVulkanStruct(ShaderCreateInfo, VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO);
     ShaderCreateInfo.stage = ShaderModule->mShaderStage;
@@ -127,8 +125,6 @@ void VulkanShader::ProcessShaderModule(Ref<VulkanShaderModule> ShaderModule)
     ProcessStorageImages(Compiler, Resources, ShaderModule->mShaderStage);
     ProcessInput(Compiler, Resources, ShaderModule->mShaderStage);
     ProcessStorageBuffers(Compiler, Resources, ShaderModule->mShaderStage);
-
-    RE_CORE_INFO("Reflection Done!");
 }
 
 void VulkanShader::ProcessAttachment(spirv_cross::Compiler& compiler, spirv_cross::ShaderResources& resources,VkPipelineStageFlags stageFlags)

@@ -5,6 +5,7 @@
 #include "assimp/postprocess.h"
 #include "assimp/scene.h"
 #include "assimp/code/glTF2/glTF2Importer.h"
+#include "glm/ext/matrix_transform.hpp"
 #include "Resource/AssetManager/AssetManager.h"
 
 using namespace std;
@@ -91,7 +92,49 @@ Ref<VulkanModel> VulkanModel::LoadFromFile(const std::string& filename, Ref<Vulk
 
 Ref<VulkanModel> VulkanModel::Create(std::shared_ptr<VulkanDevice> vulkanDevice, Ref<VulkanCommandBuffer> cmdBuffer,const std::vector<float>& vertices, const std::vector<uint16>& indices,const std::vector<VertexAttribute>& attributes)
 {
-    return nullptr;
+    Ref<VulkanModel> model   = CreateRef<VulkanModel>();
+    model->Device     = vulkanDevice;
+    model->Attributes = attributes;
+    model->CmdBuffer  = cmdBuffer;
+
+    int32 stride = 0;
+    for (int32 i = 0; i < attributes.size(); ++i)
+    {
+        stride += VertexAttributeToSize(attributes[i]);
+    }
+
+    Ref<VulkanPrimitive> primitive = CreateRef<VulkanPrimitive>();
+    primitive->vertices     = vertices;
+    primitive->indices      = indices;
+    primitive->vertexCount  = (int32)vertices.size() / stride * 4;
+
+    if (cmdBuffer)
+    {
+        if (vertices.size() > 0)
+        {
+            primitive->VertexBuffer = VulkanVertexBuffer::Create(vulkanDevice, cmdBuffer, primitive->vertices, attributes);
+        }
+        if (indices.size() > 0)
+        {
+            primitive->IndexBuffer = VulkanIndexBuffer::Create(vulkanDevice, cmdBuffer, primitive->indices);
+        }
+    }
+
+    Ref<VulkanMesh> mesh = CreateRef<VulkanMesh>();
+    mesh->m_Primitives.push_back(primitive);
+    mesh->m_BoundingBox.Min = glm::vec3(-1.0f, -1.0f, 0.0f);
+    mesh->m_BoundingBox.Max = glm::vec3(1.0f, 1.0f, 0.0f);
+    
+    Ref<VulkanMeshNode> rootNode = CreateRef<VulkanMeshNode>();
+    rootNode->name = "RootNode";
+    rootNode->Meshes.push_back(mesh);
+    rootNode->LocalMatrix = glm::identity<glm::mat4>();
+    mesh->LinkNode = rootNode;
+
+    model->RootNode = rootNode;
+    model->Meshes.push_back(mesh);
+
+    return model;
 }
 
 Ref<VulkanMeshNode> VulkanModel::LoadNode(const aiNode* Innode, const aiScene* Inscene)

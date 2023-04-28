@@ -191,7 +191,6 @@ public:
     VkPhysicalDeviceFeatures2*  physicalDeviceFeatures = nullptr;
 
 public:
-
     int32                       m_Width;
     int32                       m_Height;
     std::string                 m_Title;
