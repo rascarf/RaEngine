@@ -96,6 +96,135 @@ Ref<VulkanTexture> VulkanTexture::CreateDepthStencil(int32 width, int32 height,s
     return texture;
 }
 
+Ref<VulkanTexture> VulkanTexture::Create2D(Ref<VulkanDevice> vulkanDevice,Ref<VulkanCommandBuffer> cmdBuffer, VkFormat format, VkImageAspectFlags aspect, int32 width, int32 height,VkImageUsageFlags usage, VkSampleCountFlagBits sampleCount, ImageLayoutBarrier imageLayout)
+{
+    VkDevice device = vulkanDevice->GetInstanceHandle();
+
+    uint32 memoryTypeIndex = 0;
+    VkMemoryRequirements memReqs = {};
+    VkMemoryAllocateInfo memAllocInfo;
+    ZeroVulkanStruct(memAllocInfo, VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO);
+
+    int32 mipLevels = 1;
+
+    // image info
+    VkImage                         image = VK_NULL_HANDLE;
+    VkDeviceMemory                  imageMemory = VK_NULL_HANDLE;
+    VkImageView                     imageView = VK_NULL_HANDLE;
+    VkSampler                       imageSampler = VK_NULL_HANDLE;
+    VkDescriptorImageInfo           descriptorInfo = {};
+
+    // 创建image
+    VkImageCreateInfo imageCreateInfo;
+    ZeroVulkanStruct(imageCreateInfo, VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO);
+    imageCreateInfo.imageType       = VK_IMAGE_TYPE_2D;
+    imageCreateInfo.format          = format;
+    imageCreateInfo.mipLevels       = mipLevels;
+    imageCreateInfo.arrayLayers     = 1;
+    imageCreateInfo.samples         = sampleCount;
+    imageCreateInfo.tiling          = VK_IMAGE_TILING_OPTIMAL;
+    imageCreateInfo.sharingMode     = VK_SHARING_MODE_EXCLUSIVE;
+    imageCreateInfo.initialLayout   = VK_IMAGE_LAYOUT_UNDEFINED;
+    imageCreateInfo.extent          = { (uint32_t)width, (uint32_t)height, (uint32_t)1 };
+    imageCreateInfo.usage           = usage;
+    VERIFYVULKANRESULT(vkCreateImage(device, &imageCreateInfo, VULKAN_CPU_ALLOCATOR, &image));
+
+    // bind image buffer
+    vkGetImageMemoryRequirements(device, image, &memReqs);
+    vulkanDevice->GetMemoryManager().GetMemoryTypeFromProperties(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &memoryTypeIndex);
+    memAllocInfo.allocationSize  = memReqs.size;
+    memAllocInfo.memoryTypeIndex = memoryTypeIndex;
+    VERIFYVULKANRESULT(vkAllocateMemory(device, &memAllocInfo, VULKAN_CPU_ALLOCATOR, &imageMemory));
+    VERIFYVULKANRESULT(vkBindImageMemory(device, image, imageMemory, 0));
+
+    VkSamplerCreateInfo samplerInfo;
+    ZeroVulkanStruct(samplerInfo, VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO);
+    samplerInfo.magFilter        = VK_FILTER_LINEAR;
+    samplerInfo.minFilter        = VK_FILTER_LINEAR;
+    samplerInfo.mipmapMode       = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+    samplerInfo.addressModeU     = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerInfo.addressModeV     = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerInfo.addressModeW     = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerInfo.compareOp        = VK_COMPARE_OP_NEVER;
+    samplerInfo.borderColor      = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+    samplerInfo.maxAnisotropy    = 1.0;
+    samplerInfo.anisotropyEnable = VK_FALSE;
+    samplerInfo.maxLod           = (float)mipLevels;
+    samplerInfo.minLod           = 0.0f;
+    VERIFYVULKANRESULT(vkCreateSampler(device, &samplerInfo, VULKAN_CPU_ALLOCATOR, &imageSampler));
+
+    VkImageViewCreateInfo viewInfo;
+    ZeroVulkanStruct(viewInfo, VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO);
+    viewInfo.image      = image;
+    viewInfo.viewType   = VK_IMAGE_VIEW_TYPE_2D;
+    viewInfo.format     = format;
+    viewInfo.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
+    viewInfo.subresourceRange.aspectMask     = aspect;
+    viewInfo.subresourceRange.layerCount     = 1;
+    viewInfo.subresourceRange.levelCount     = mipLevels;
+    viewInfo.subresourceRange.baseMipLevel   = 0;
+    viewInfo.subresourceRange.baseArrayLayer = 0;
+    VERIFYVULKANRESULT(vkCreateImageView(device, &viewInfo, VULKAN_CPU_ALLOCATOR, &imageView));
+
+    if (cmdBuffer != nullptr && imageLayout != ImageLayoutBarrier::Undefined)
+    {
+        VkImageSubresourceRange subresourceRange = {};
+        subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+        subresourceRange.levelCount     = mipLevels;
+        subresourceRange.layerCount     = 1;
+        subresourceRange.baseArrayLayer = 0;
+        subresourceRange.baseMipLevel   = 0;
+
+        cmdBuffer->Begin();
+        ImagePipelineBarrier(cmdBuffer->CmdBuffer, image, ImageLayoutBarrier::Undefined, imageLayout, subresourceRange);
+        cmdBuffer->Submit();
+    }
+    else
+    {
+        imageLayout = ImageLayoutBarrier::Undefined;
+    }
+
+    descriptorInfo.sampler     = imageSampler;
+    descriptorInfo.imageView   = imageView;
+    descriptorInfo.imageLayout = GetImageLayout(imageLayout);
+
+    Ref<VulkanTexture> Texture = CreateRef<VulkanTexture>();
+    Texture->DescriptorInfo = descriptorInfo;
+    Texture->Format         = format;
+    Texture->Width          = width;
+    Texture->Height         = height;
+    Texture->Depth          = 1;
+    Texture->Image          = image;
+    Texture->ImageLayout    = GetImageLayout(imageLayout);
+    Texture->ImageMemory    = imageMemory;
+    Texture->ImageSampler   = imageSampler;
+    Texture->ImageView      = imageView;
+    Texture->Device         = device;
+    Texture->MipLevels      = mipLevels;
+    Texture->LayerCount     = 1;
+    Texture->NumSamples     = sampleCount;
+
+    return Texture;
+}
+
+Ref<VulkanTexture> VulkanTexture::CreateRenderTarget(std::shared_ptr<VulkanDevice> vulkanDevice, VkFormat format,VkImageAspectFlags aspect, int32 width, int32 height, VkImageUsageFlags usage, VkSampleCountFlagBits sampleCount)
+{
+    Ref<VulkanTexture> Texture = Create2D(vulkanDevice, nullptr, format, aspect, width, height, usage, sampleCount);
+
+    Texture->DescriptorInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    Texture->ImageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    return Texture;
+}
+
+Ref<VulkanTexture> VulkanTexture::CreateAttachment(Ref<VulkanDevice> vulkanDevice, VkFormat Format,VkImageAspectFlags Aspect, int32 Width, int32 Height, VkImageUsageFlags Usage)
+{
+    Ref<VulkanTexture> texture = Create2D(vulkanDevice, nullptr, Format, Aspect, Width, Height, Usage);
+    texture->DescriptorInfo.sampler = VK_NULL_HANDLE;
+    texture->DescriptorInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    texture->ImageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    return texture;
+}
+
 Ref<VulkanTexture> VulkanTexture::Create2D(const uint8* rgbaData,uint32 size,VkFormat format,int32 width,int32 height,std::shared_ptr<VulkanDevice> vulkanDevice,Ref<VulkanCommandBuffer> cmdBuffer,VkImageUsageFlags imageUsageFlags,ImageLayoutBarrier imageLayout)
 {
     int32 MipLevels = Math::FloorToInt(Math::Log2(Math::Max(width,height))) + 1;

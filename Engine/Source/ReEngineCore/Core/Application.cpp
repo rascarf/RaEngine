@@ -33,25 +33,31 @@ namespace ReEngine
             float CurrentTime = m_Window->GetTime();
             Timestep Ts = CurrentTime - m_LastTime;
             m_LastTime = CurrentTime;
-
-            m_Window->PollEvent();
             
-            //更新数据
             auto Context = Renderer::GetContext().get();
             auto VulkanContext = dynamic_cast<ReEngine::VulkanContext*>(Context);
             
             VulkanContext->Acquire();
+
+            //响应事件
+            m_Window->PollEvent();
             
+            //更新数据
             for (auto it = mLayerStack.end(); it != mLayerStack.begin(); )
                 (*(--it))->OnUpdate(Ts);
-            
+
+            //更新UI
             VulkanContext->BeginUI();
             for (auto it = mLayerStack.end(); it != mLayerStack.begin(); )
                 (*(--it))->OnUIRender(Ts);
             VulkanContext->EndUI();
-            
+
+            //绘制每一层
             for (auto it = mLayerStack.end(); it != mLayerStack.begin(); )
                 (*(--it))->OnRender();
+
+            //绘制UI
+            VulkanContext->DrawUI();
             
             //present
             VulkanContext->SwapBuffers(Ts);

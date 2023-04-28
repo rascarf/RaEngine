@@ -104,7 +104,23 @@ namespace ReEngine
     	//获取渲染数据
     	m_GUI->Update();
     }
-	
+
+    void VulkanContext::DrawUI()
+    {
+    	VkRenderPassBeginInfo UIrenderPassInfo = {};
+    	UIrenderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    	UIrenderPassInfo.renderPass = m_GUI->m_UIRenderPass;
+    	UIrenderPassInfo.framebuffer = m_GUI->m_UIFrameBuffers[GetCurrtIndex()];
+    	UIrenderPassInfo.renderArea.offset = { 0, 0 };
+    	UIrenderPassInfo.renderArea.extent = VkExtent2D(Instance->GetSwapChain()->GetWidth(),Instance->GetSwapChain()->GetHeight());
+    
+    	vkCmdBeginRenderPass(GetCommandList(), &UIrenderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+    
+    	m_GUI->BindDrawCmd(GetCommandList(),m_GUI->m_UIRenderPass);
+    
+    	vkCmdEndRenderPass(GetCommandList());
+    }
+
     void VulkanContext::CreateCommandBuffers()
     {
         CommandPool->m_CommandBuffers.resize(CommandPool->m_SwapChain->GetBackBufferCount());

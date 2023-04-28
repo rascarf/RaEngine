@@ -127,6 +127,7 @@ void VulkanImGui::Init(const std::string& font,VulkanContext * Context)
 
     m_Scale        = frameWidth / windowWidth;
     m_VulkanDevice = Context->GetVulkanInstance()->GetDevice();
+    g_VulkanInstance = Context->Instance;
 
     ImGuiIO& io = ImGui::GetIO();
     io.DisplaySize = ImVec2((float)(windowWidth), (float)(windowHeight));
@@ -139,11 +140,26 @@ void VulkanImGui::Init(const std::string& font,VulkanContext * Context)
     
     PrepareFontResources();
     PreparePipelineResources();
+
+    CreateUIPass();
 }
 
 void VulkanImGui::Destroy()
 {
     VkDevice device = m_VulkanDevice->GetInstanceHandle();
+
+    if(m_UIRenderPass != VK_NULL_HANDLE)
+    {
+        vkDestroyRenderPass(device, m_UIRenderPass, VULKAN_CPU_ALLOCATOR);
+        m_UIRenderPass = VK_NULL_HANDLE;
+    }
+    
+    for (int32 i = 0; i < m_UIFrameBuffers.size(); ++i)
+    {
+        vkDestroyFramebuffer(device, m_UIFrameBuffers[i], VULKAN_CPU_ALLOCATOR);
+    }
+    m_UIFrameBuffers.clear();
+    
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
     m_VertexBuffer.Destroy();
@@ -314,9 +330,66 @@ void VulkanImGui::BindDrawCmd(const VkCommandBuffer& commandBuffer, const VkRend
     m_Updated = false;
 }
 
-void VulkanImGui::OnEvent(std::shared_ptr<Event> e)
+void VulkanImGui::CreateUIPass()
 {
+    PixelFormat pixelFormat = g_VulkanInstance->GetPixelFormat();
+    std::vector<VkAttachmentDescription> UIAttachments(1);
     
+    // color attachment
+    UIAttachments[0].format         = PixelFormatToVkFormat(pixelFormat, false);
+    UIAttachments[0].samples        = VK_SAMPLE_COUNT_1_BIT;
+    UIAttachments[0].loadOp         = VK_ATTACHMENT_LOAD_OP_NONE_EXT;
+    UIAttachments[0].storeOp        = VK_ATTACHMENT_STORE_OP_STORE;
+    UIAttachments[0].stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    UIAttachments[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    UIAttachments[0].initialLayout  = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
+    UIAttachments[0].finalLayout    = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+    VkAttachmentReference UIColorReference = { };
+    UIColorReference.attachment = 0;
+    UIColorReference.layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    
+    VkSubpassDescription UISubpassDescription = { };
+    UISubpassDescription.pipelineBindPoint       = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    UISubpassDescription.colorAttachmentCount    = 1;
+    UISubpassDescription.pColorAttachments       = &UIColorReference;
+    UISubpassDescription.pDepthStencilAttachment = nullptr;
+    UISubpassDescription.pResolveAttachments     = nullptr;
+    UISubpassDescription.inputAttachmentCount    = 0;
+    UISubpassDescription.pInputAttachments       = nullptr;
+    UISubpassDescription.preserveAttachmentCount = 0;
+    UISubpassDescription.pPreserveAttachments    = nullptr;
+    
+    VkRenderPassCreateInfo UIRenderPassInfo;
+    ZeroVulkanStruct(UIRenderPassInfo, VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO);
+    UIRenderPassInfo.attachmentCount = static_cast<uint32_t>(UIAttachments.size());
+    UIRenderPassInfo.pAttachments    = UIAttachments.data();
+    UIRenderPassInfo.subpassCount    = 1;
+    UIRenderPassInfo.pSubpasses      = &UISubpassDescription;
+    VERIFYVULKANRESULT(vkCreateRenderPass(m_VulkanDevice->GetInstanceHandle(), &UIRenderPassInfo, VULKAN_CPU_ALLOCATOR, &m_UIRenderPass));
+    
+    const std::vector<VkImageView>& backbufferViews = g_VulkanInstance->GetBackbufferViews();
+    int32 fwidth    = g_VulkanInstance->GetSwapChain()->GetWidth();
+    int32 fheight   = g_VulkanInstance->GetSwapChain()->GetHeight();
+    VkDevice device = g_VulkanInstance->GetDevice()->GetInstanceHandle();
+
+    VkImageView attachments[2];
+    
+    VkFramebufferCreateInfo UIFrameBufferCreateInfo;
+    ZeroVulkanStruct(UIFrameBufferCreateInfo, VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO);
+    UIFrameBufferCreateInfo.renderPass      = m_UIRenderPass;
+    UIFrameBufferCreateInfo.attachmentCount = 1;
+    UIFrameBufferCreateInfo.pAttachments    = attachments;
+    UIFrameBufferCreateInfo.width           = fwidth;
+    UIFrameBufferCreateInfo.height          = fheight;
+    UIFrameBufferCreateInfo.layers          = 1;
+
+    m_UIFrameBuffers.resize(backbufferViews.size());
+    for (uint32 i = 0; i < m_UIFrameBuffers.size(); ++i)
+    {
+        attachments[0] = backbufferViews[i];
+        VERIFYVULKANRESULT(vkCreateFramebuffer(device, &UIFrameBufferCreateInfo, VULKAN_CPU_ALLOCATOR, &m_UIFrameBuffers[i]));
+    }
 }
 
 void VulkanImGui::PrepareFontResources()

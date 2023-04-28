@@ -3,11 +3,9 @@
 
 void VulkanBackBuffer::Init(VulkanContext* Context)
 {
-    {
-        g_VulkanInstance = Context->GetVulkanInstance();
-        
-        CreateDepthStencil();
-        CreateRenderPass();
-        CreateFrameBuffers();
-    }
+    g_VulkanInstance = Context->GetVulkanInstance();
+
+    CreateDepthStencil();
+    CreateRenderPass();
+    CreateFrameBuffers();
 }

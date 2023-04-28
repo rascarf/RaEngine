@@ -79,6 +79,8 @@ public:
     // static Ref<VulkanTexture> Create3D(VkFormat format, const uint8* rgbaData, int32 size, int32 width, int32 height, int32 depth, std::shared_ptr<VulkanDevice> vulkanDevice, Ref<VulkanCommandBuffer> cmdBuffer);
 
     /*------------------ 2D ---------------------------*/
+
+    /*读取一张贴图*/
     static Ref<VulkanTexture> Create2D(
     const uint8* rgbaData,
     uint32 size,
@@ -91,6 +93,7 @@ public:
     ImageLayoutBarrier imageLayout = ImageLayoutBarrier::PixelShaderRead
 );
 
+    /*读取一张贴图*/
     static  Ref<VulkanTexture> Create2D(
         const std::string& filename,
         std::shared_ptr<VulkanDevice> vulkanDevice,
@@ -98,31 +101,54 @@ public:
         VkImageUsageFlags imageUsageFlags = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
         ImageLayoutBarrier imageLayout = ImageLayoutBarrier::PixelShaderRead
     );
+    
+    /*创建一块内存*/
+    static  Ref<VulkanTexture> Create2D(
+    std::shared_ptr<VulkanDevice> vulkanDevice,
+    Ref<VulkanCommandBuffer> cmdBuffer,
+    VkFormat format,
+    VkImageAspectFlags aspect,
+    int32 width,
+    int32 height,
+    VkImageUsageFlags usage,
+    VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT,
+    ImageLayoutBarrier imageLayout = ImageLayoutBarrier::Undefined
+    );
 
-    static Ref<VulkanTexture> CreateDepthStencil(
-            int32 width,
-            int32 height,
-            std::shared_ptr<VulkanDevice> vulkanDevice,
-            PixelFormat              DepthFormat,
-            VkSampleCountFlagBits NumSamples = VK_SAMPLE_COUNT_1_BIT,
-            VkImageUsageFlags imageUsageFlags = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
-            ImageLayoutBarrier imageLayout = ImageLayoutBarrier::DepthStencilAttachment
-        );
-
-    // static  Ref<VulkanTexture> Create2D(
-    // std::shared_ptr<VulkanDevice> vulkanDevice,
-    // Ref<VulkanCommandBuffer> cmdBuffer,
-    // VkFormat format,
-    // VkImageAspectFlags aspect,
-    // int32 width,
-    // int32 height,
-    // VkImageUsageFlags usage,
-    // VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT,
-    // ImageLayoutBarrier imageLayout = ImageLayoutBarrier::Undefined
-    // );
     /*----------------------------------------------*/
 
+    
+    /*创建DepthStencil*/
+    static Ref<VulkanTexture> CreateDepthStencil(
+        int32 width,
+        int32 height,
+        Ref<VulkanDevice> vulkanDevice,
+        PixelFormat              DepthFormat,
+        VkSampleCountFlagBits NumSamples = VK_SAMPLE_COUNT_1_BIT,
+        VkImageUsageFlags imageUsageFlags = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+        ImageLayoutBarrier imageLayout = ImageLayoutBarrier::DepthStencilAttachment
+    );
+    
+    /*创建RT*/
+    static Ref<VulkanTexture> CreateRenderTarget(
+        Ref<VulkanDevice> vulkanDevice,
+        VkFormat format,
+        VkImageAspectFlags aspect,
+        int32 width,
+        int32 height,
+        VkImageUsageFlags usage,
+        VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT
+    );
 
+    static Ref<VulkanTexture> CreateAttachment(
+        Ref<VulkanDevice> vulkanDevice,
+        VkFormat Format,
+        VkImageAspectFlags Aspect,
+        int32 Width,
+        int32 Height,
+        VkImageUsageFlags Usage
+    );
+    
 public:
 
     VkDevice Device = nullptr;

@@ -39,6 +39,7 @@ namespace ReEngine
         virtual int32 GetCurrtIndex();
         virtual void BeginUI();
         virtual void EndUI();
+        virtual void DrawUI();
         [[nodiscard]]Ref<VulkanInstance> GetVulkanInstance(){ return Instance;}
         [[nodiscard]]GLFWwindow* GetGLFWwindow(){return m_WindowHandle;}
         

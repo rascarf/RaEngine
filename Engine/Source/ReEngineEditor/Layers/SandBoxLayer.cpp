@@ -16,7 +16,6 @@
 
 SandBoxLayer::SandBoxLayer():Layer("SandBoxLayer")
 {
-   
 }
 
 SandBoxLayer::~SandBoxLayer()
@@ -56,15 +55,9 @@ void SandBoxLayer::OnEvent(std::shared_ptr<ReEngine::Event> e)
 {
 	if(e->GetEventType() == ReEngine::EventType::WindowResize)
 	{
-		ReEngine::Ref<ReEngine::WindowResizeEvent> re = std::dynamic_pointer_cast<ReEngine::WindowResizeEvent>(e);
-
 		FrameBuffer->ShutDown();
 		FrameBuffer->Init(VkContext);
 		CreateGraphicsPipeline();
-	}
-	else if (e->GetEventType() == ReEngine::EventType::KeyPressed)
-	{
-		
 	}
 }
 
@@ -130,19 +123,6 @@ void SandBoxLayer::OnRender()
         
         Model->Meshes[meshIndex]->BindDraw(VkContext->GetCommandList());
     }
-    
-    vkCmdEndRenderPass(VkContext->GetCommandList());
-
-    VkRenderPassBeginInfo UIrenderPassInfo = {};
-    UIrenderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    UIrenderPassInfo.renderPass = FrameBuffer->m_UIRenderPass;
-    UIrenderPassInfo.framebuffer = FrameBuffer->m_UIFrameBuffers[VkContext->GetCurrtIndex()];
-    UIrenderPassInfo.renderArea.offset = { 0, 0 };
-    UIrenderPassInfo.renderArea.extent = VkExtent2D(VkContext->Instance->GetSwapChain()->GetWidth(),VkContext->Instance->GetSwapChain()->GetHeight());
-    
-    vkCmdBeginRenderPass(VkContext->GetCommandList(), &UIrenderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-    
-    VkContext->m_GUI->BindDrawCmd(VkContext->GetCommandList(),FrameBuffer->m_UIRenderPass);
     
     vkCmdEndRenderPass(VkContext->GetCommandList());
 }
