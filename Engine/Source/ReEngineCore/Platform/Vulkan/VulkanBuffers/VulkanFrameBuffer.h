@@ -1,19 +1,18 @@
 ﻿#pragma once
+#include "VulkanTexture.h"
 #include "Platform/Vulkan/VulkanCommonDefine.h"
 #include "Platform/Vulkan/VulkanInstance.h"
 
 namespace ReEngine
 {
-    class VulkanFrameBuffer
+    class VulkanBackBuffer
 {
 public:
-    VulkanFrameBuffer(int32 width, int32 height, const char* title)
+    VulkanBackBuffer(int32 width, int32 height, const char* title)
           : m_Width(width)
         , m_Height(height)
         , m_Title(title)
-        , m_DepthStencilImage(VK_NULL_HANDLE)
-        , m_DepthStencilView(VK_NULL_HANDLE)
-        , m_DepthStencilMemory(VK_NULL_HANDLE)
+        , DepthStencil(nullptr)
         , m_RenderPass(VK_NULL_HANDLE)
         , m_UIRenderPass(VK_NULL_HANDLE)
         , m_SampleCount(VK_SAMPLE_COUNT_1_BIT)
@@ -22,7 +21,7 @@ public:
 
     }
 
-    virtual ~VulkanFrameBuffer()
+    virtual ~VulkanBackBuffer()
     {
 
     }
@@ -74,7 +73,7 @@ protected:
         VkDevice device = g_VulkanInstance->GetDevice()->GetInstanceHandle();
 
         VkImageView attachments[2];
-        attachments[1] = m_DepthStencilView;
+        attachments[1] = DepthStencil->ImageView;
 
         VkFramebufferCreateInfo frameBufferCreateInfo;
         ZeroVulkanStruct(frameBufferCreateInfo, VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO);
@@ -113,49 +112,7 @@ protected:
 
     virtual void CreateDepthStencil()
     {
-        DestoryDepthStencil();
-
-        int32 fwidth    = g_VulkanInstance->GetSwapChain()->GetWidth();
-        int32 fheight   = g_VulkanInstance->GetSwapChain()->GetHeight();
-        VkDevice device = g_VulkanInstance->GetDevice()->GetInstanceHandle();
-
-        VkImageCreateInfo imageCreateInfo;
-        ZeroVulkanStruct(imageCreateInfo, VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO);
-        imageCreateInfo.imageType   = VK_IMAGE_TYPE_2D;
-        imageCreateInfo.format      = PixelFormatToVkFormat(m_DepthFormat, false);
-        imageCreateInfo.extent      = { (uint32)fwidth, (uint32)fheight, 1 };
-        imageCreateInfo.mipLevels   = 1;
-        imageCreateInfo.arrayLayers = 1;
-        imageCreateInfo.samples     = m_SampleCount;
-        imageCreateInfo.tiling      = VK_IMAGE_TILING_OPTIMAL;
-        imageCreateInfo.usage       = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-        imageCreateInfo.flags       = 0;
-        VERIFYVULKANRESULT(vkCreateImage(device, &imageCreateInfo, VULKAN_CPU_ALLOCATOR, &m_DepthStencilImage));
-
-        VkMemoryRequirements memRequire;
-        vkGetImageMemoryRequirements(device, m_DepthStencilImage, &memRequire);
-        uint32 memoryTypeIndex = 0;
-        VERIFYVULKANRESULT(g_VulkanInstance->GetDevice()->GetMemoryManager().GetMemoryTypeFromProperties(memRequire.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &memoryTypeIndex));
-
-        VkMemoryAllocateInfo memAllocateInfo;
-        ZeroVulkanStruct(memAllocateInfo, VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO);
-        memAllocateInfo.allocationSize  = memRequire.size;
-        memAllocateInfo.memoryTypeIndex = memoryTypeIndex;
-        vkAllocateMemory(device, &memAllocateInfo, VULKAN_CPU_ALLOCATOR, &m_DepthStencilMemory);
-        vkBindImageMemory(device, m_DepthStencilImage, m_DepthStencilMemory, 0);
-
-        VkImageViewCreateInfo imageViewCreateInfo;
-        ZeroVulkanStruct(imageViewCreateInfo, VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO);
-        imageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-        imageViewCreateInfo.format   = PixelFormatToVkFormat(m_DepthFormat, false);
-        imageViewCreateInfo.flags    = 0;
-        imageViewCreateInfo.image    = m_DepthStencilImage;
-        imageViewCreateInfo.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
-        imageViewCreateInfo.subresourceRange.baseMipLevel   = 0;
-        imageViewCreateInfo.subresourceRange.levelCount     = 1;
-        imageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
-        imageViewCreateInfo.subresourceRange.layerCount     = 1;
-        VERIFYVULKANRESULT(vkCreateImageView(device, &imageViewCreateInfo, VULKAN_CPU_ALLOCATOR, &m_DepthStencilView));
+        DepthStencil = VulkanTexture::CreateDepthStencil(m_Width,m_Height,g_VulkanInstance->GetDevice(),PixelFormat::PF_DepthStencil);
     }
 
     virtual void CreateRenderPass()
@@ -204,32 +161,13 @@ protected:
         subpassDescription.pInputAttachments       = nullptr;
         subpassDescription.preserveAttachmentCount = 0;
         subpassDescription.pPreserveAttachments    = nullptr;
-
-        std::vector<VkSubpassDependency> dependencies(2);
-        dependencies[0].srcSubpass      = VK_SUBPASS_EXTERNAL;
-        dependencies[0].dstSubpass      = 0;
-        dependencies[0].srcStageMask    = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-        dependencies[0].dstStageMask    = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        dependencies[0].srcAccessMask   = VK_ACCESS_MEMORY_READ_BIT;
-        dependencies[0].dstAccessMask   = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-        dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
-
-        dependencies[1].srcSubpass      = 0;
-        dependencies[1].dstSubpass      = VK_SUBPASS_EXTERNAL;
-        dependencies[1].srcStageMask    = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        dependencies[1].dstStageMask    = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-        dependencies[1].srcAccessMask   = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-        dependencies[1].dstAccessMask   = VK_ACCESS_MEMORY_READ_BIT;
-        dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
-
+        
         VkRenderPassCreateInfo renderPassInfo;
         ZeroVulkanStruct(renderPassInfo, VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO);
         renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
         renderPassInfo.pAttachments    = attachments.data();
         renderPassInfo.subpassCount    = 1;
         renderPassInfo.pSubpasses      = &subpassDescription;
-        renderPassInfo.dependencyCount = static_cast<uint32_t>(dependencies.size());
-        renderPassInfo.pDependencies   = dependencies.data();
         VERIFYVULKANRESULT(vkCreateRenderPass(device, &renderPassInfo, VULKAN_CPU_ALLOCATOR, &m_RenderPass));
 
         std::vector<VkAttachmentDescription> UIAttachments(1);
@@ -247,7 +185,6 @@ protected:
         UIColorReference.attachment = 0;
         UIColorReference.layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
         
-
         VkSubpassDescription UISubpassDescription = { };
         UISubpassDescription.pipelineBindPoint       = VK_PIPELINE_BIND_POINT_GRAPHICS;
         UISubpassDescription.colorAttachmentCount    = 1;
@@ -258,15 +195,7 @@ protected:
         UISubpassDescription.pInputAttachments       = nullptr;
         UISubpassDescription.preserveAttachmentCount = 0;
         UISubpassDescription.pPreserveAttachments    = nullptr;
-
-        std::vector<VkSubpassDependency> UIDependencies(1);
-        UIDependencies[0].srcSubpass      = VK_SUBPASS_EXTERNAL;
-        UIDependencies[0].dstSubpass      = 0;
-        UIDependencies[0].srcStageMask    = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-        UIDependencies[0].dstStageMask    = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        UIDependencies[0].srcAccessMask   = VK_ACCESS_MEMORY_READ_BIT;
-        UIDependencies[0].dstAccessMask   = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-        UIDependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+        
 
         VkRenderPassCreateInfo UIRenderPassInfo;
         ZeroVulkanStruct(UIRenderPassInfo, VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO);
@@ -274,8 +203,6 @@ protected:
         UIRenderPassInfo.pAttachments    = UIAttachments.data();
         UIRenderPassInfo.subpassCount    = 1;
         UIRenderPassInfo.pSubpasses      = &UISubpassDescription;
-        UIRenderPassInfo.dependencyCount = static_cast<uint32_t>(UIDependencies.size());
-        UIRenderPassInfo.pDependencies   = UIDependencies.data();
         VERIFYVULKANRESULT(vkCreateRenderPass(device, &UIRenderPassInfo, VULKAN_CPU_ALLOCATOR, &m_UIRenderPass));
     }
 
@@ -315,24 +242,9 @@ protected:
 
     virtual void DestoryDepthStencil()
     {
-        VkDevice device = g_VulkanInstance->GetDevice()->GetInstanceHandle();
-
-        if (m_DepthStencilMemory != VK_NULL_HANDLE)
+        if(DepthStencil != nullptr)
         {
-            vkFreeMemory(device, m_DepthStencilMemory, VULKAN_CPU_ALLOCATOR);
-            m_DepthStencilMemory = VK_NULL_HANDLE;
-        }
-
-        if (m_DepthStencilView != VK_NULL_HANDLE)
-        {
-            vkDestroyImageView(device, m_DepthStencilView, VULKAN_CPU_ALLOCATOR);
-            m_DepthStencilView = VK_NULL_HANDLE;
-        }
-
-        if (m_DepthStencilImage != VK_NULL_HANDLE)
-        {
-            vkDestroyImage(device, m_DepthStencilImage, VULKAN_CPU_ALLOCATOR);
-            m_DepthStencilImage = VK_NULL_HANDLE;
+            DepthStencil.reset();
         }
     }
 
@@ -350,9 +262,7 @@ public:
     std::vector<VkFramebuffer>  m_FrameBuffers;
     std::vector<VkFramebuffer>  m_UIFrameBuffers;
 
-    VkImage                     m_DepthStencilImage;
-    VkImageView                 m_DepthStencilView;
-    VkDeviceMemory              m_DepthStencilMemory;
+    Ref<VulkanTexture> DepthStencil;
 
     VkRenderPass                m_RenderPass;
     VkRenderPass                m_UIRenderPass;

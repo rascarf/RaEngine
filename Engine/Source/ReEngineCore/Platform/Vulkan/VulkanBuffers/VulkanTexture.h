@@ -99,6 +99,16 @@ public:
         ImageLayoutBarrier imageLayout = ImageLayoutBarrier::PixelShaderRead
     );
 
+    static Ref<VulkanTexture> CreateDepthStencil(
+            int32 width,
+            int32 height,
+            std::shared_ptr<VulkanDevice> vulkanDevice,
+            PixelFormat              DepthFormat,
+            VkSampleCountFlagBits NumSamples = VK_SAMPLE_COUNT_1_BIT,
+            VkImageUsageFlags imageUsageFlags = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+            ImageLayoutBarrier imageLayout = ImageLayoutBarrier::DepthStencilAttachment
+        );
+
     // static  Ref<VulkanTexture> Create2D(
     // std::shared_ptr<VulkanDevice> vulkanDevice,
     // Ref<VulkanCommandBuffer> cmdBuffer,

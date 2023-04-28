@@ -22,7 +22,7 @@ function(compile_shader SHADERS TARGET_NAME SHADER_INCLUDE_FOLDER GENERATED_DIR 
             COMMAND ${GLSLANG_BIN} -I${SHADER_INCLUDE_FOLDER} -gVS -V100 -o ${SPV_FILE} ${SHADER}
             DEPENDS ${SHADER}
             WORKING_DIRECTORY "${working_dir}"
-            COMMENT "I'm testing the new method."
+            COMMENT "Generate Shaders."
             VERBATIM)
 
         list(APPEND ALL_GENERATED_SPV_FILES ${SPV_FILE})

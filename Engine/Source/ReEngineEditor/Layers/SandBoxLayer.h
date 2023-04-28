@@ -51,7 +51,7 @@ public:
     virtual void OnUIRender(ReEngine::Timestep ts) override;
 
     
-    Ref<VulkanFrameBuffer> FrameBuffer;
+    Ref<VulkanBackBuffer> FrameBuffer;
     Ref<VulkanPipeline> GraphicsPipeline;
     Ref<VulkanDynamicBufferRing> RingBuffer;
     Ref<VulkanShader> PipeShader;

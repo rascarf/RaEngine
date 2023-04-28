@@ -1,6 +1,8 @@
 ﻿#include "VulkanTexture.h"
 #include "ImageLoader.h"
+#include "assimp/code/OpenGEX/OpenGEXStructs.h"
 #include "Math/Math.h"
+#include "Platform/Vulkan/VulkanInstance.h"
 #include "Resource/AssetManager/AssetManager.h"
 #include "Platform/Vulkan/VulkanBuffers/VulkanBuffer.h"
 
@@ -35,6 +37,61 @@ Ref<VulkanTexture> VulkanTexture::Create2D(const std::string& filename, std::sha
     Ref<VulkanTexture> texture = Create2D(rgbaData, width * height * 4, VK_FORMAT_R8G8B8A8_UNORM, width, height, vulkanDevice, cmdBuffer, imageUsageFlags, imageLayout);
 
     StbImage::Free(rgbaData);
+
+    return texture;
+}
+
+Ref<VulkanTexture> VulkanTexture::CreateDepthStencil(int32 width, int32 height,std::shared_ptr<VulkanDevice> vulkanDevice,PixelFormat DepthFormat, VkSampleCountFlagBits NumSamples,VkImageUsageFlags imageUsageFlags,ImageLayoutBarrier imageLayout)
+{
+    int32 fwidth    = width;
+    int32 fheight   = height;
+    VkDevice device = vulkanDevice->GetInstanceHandle();
+
+    Ref<VulkanTexture> texture   = CreateRef<VulkanTexture>();
+    texture->Device = device;
+    texture->Height = height;
+    texture->Width = width;
+    texture->Format = PixelFormatToVkFormat(DepthFormat, false);
+    texture->NumSamples = NumSamples;
+
+    VkImageCreateInfo imageCreateInfo;
+    ZeroVulkanStruct(imageCreateInfo, VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO);
+    imageCreateInfo.imageType   = VK_IMAGE_TYPE_2D;
+    imageCreateInfo.format      = PixelFormatToVkFormat(DepthFormat, false);
+    imageCreateInfo.extent      = { (uint32)fwidth, (uint32)fheight, 1 };
+    imageCreateInfo.mipLevels   = 1;
+    imageCreateInfo.arrayLayers = 1;
+    imageCreateInfo.samples     = NumSamples;
+    imageCreateInfo.tiling      = VK_IMAGE_TILING_OPTIMAL;
+    imageCreateInfo.usage       = imageUsageFlags;
+    imageCreateInfo.flags       = 0;
+    imageCreateInfo.initialLayout   = VK_IMAGE_LAYOUT_UNDEFINED;
+    VERIFYVULKANRESULT(vkCreateImage(device, &imageCreateInfo, VULKAN_CPU_ALLOCATOR, &texture->Image))
+
+    VkMemoryRequirements memRequire;
+    vkGetImageMemoryRequirements(device, texture->Image, &memRequire);
+    uint32 memoryTypeIndex = 0;
+    VERIFYVULKANRESULT(vulkanDevice->GetMemoryManager().GetMemoryTypeFromProperties(memRequire.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &memoryTypeIndex))
+
+    VkMemoryAllocateInfo memAllocateInfo;
+    ZeroVulkanStruct(memAllocateInfo, VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO);
+    memAllocateInfo.allocationSize  = memRequire.size;
+    memAllocateInfo.memoryTypeIndex = memoryTypeIndex;
+    vkAllocateMemory(device, &memAllocateInfo, VULKAN_CPU_ALLOCATOR, &texture->ImageMemory);
+    vkBindImageMemory(device, texture->Image, texture->ImageMemory, 0);
+
+    VkImageViewCreateInfo imageViewCreateInfo;
+    ZeroVulkanStruct(imageViewCreateInfo, VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO);
+    imageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    imageViewCreateInfo.format   = PixelFormatToVkFormat(DepthFormat, false);
+    imageViewCreateInfo.flags    = 0;
+    imageViewCreateInfo.image    = texture->Image;
+    imageViewCreateInfo.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
+    imageViewCreateInfo.subresourceRange.baseMipLevel   = 0;
+    imageViewCreateInfo.subresourceRange.levelCount     = 1;
+    imageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
+    imageViewCreateInfo.subresourceRange.layerCount     = 1;
+    VERIFYVULKANRESULT(vkCreateImageView(device, &imageViewCreateInfo, VULKAN_CPU_ALLOCATOR, &texture->ImageView))
 
     return texture;
 }
@@ -168,49 +225,49 @@ Ref<VulkanTexture> VulkanTexture::Create2D(const uint8* rgbaData,uint32 size,VkF
     cmdBuffer->Submit();
 
     VkSamplerCreateInfo samplerInfo;
-        ZeroVulkanStruct(samplerInfo, VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO);
-        samplerInfo.magFilter        = VK_FILTER_LINEAR;
-        samplerInfo.minFilter        = VK_FILTER_LINEAR;
-        samplerInfo.mipmapMode       = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-        samplerInfo.addressModeU     = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-        samplerInfo.addressModeV     = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-        samplerInfo.addressModeW     = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-        samplerInfo.compareOp        = VK_COMPARE_OP_NEVER;
-        samplerInfo.borderColor      = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
-        samplerInfo.maxAnisotropy    = 1.0;
-        samplerInfo.anisotropyEnable = VK_FALSE;
-        samplerInfo.maxLod           = (float)MipLevels;
-        samplerInfo.minLod           = 0.0f;
-        VERIFYVULKANRESULT(vkCreateSampler(device, &samplerInfo, VULKAN_CPU_ALLOCATOR, &imageSampler));
+    ZeroVulkanStruct(samplerInfo, VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO);
+    samplerInfo.magFilter        = VK_FILTER_LINEAR;
+    samplerInfo.minFilter        = VK_FILTER_LINEAR;
+    samplerInfo.mipmapMode       = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+    samplerInfo.addressModeU     = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerInfo.addressModeV     = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerInfo.addressModeW     = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerInfo.compareOp        = VK_COMPARE_OP_NEVER;
+    samplerInfo.borderColor      = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+    samplerInfo.maxAnisotropy    = 1.0;
+    samplerInfo.anisotropyEnable = VK_FALSE;
+    samplerInfo.maxLod           = (float)MipLevels;
+    samplerInfo.minLod           = 0.0f;
+    VERIFYVULKANRESULT(vkCreateSampler(device, &samplerInfo, VULKAN_CPU_ALLOCATOR, &imageSampler));
 
-        VkImageViewCreateInfo viewInfo;
-        ZeroVulkanStruct(viewInfo, VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO);
-        viewInfo.image      = image;
-        viewInfo.viewType   = VK_IMAGE_VIEW_TYPE_2D;
-        viewInfo.format     = format;
-        viewInfo.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
-        viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        viewInfo.subresourceRange.layerCount = 1;
-        viewInfo.subresourceRange.levelCount = MipLevels;
-        VERIFYVULKANRESULT(vkCreateImageView(device, &viewInfo, VULKAN_CPU_ALLOCATOR, &imageView));
+    VkImageViewCreateInfo viewInfo;
+    ZeroVulkanStruct(viewInfo, VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO);
+    viewInfo.image      = image;
+    viewInfo.viewType   = VK_IMAGE_VIEW_TYPE_2D;
+    viewInfo.format     = format;
+    viewInfo.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
+    viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    viewInfo.subresourceRange.layerCount = 1;
+    viewInfo.subresourceRange.levelCount = MipLevels;
+    VERIFYVULKANRESULT(vkCreateImageView(device, &viewInfo, VULKAN_CPU_ALLOCATOR, &imageView));
 
-        descriptorInfo.sampler     = imageSampler;
-        descriptorInfo.imageView   = imageView;
-        descriptorInfo.imageLayout = GetImageLayout(imageLayout);
+    descriptorInfo.sampler     = imageSampler;
+    descriptorInfo.imageView   = imageView;
+    descriptorInfo.imageLayout = GetImageLayout(imageLayout);
 
-        Ref<VulkanTexture> texture   = CreateRef<VulkanTexture>();
-        texture->DescriptorInfo = descriptorInfo;
-        texture->Format         = format;
-        texture->Height         = height;
-        texture->Image          = image;
-        texture->ImageLayout    = GetImageLayout(imageLayout);
-        texture->ImageMemory    = imageMemory;
-        texture->ImageSampler   = imageSampler;
-        texture->ImageView      = imageView;
-        texture->Device         = device;
-        texture->Width          = width;
-        texture->MipLevels      = MipLevels;
-        texture->LayerCount     = 1;
+    Ref<VulkanTexture> texture   = CreateRef<VulkanTexture>();
+    texture->DescriptorInfo = descriptorInfo;
+    texture->Format         = format;
+    texture->Height         = height;
+    texture->Image          = image;
+    texture->ImageLayout    = GetImageLayout(imageLayout);
+    texture->ImageMemory    = imageMemory;
+    texture->ImageSampler   = imageSampler;
+    texture->ImageView      = imageView;
+    texture->Device         = device;
+    texture->Width          = width;
+    texture->MipLevels      = MipLevels;
+    texture->LayerCount     = 1;
 
     return texture;
 }

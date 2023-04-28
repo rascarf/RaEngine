@@ -28,7 +28,7 @@ void SandBoxLayer::OnAttach()
 	auto Context = Renderer::GetContext().get();
 	VkContext = dynamic_cast<ReEngine::VulkanContext*>(Context);
 	
-	FrameBuffer = CreateRef<VulkanFrameBuffer>(VkContext->WinProperty->Width,VkContext->WinProperty->Height,VkContext->WinProperty->Title.c_str());
+	FrameBuffer = CreateRef<VulkanBackBuffer>(VkContext->WinProperty->Width,VkContext->WinProperty->Height,VkContext->WinProperty->Title.c_str());
 	Camera = CreateRef<EditorCamera>();
 
 	FrameBuffer->Init(VkContext);
