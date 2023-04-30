@@ -32,7 +32,7 @@ void VulkanCommandPool::Present(int backBufferIndex)
     submitInfo.pWaitDstStageMask    = &m_WaitStageMask;
     submitInfo.pWaitSemaphores      = &m_PresentComplete;
     submitInfo.waitSemaphoreCount   = 1;
-    submitInfo.pSignalSemaphores    = &m_RenderComplete[backBufferIndex];
+    submitInfo.pSignalSemaphores    = &m_RenderComplete;
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.pCommandBuffers      = &(m_CommandBuffers[backBufferIndex]);
     submitInfo.commandBufferCount   = 1;
@@ -43,7 +43,7 @@ void VulkanCommandPool::Present(int backBufferIndex)
     vkWaitForFences(m_Device, 1, &(m_Fences[m_FrameIndex]), true, ((uint64)	0xffffffffffffffff));
     
     // present会等待RenderComplete Semaphore
-    m_SwapChain->Present(*m_VulkanDevice->GetGraphicsQueue(),*m_VulkanDevice->GetPresentQueue() , &m_RenderComplete[backBufferIndex]);
+    m_SwapChain->Present(*m_VulkanDevice->GetGraphicsQueue(),*m_VulkanDevice->GetPresentQueue() , &m_RenderComplete);
 }
 
 int32 VulkanCommandPool::AcquireBackbufferIndex()
@@ -138,13 +138,11 @@ void VulkanCommandPool::CreateFences()
         VERIFYVULKANRESULT(vkCreateFence(device, &fenceCreateInfo, VULKAN_CPU_ALLOCATOR, &m_Fences[i]));
     }
 
-    m_RenderComplete.resize(frameCount);
-    for(int32 i = 0; i < m_RenderComplete.size(); ++i)
-    {
-        VkSemaphoreCreateInfo createInfo;
-        ZeroVulkanStruct(createInfo, VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO);
-        vkCreateSemaphore(device, &createInfo, VULKAN_CPU_ALLOCATOR, &m_RenderComplete[i]);
-    }
+
+    VkSemaphoreCreateInfo createInfo;
+    ZeroVulkanStruct(createInfo, VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO);
+    vkCreateSemaphore(device, &createInfo, VULKAN_CPU_ALLOCATOR, &m_RenderComplete);
+    
 }
 
 void VulkanCommandPool::DestroyFences()
@@ -156,10 +154,7 @@ void VulkanCommandPool::DestroyFences()
         vkDestroyFence(device, m_Fences[i], VULKAN_CPU_ALLOCATOR);
     }
     
-    for(int32 i = 0; i < m_RenderComplete.size(); ++i)
-    {
-        vkDestroySemaphore(device, m_RenderComplete[i], VULKAN_CPU_ALLOCATOR);
-    }
+    vkDestroySemaphore(device, m_RenderComplete, VULKAN_CPU_ALLOCATOR);
 }
 
 void VulkanCommandPool::DestroyPipelineCache()

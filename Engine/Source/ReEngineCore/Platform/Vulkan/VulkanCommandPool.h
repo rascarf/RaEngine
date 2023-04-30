@@ -98,7 +98,7 @@ public:
     VkPipelineCache                 m_PipelineCache;
 
     std::vector<VkFence>            m_Fences;
-    std::vector<VkSemaphore>        m_RenderComplete;
+    VkSemaphore                     m_RenderComplete;
     VkSemaphore                     m_PresentComplete;
 
     VkCommandPool                   m_CommandPool;

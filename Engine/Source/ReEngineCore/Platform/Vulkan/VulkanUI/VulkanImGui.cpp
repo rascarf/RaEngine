@@ -373,7 +373,7 @@ void VulkanImGui::CreateUIPass()
     int32 fheight   = g_VulkanInstance->GetSwapChain()->GetHeight();
     VkDevice device = g_VulkanInstance->GetDevice()->GetInstanceHandle();
 
-    VkImageView attachments[2];
+    VkImageView attachments[1];
     
     VkFramebufferCreateInfo UIFrameBufferCreateInfo;
     ZeroVulkanStruct(UIFrameBufferCreateInfo, VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO);

@@ -19,7 +19,7 @@ public:
 public:
     virtual void CreateFrameBuffers() override;
     virtual void CreateRenderPass() override;
-
+    virtual void CreateDepthStencil() override{};
 public:
     std::vector<Ref<VulkanTexture>>             m_AttachmentDepth;
     std::vector<Ref<VulkanTexture>>             m_AttachmentNormals;

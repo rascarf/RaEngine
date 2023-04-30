@@ -55,7 +55,7 @@ void InputAttachmentBackBuffer::CreateRenderPass()
     attachments[0].stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
     attachments[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
     attachments[0].initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
-    attachments[0].finalLayout    = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+    attachments[0].finalLayout    = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
     
     // color attachment
     attachments[1].format         = PixelFormatToVkFormat(pixelFormat, false);
@@ -155,6 +155,7 @@ void InputAttachmentBackBuffer::CreateRenderPass()
     VERIFYVULKANRESULT(vkCreateRenderPass(device, &renderPassInfo, VULKAN_CPU_ALLOCATOR, &m_RenderPass));
 }
 
+
 void InputAttachment::OnCreateBackBuffer()
 {
     CreateAttachments();
@@ -179,7 +180,7 @@ void InputAttachment::OnUpdate(Timestep ts)
     m_RingBuffer->OnBeginFrame();
     m_Camera->OnUpdate(ts);
     
-    ModelMatrix.model = glm::rotate(ModelMatrix.model, ts.GetSeconds() *  glm::radians(45.0f), glm::vec3(0.0f, 1.0f, 0.0f));;
+    ModelMatrix.model = glm::identity<glm::mat4>();;
     ViewParam.view = m_Camera->GetViewMatrix();
     ViewParam.projection = m_Camera->GetProjection();
 }
@@ -239,8 +240,10 @@ void InputAttachment::OnRender()
     {
         const auto ViewBufferView =  m_RingBuffer->AllocConstantBuffer(sizeof(ViewProjectionBlock),&ViewParam);
         vkCmdBindPipeline(VkContext->GetCommandList(), VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline0->Pipeline);
-        for (int32 meshIndex = 0; meshIndex < m_Model->Meshes.size(); ++meshIndex)
+        // for (int32 meshIndex = 0; meshIndex < m_Model->Meshes.size(); ++meshIndex)
+        for (int32 meshIndex = 0; meshIndex < 1; ++meshIndex)
         {
+            ModelMatrix.model = m_Model->Meshes[i]->LinkNode.lock()->GetGlobalMatrix();
             auto BufferView = m_RingBuffer->AllocConstantBuffer(sizeof(ModelBlock),&ModelMatrix);
             const uint32_t UniformOffset[2] = {(uint32_t)ViewBufferView.offset,(uint32_t)BufferView.offset};
             vkCmdBindDescriptorSets(VkContext->GetCommandList(), VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline0->PipelineLayout, 0, m_DescriptorSet0->DescriptorSets.size(), m_DescriptorSet0->DescriptorSets.data(), 2, UniformOffset);
@@ -250,17 +253,17 @@ void InputAttachment::OnRender()
 
     vkCmdNextSubpass(VkContext->GetCommandList(), VK_SUBPASS_CONTENTS_INLINE);
     
-    // pass1
-    {
-        auto BufferView = m_RingBuffer->AllocConstantBuffer(sizeof(AttachmentParamBlock),&m_DebugParam);
-        const uint32_t UniformOffset[1] = {(uint32_t)BufferView.offset};
-        vkCmdBindPipeline(VkContext->GetCommandList(), VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline1->Pipeline);
-        vkCmdBindDescriptorSets(VkContext->GetCommandList(), VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline1->PipelineLayout, 0, m_DescriptorSets[i]->DescriptorSets.size(), m_DescriptorSets[i]->DescriptorSets.data(), 1, UniformOffset);
-        for (int32 meshIndex = 0; meshIndex < m_Quad->Meshes.size(); ++meshIndex)
-        {
-            m_Quad->Meshes[meshIndex]->BindDraw(VkContext->GetCommandList());
-        }
-    }
+    // // pass1
+    // {
+    //     auto BufferView = m_RingBuffer->AllocConstantBuffer(sizeof(AttachmentParamBlock),&m_DebugParam);
+    //     const uint32_t UniformOffset[1] = {(uint32_t)BufferView.offset};
+    //     vkCmdBindPipeline(VkContext->GetCommandList(), VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline1->Pipeline);
+    //     vkCmdBindDescriptorSets(VkContext->GetCommandList(), VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline1->PipelineLayout, 0, m_DescriptorSets[i]->DescriptorSets.size(), m_DescriptorSets[i]->DescriptorSets.data(), 1, UniformOffset);
+    //     for (int32 meshIndex = 0; meshIndex < m_Quad->Meshes.size(); ++meshIndex)
+    //     {
+    //         m_Quad->Meshes[meshIndex]->BindDraw(VkContext->GetCommandList());
+    //     }
+    // }
 
     vkCmdEndRenderPass(VkContext->GetCommandList());
 }
@@ -314,11 +317,11 @@ void InputAttachment::CreateAttachments()
         );
     }
 
-    for (int32 i = 0; i < m_AttachmentDepth.size(); ++i)
+    for (int32 i = 0; i < m_AttachmentNormals.size(); ++i)
     {
-        m_AttachmentDepth[i] = VulkanTexture::CreateAttachment(
+        m_AttachmentNormals[i] = VulkanTexture::CreateAttachment(
         VkContext->GetVulkanInstance()->GetDevice(),
-        PixelFormatToVkFormat(VkContext->GetVulkanInstance()->GetPixelFormat(), false),
+        VK_FORMAT_R8G8B8A8_UNORM,
         VK_IMAGE_ASPECT_COLOR_BIT,
         fWidth,
         fHeight,
@@ -326,15 +329,15 @@ void InputAttachment::CreateAttachments()
         );
     }
 
-    for (int32 i = 0; i < m_AttachmentNormals.size(); ++i)
+    for (int32 i = 0; i < m_AttachmentDepth.size(); ++i)
     {
-        m_AttachmentNormals[i] = VulkanTexture::CreateAttachment(
+        m_AttachmentDepth[i] = VulkanTexture::CreateAttachment(
         VkContext->GetVulkanInstance()->GetDevice(),
-        PixelFormatToVkFormat(VkContext->GetVulkanInstance()->GetPixelFormat(), false),
-        VK_IMAGE_ASPECT_COLOR_BIT,
+        PixelFormatToVkFormat(PF_DepthStencil, false),
+        VK_IMAGE_ASPECT_DEPTH_BIT,
         fWidth,
         fHeight,
-        VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT
+        VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT
         );
     }
     
