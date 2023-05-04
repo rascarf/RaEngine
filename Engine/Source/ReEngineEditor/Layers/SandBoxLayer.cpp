@@ -72,10 +72,12 @@ void SandBoxLayer::OnRender()
     for (int32 meshIndex = 0; meshIndex < Model->Meshes.size(); ++meshIndex)
     {
         auto BufferView = RingBuffer->AllocConstantBuffer(sizeof(UniformBufferObject),&ubo);
-        const uint32_t UniformOffset[2] = {(uint32_t)BufferView.offset,(uint32_t)ParamBufferView.offset};
-        
-        vkCmdBindDescriptorSets(VkContext->GetCommandList(), VK_PIPELINE_BIND_POINT_GRAPHICS, PipeShader->pipelineLayout, 0, PipeSet->DescriptorSets.size(), PipeSet->DescriptorSets.data(), 2, UniformOffset);
-        
+    	
+    	PipeSet->WriteBindOffset("uboMVP",BufferView.offset);
+    	PipeSet->WriteBindOffset("params",ParamBufferView.offset);
+    	
+        PipeSet->BindSet(VkContext->GetCommandList(),PipeShader->pipelineLayout);
+    	
         Model->Meshes[meshIndex]->BindDraw(VkContext->GetCommandList());
     }
     

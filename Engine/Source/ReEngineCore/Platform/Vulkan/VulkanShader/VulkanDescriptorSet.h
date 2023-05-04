@@ -3,6 +3,7 @@
 #include "Platform/Vulkan/VulkanBuffers/VulkanBuffer.h"
 #include "Platform/Vulkan/VulkanBuffers/VulkanTexture.h"
 
+
 //单个SetLayout的信息
 class VulkanDescriptorSetLayoutInfo
 {
@@ -27,6 +28,8 @@ public:
     {
         int32 Set;
         int32 Binding;
+        uint32_t DynamicOffset;
+        bool bDynamic;
     };
 
     VulkanDescriptorSetLayoutsInfo(){}
@@ -172,6 +175,48 @@ public:
         writeDescriptorSet.pBufferInfo     = &(buffer->Descriptor);
         writeDescriptorSet.dstBinding      = bindInfo.Binding;
         vkUpdateDescriptorSets(device, 1, &writeDescriptorSet, 0, nullptr);
+    }
+
+    void WriteBindOffset(const std::string& name,uint32_t Offset)
+    {
+        auto it = SetLayoutsInfo.ParamsMap.find(name);
+        if (it == SetLayoutsInfo.ParamsMap.end())
+        {
+            RE_CORE_ERROR("Failed write buffer, {0} not found!", name.c_str());
+        }
+
+        auto& bindInfo = it->second;
+        bindInfo.DynamicOffset = Offset;
+        bindInfo.bDynamic = true;
+    }
+
+    void BindSet(VkCommandBuffer& Cmd, VkPipelineLayout PipelineLayout)
+    {
+        //检查有多少个Set的DynamicOffset是一致的
+        //TODO 一起绑定
+        
+        //依次绑定不同DynamicOffset的Set
+        for(int32 i = 0; i < SetLayoutsInfo.SetLayouts.size(); ++i)
+        {
+            std::vector<uint32_t> Offsets;
+            for(int32 DescriptorIndex = 0 ; DescriptorIndex < SetLayoutsInfo.SetLayouts[i].Bindings.size();DescriptorIndex++)
+            {
+                for(auto BindInfoPair : SetLayoutsInfo.ParamsMap)
+                {
+                    auto BindInfo = BindInfoPair.second;
+
+                    if(BindInfo.bDynamic == false)
+                        continue;
+                    
+                    if(BindInfo.Binding == DescriptorIndex && BindInfo.Set == i)
+                    {
+                        Offsets.push_back(BindInfo.DynamicOffset);
+                    }
+                }
+            }
+            
+            vkCmdBindDescriptorSets(Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, PipelineLayout, 0, 1, &DescriptorSets[i], Offsets.size(), Offsets.data());
+        }
     }
 
 public:

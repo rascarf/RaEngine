@@ -8,6 +8,6 @@ namespace ReEngine
     {
         app.Init();
         
-        app.PushLayer(CreateRef<InputAttachment>());
+        app.PushLayer(CreateRef<SandBoxLayer>());
     }
 }
