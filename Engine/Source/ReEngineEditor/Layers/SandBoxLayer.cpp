@@ -145,8 +145,6 @@ void SandBoxLayer::OnDeInit()
 	TexNomal.reset();
 	TexPreIntegareted.reset();
 	GraphicsPipeline.reset();
-    	
-	FrameBuffer->ShutDown();
 }
 
 void SandBoxLayer::CreateGraphicsPipeline()

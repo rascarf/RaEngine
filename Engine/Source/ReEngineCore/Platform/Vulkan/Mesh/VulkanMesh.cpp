@@ -87,6 +87,8 @@ Ref<VulkanModel> VulkanModel::LoadFromFile(const std::string& filename, Ref<Vulk
     
     model->LoadNode(scene->mRootNode, scene);
 
+    delete[] dataPtr;
+
     return model;
 }
 
@@ -231,7 +233,7 @@ void VulkanModel::FillMatrixWithAiMatrix(glm::mat4x4& OutMatix, const aiMatrix4x
     OutMatix[3][2] = aiMatrix.d3;
     OutMatix[3][3] = aiMatrix.d4;
 
-    glm::transpose(OutMatix);
+    OutMatix = glm::transpose(OutMatix);
 }
 
 void VulkanModel::LoadVertexDatas(std::vector<float>& vertices, glm::vec3& mmax, glm::vec3& mmin, Ref<VulkanMesh> mesh,const aiMesh* aiMesh, const aiScene* aiScene)

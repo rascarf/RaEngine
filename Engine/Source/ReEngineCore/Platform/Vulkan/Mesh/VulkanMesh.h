@@ -74,7 +74,7 @@ public:
         GlobalMatrix = LocalMatrix;
         if (!Parent.expired())
         {
-            GlobalMatrix = GlobalMatrix * Parent.lock()->GetGlobalMatrix();
+            GlobalMatrix = Parent.lock()->GetGlobalMatrix() * GlobalMatrix;
         }
 
         return GlobalMatrix;

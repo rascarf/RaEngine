@@ -7,9 +7,9 @@ class InputAttachmentBackBuffer : public VulkanBackBuffer
 {
 public:
     InputAttachmentBackBuffer(int32 width, int32 height, const char* title,
-                            std::vector<Ref<VulkanTexture>> AttachmentDepth,
-                            std::vector<Ref<VulkanTexture>> AttachmentNormals,
-                            std::vector<Ref<VulkanTexture>> AttachmentColors)
+                            std::vector<Ref<VulkanTexture>>* AttachmentDepth,
+                            std::vector<Ref<VulkanTexture>>* AttachmentNormals,
+                            std::vector<Ref<VulkanTexture>>* AttachmentColors)
     : VulkanBackBuffer(width,height,title),
     m_AttachmentColors(AttachmentColors),
     m_AttachmentDepth(AttachmentDepth),
@@ -21,9 +21,9 @@ public:
     virtual void CreateRenderPass() override;
     virtual void CreateDepthStencil() override{};
 public:
-    std::vector<Ref<VulkanTexture>>             m_AttachmentDepth;
-    std::vector<Ref<VulkanTexture>>             m_AttachmentNormals;
-    std::vector<Ref<VulkanTexture>>             m_AttachmentColors;
+    std::vector<Ref<VulkanTexture>>*             m_AttachmentDepth;
+    std::vector<Ref<VulkanTexture>>*             m_AttachmentNormals;
+    std::vector<Ref<VulkanTexture>>*             m_AttachmentColors;
 };
 
 struct ModelBlock

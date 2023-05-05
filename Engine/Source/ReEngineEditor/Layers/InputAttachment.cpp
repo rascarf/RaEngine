@@ -30,9 +30,9 @@ void InputAttachmentBackBuffer::CreateFrameBuffers()
     for (uint32 i = 0; i < m_FrameBuffers.size(); ++i)
     {
         attachments[0] = backbufferViews[i];
-        attachments[1] = m_AttachmentColors[i]->ImageView;
-        attachments[2] = m_AttachmentNormals[i]->ImageView;
-        attachments[3] = m_AttachmentDepth[i]->ImageView;
+        attachments[1] = (*m_AttachmentColors)[i]->ImageView;
+        attachments[2] = (*m_AttachmentNormals)[i]->ImageView;
+        attachments[3] = (*m_AttachmentDepth)[i]->ImageView;
         
         VERIFYVULKANRESULT(vkCreateFramebuffer(device, &frameBufferCreateInfo, VULKAN_CPU_ALLOCATOR, &m_FrameBuffers[i]));
     }
@@ -159,7 +159,7 @@ void InputAttachmentBackBuffer::CreateRenderPass()
 void InputAttachment::OnCreateBackBuffer()
 {
     CreateAttachments();
-    FrameBuffer = CreateRef<InputAttachmentBackBuffer>(VkContext->WinProperty->Width,VkContext->WinProperty->Height,VkContext->WinProperty->Title.c_str(),m_AttachmentDepth,m_AttachmentNormals,m_AttachmentColors);
+    FrameBuffer = CreateRef<InputAttachmentBackBuffer>(VkContext->WinProperty->Width,VkContext->WinProperty->Height,VkContext->WinProperty->Title.c_str(),&m_AttachmentDepth,&m_AttachmentNormals,&m_AttachmentColors);
     FrameBuffer->Init(VkContext);
 }
 
@@ -172,7 +172,25 @@ void InputAttachment::OnInit()
 
 void InputAttachment::OnDeInit()
 {
+    m_Model.reset();
+    m_Quad.reset();
+
+    m_Pipeline0.reset();
+    m_Shader0.reset();
+    m_DescriptorSet0.reset();
+
+    m_Pipeline1.reset();
+    m_Shader1.reset();
+
+    m_RingBuffer.reset();
     
+    for(auto Index = 0; Index < m_AttachmentColors.size(); Index++)
+    {
+        m_AttachmentColors[Index].reset();
+        m_AttachmentDepth[Index].reset();
+        m_AttachmentNormals[Index].reset();
+    }
+
 }
 
 void InputAttachment::OnUpdate(Timestep ts)
@@ -240,13 +258,16 @@ void InputAttachment::OnRender()
     {
         const auto ViewBufferView =  m_RingBuffer->AllocConstantBuffer(sizeof(ViewProjectionBlock),&ViewParam);
         vkCmdBindPipeline(VkContext->GetCommandList(), VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline0->Pipeline);
-        // for (int32 meshIndex = 0; meshIndex < m_Model->Meshes.size(); ++meshIndex)
-        for (int32 meshIndex = 0; meshIndex < 1; ++meshIndex)
+        for (int32 meshIndex = 0; meshIndex < m_Model->Meshes.size(); ++meshIndex)
+        // for (int32 meshIndex = 0; meshIndex < 1; ++meshIndex)
         {
-            ModelMatrix.model = m_Model->Meshes[i]->LinkNode.lock()->GetGlobalMatrix();
-            auto BufferView = m_RingBuffer->AllocConstantBuffer(sizeof(ModelBlock),&ModelMatrix);
-            const uint32_t UniformOffset[2] = {(uint32_t)ViewBufferView.offset,(uint32_t)BufferView.offset};
-            vkCmdBindDescriptorSets(VkContext->GetCommandList(), VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline0->PipelineLayout, 0, m_DescriptorSet0->DescriptorSets.size(), m_DescriptorSet0->DescriptorSets.data(), 2, UniformOffset);
+            ModelMatrix.model =  glm::scale(m_Model->Meshes[meshIndex]->LinkNode.lock()->GetGlobalMatrix(),glm::vec3(0.1,0.1,0.1));
+            const auto BufferView = m_RingBuffer->AllocConstantBuffer(sizeof(ModelBlock),&ModelMatrix);
+            
+            m_DescriptorSet0->WriteBindOffset("uboViewProj",ViewBufferView.offset);
+            m_DescriptorSet0->WriteBindOffset("uboModel",BufferView.offset);
+            m_DescriptorSet0->BindSet(VkContext->GetCommandList(),m_Pipeline0->PipelineLayout);
+
             m_Model->Meshes[meshIndex]->BindDraw(VkContext->GetCommandList());
         }
     }
@@ -254,16 +275,16 @@ void InputAttachment::OnRender()
     vkCmdNextSubpass(VkContext->GetCommandList(), VK_SUBPASS_CONTENTS_INLINE);
     
     // // pass1
-    // {
-    //     auto BufferView = m_RingBuffer->AllocConstantBuffer(sizeof(AttachmentParamBlock),&m_DebugParam);
-    //     const uint32_t UniformOffset[1] = {(uint32_t)BufferView.offset};
-    //     vkCmdBindPipeline(VkContext->GetCommandList(), VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline1->Pipeline);
-    //     vkCmdBindDescriptorSets(VkContext->GetCommandList(), VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline1->PipelineLayout, 0, m_DescriptorSets[i]->DescriptorSets.size(), m_DescriptorSets[i]->DescriptorSets.data(), 1, UniformOffset);
-    //     for (int32 meshIndex = 0; meshIndex < m_Quad->Meshes.size(); ++meshIndex)
-    //     {
-    //         m_Quad->Meshes[meshIndex]->BindDraw(VkContext->GetCommandList());
-    //     }
-    // }
+    {
+        auto BufferView = m_RingBuffer->AllocConstantBuffer(sizeof(AttachmentParamBlock),&m_DebugParam);
+        const uint32_t UniformOffset[1] = {(uint32_t)BufferView.offset};
+        vkCmdBindPipeline(VkContext->GetCommandList(), VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline1->Pipeline);
+        vkCmdBindDescriptorSets(VkContext->GetCommandList(), VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline1->PipelineLayout, 0, m_DescriptorSets[i]->DescriptorSets.size(), m_DescriptorSets[i]->DescriptorSets.data(), 1, UniformOffset);
+        for (int32 meshIndex = 0; meshIndex < m_Quad->Meshes.size(); ++meshIndex)
+        {
+            m_Quad->Meshes[meshIndex]->BindDraw(VkContext->GetCommandList());
+        }
+    }
 
     vkCmdEndRenderPass(VkContext->GetCommandList());
 }
