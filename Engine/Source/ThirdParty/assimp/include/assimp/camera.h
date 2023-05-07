@@ -5,6 +5,8 @@ Open Asset Import Library (assimp)
 
 Copyright (c) 2006-2019, assimp team
 
+
+
 All rights reserved.
 
 Redistribution and use of this software in source and binary forms,
@@ -58,7 +60,7 @@ extern "C" {
  *
  * Cameras have a representation in the node graph and can be animated.
  * An important aspect is that the camera itself is also part of the
- * scene-graph. This means, any values such as the look-at vector are not
+ * scenegraph. This means, any values such as the look-at vector are not
  * *absolute*, they're <b>relative</b> to the coordinate system defined
  * by the node which corresponds to the camera. This allows for camera
  * animations. For static cameras parameters like the 'look-at' or 'up' vectors
@@ -113,6 +115,7 @@ struct aiCamera
      */
     C_STRUCT aiVector3D mPosition;
 
+
     /** 'Up' - vector of the camera coordinate system relative to
      *  the coordinate space defined by the corresponding node.
      *
@@ -132,6 +135,7 @@ struct aiCamera
      *  may be normalized, but it needn't.
      */
     C_STRUCT aiVector3D mLookAt;
+
 
     /** Half horizontal field of view angle, in radians.
      *
@@ -157,6 +161,7 @@ struct aiCamera
      * inaccuracies which could lead to z-fighting.
      */
     float mClipPlaneFar;
+
 
     /** Screen aspect ratio.
      *

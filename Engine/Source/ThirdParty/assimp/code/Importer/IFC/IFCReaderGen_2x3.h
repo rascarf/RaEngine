@@ -43,7 +43,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef INCLUDED_IFC_READER_GEN_H
 #define INCLUDED_IFC_READER_GEN_H
 
-#include "code/Step/STEPFile.h"
+#include "code/STEPFile.h"
 
 namespace Assimp {
 namespace IFC {

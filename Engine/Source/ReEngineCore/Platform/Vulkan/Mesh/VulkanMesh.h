@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include "assimp/matrix4x4.h"
 #include "Core/Core.h"
+#include "glm/ext/matrix_transform.hpp"
 #include "Mesh/BoundingBox.h"
 #include "Platform/Vulkan/VulkanCommonDefine.h"
 #include "Platform/Vulkan/Mesh/VulkanPrimitive.h"
@@ -54,7 +55,11 @@ public:
 
     int32 Index;
 
-    VulkanMeshNode():name("None"),Index(-1)
+    VulkanMeshNode():
+    name("None"),
+    Index(-1),
+    LocalMatrix(glm::identity<glm::mat4>()),
+    GlobalMatrix(glm::identity<glm::mat4>())
     {
         
     }

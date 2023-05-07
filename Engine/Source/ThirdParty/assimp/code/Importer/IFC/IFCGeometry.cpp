@@ -46,22 +46,17 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #ifndef ASSIMP_BUILD_NO_IFC_IMPORTER
 #include "IFCUtil.h"
-#include "Common/PolyTools.h"
-#include "PostProcessing/ProcessHelper.h"
+#include "code/PolyTools.h"
+#include "code/ProcessHelper.h"
 
-#ifdef ASSIMP_USE_HUNTER
-#  include <poly2tri/poly2tri.h>
-#  include <polyclipping/clipper.hpp>
-#else
-#  include "../contrib/poly2tri/poly2tri/poly2tri.h"
-#  include "../contrib/clipper/clipper.hpp"
-#endif
-
+#include "../contrib/poly2tri/poly2tri/poly2tri.h"
+#include "../contrib/clipper/clipper.hpp"
 #include <memory>
+
 #include <iterator>
 
 namespace Assimp {
-namespace IFC {
+    namespace IFC {
 
 // ------------------------------------------------------------------------------------------------
 bool ProcessPolyloop(const Schema_2x3::IfcPolyLoop& loop, TempMesh& meshout, ConversionData& /*conv*/)
@@ -128,7 +123,7 @@ void ProcessPolygonBoundaries(TempMesh& result, const TempMesh& inmesh, size_t m
         outer_polygon_it = begin + master_bounds;
     }
     else {
-        for(iit = begin; iit != end; ++iit) {
+        for(iit = begin; iit != end; iit++) {
             // find the polygon with the largest area and take it as the outer bound.
             IfcVector3& n = normals[std::distance(begin,iit)];
             const IfcFloat area = n.SquareLength();

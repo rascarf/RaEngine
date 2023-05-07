@@ -311,9 +311,10 @@ class TrimmedCurve : public BoundedCurve {
 public:
     // --------------------------------------------------
     TrimmedCurve(const Schema_2x3::IfcTrimmedCurve& entity, ConversionData& conv)
-        : BoundedCurve(entity,conv),
-          base(std::shared_ptr<const Curve>(Curve::Convert(entity.BasisCurve,conv)))
+        : BoundedCurve(entity,conv)
     {
+        base = std::shared_ptr<const Curve>(Curve::Convert(entity.BasisCurve,conv));
+
         typedef std::shared_ptr<const STEP::EXPRESS::DataType> Entry;
 
         // for some reason, trimmed curves can either specify a parametric value
@@ -499,7 +500,7 @@ bool Curve::InRange(IfcFloat u) const {
     if (IsClosed()) {
         return true;
     }
-    const IfcFloat epsilon = Math::getEpsilon<float>();
+    const IfcFloat epsilon = 1e-5;
     return u - range.first > -epsilon && range.second - u > -epsilon;
 }
 #endif

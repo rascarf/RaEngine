@@ -19,7 +19,10 @@ namespace ReEngine
 
         [[nodiscard]] inline float GetDistance()const {return mDistance;}
         inline void SetDistance(float distance){mDistance = distance;}
-        inline void SetViewportSize(float Width,float Height){mViewportWidth = Width;mViewportHeight = Height;}\
+        inline void SetViewportSize(float Width,float Height){mViewportWidth = Width;mViewportHeight = Height;}
+        inline void SetSpeed(float InSpeed){ mCameraSpeed = InSpeed;}
+        inline void SetNearPlane(float InNear){mNearClip = InNear; UpdateProjection();}
+        inline void SetFarPlane(float InFar){mFarClip = InFar; UpdateProjection();}
         
         [[nodiscard]] const glm::mat4& GetViewMatrix() const { return mViewMatrix; }
         [[nodiscard]] glm::mat4 GetViewProjection() const { return mProjection * mViewMatrix; }
@@ -57,7 +60,7 @@ namespace ReEngine
         float RotationSpeed() const;
         float ZoomSpeed() const;
     public:
-        float mCameraSpeed = 0.1f;
+        float mCameraSpeed = 100.0f;
         
     private:
         float mFOV = 45.0f,mAspectRatio = 1.778f,mNearClip = 0.1f,mFarClip = 1000.0f;

@@ -48,8 +48,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef AI_MESH_H_INC
 #define AI_MESH_H_INC
 
-#include <assimp/types.h>
-#include <assimp/aabb.h>
+#include "types.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -715,11 +714,6 @@ struct aiMesh
      *  Method of morphing when animeshes are specified. 
      */
     unsigned int mMethod;
-
-    /**
-     *
-     */
-    C_STRUCT aiAABB mAABB;
 	
 #ifdef __cplusplus
 
@@ -741,8 +735,7 @@ struct aiMesh
     , mMaterialIndex( 0 )
     , mNumAnimMeshes( 0 )
     , mAnimMeshes(nullptr)
-    , mMethod( 0 )
-    , mAABB() {
+    , mMethod( 0 ) {
         for( unsigned int a = 0; a < AI_MAX_NUMBER_OF_TEXTURECOORDS; ++a ) {
             mNumUVComponents[a] = 0;
             mTextureCoords[a] = nullptr;

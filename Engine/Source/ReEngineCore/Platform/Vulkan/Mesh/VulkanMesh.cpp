@@ -4,7 +4,6 @@
 #include <assimp/Importer.hpp>
 #include "assimp/postprocess.h"
 #include "assimp/scene.h"
-#include "assimp/code/glTF2/glTF2Importer.h"
 #include "glm/ext/matrix_transform.hpp"
 #include "Resource/AssetManager/AssetManager.h"
 
@@ -52,10 +51,7 @@ Ref<VulkanModel> VulkanModel::LoadFromFile(const std::string& filename, Ref<Vulk
     model->CmdBuffer  = cmdBuffer;
         
     int assimpFlags =
-        aiProcess_Triangulate | //三角形
-        aiProcess_MakeLeftHanded | //左手系坐标
-        aiProcess_FlipUVs | // 反转UV的Y坐标
-        aiProcess_FlipWindingOrder; //翻转绕序
+        aiProcess_Triangulate | aiProcess_FlipUVs| aiProcess_FlipWindingOrder | aiProcess_MakeLeftHanded;
         
     for (int32 i = 0; i < attributes.size(); ++i)
     {
@@ -81,9 +77,8 @@ Ref<VulkanModel> VulkanModel::LoadFromFile(const std::string& filename, Ref<Vulk
         return model;
     }
 
-    using namespace Assimp;
     Assimp::Importer importer;
-    auto scene = importer.ReadFileFromMemory(dataPtr, dataSize, assimpFlags);
+    const aiScene* scene = importer.ReadFileFromMemory(dataPtr, dataSize, assimpFlags);
     
     model->LoadNode(scene->mRootNode, scene);
 
@@ -214,26 +209,14 @@ Ref<VulkanMesh> VulkanModel::LoadMesh(const aiMesh* Inmesh, const aiScene* Insce
     return Mesh;
 }
 
-void VulkanModel::FillMatrixWithAiMatrix(glm::mat4x4& OutMatix, const aiMatrix4x4& aiMatrix)
+void VulkanModel::FillMatrixWithAiMatrix(glm::mat4x4& OutMatix, const aiMatrix4x4& from)
 {
-    OutMatix[0][0] = aiMatrix.a1;
-    OutMatix[0][1] = aiMatrix.a2;
-    OutMatix[0][2] = aiMatrix.a3;
-    OutMatix[0][3] = aiMatrix.a4;
-    OutMatix[1][0] = aiMatrix.b1;
-    OutMatix[1][1] = aiMatrix.b2;
-    OutMatix[1][2] = aiMatrix.b3;
-    OutMatix[1][3] = aiMatrix.b4;
-    OutMatix[2][0] = aiMatrix.c1;
-    OutMatix[2][1] = aiMatrix.c2;
-    OutMatix[2][2] = aiMatrix.c3;
-    OutMatix[2][3] = aiMatrix.c4;
-    OutMatix[3][0] = aiMatrix.d1;
-    OutMatix[3][1] = aiMatrix.d2;
-    OutMatix[3][2] = aiMatrix.d3;
-    OutMatix[3][3] = aiMatrix.d4;
 
-    OutMatix = glm::transpose(OutMatix);
+    OutMatix = glm::mat4x4{
+        (double)from.a1, (double)from.b1, (double)from.c1, (double)from.d1,
+        (double)from.a2, (double)from.b2, (double)from.c2, (double)from.d2,
+        (double)from.a3, (double)from.b3, (double)from.c3, (double)from.d3,
+        (double)from.a4, (double)from.b4, (double)from.c4, (double)from.d4};
 }
 
 void VulkanModel::LoadVertexDatas(std::vector<float>& vertices, glm::vec3& mmax, glm::vec3& mmin, Ref<VulkanMesh> mesh,const aiMesh* aiMesh, const aiScene* aiScene)

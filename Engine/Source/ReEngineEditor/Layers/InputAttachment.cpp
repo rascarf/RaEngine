@@ -198,6 +198,9 @@ void InputAttachment::OnUpdate(Timestep ts)
     m_RingBuffer->OnBeginFrame();
     m_Camera->OnUpdate(ts);
     
+    m_Camera->SetFarPlane(m_DebugParam.zFar);
+    m_Camera->SetNearPlane(m_DebugParam.zNear);
+    
     ModelMatrix.model = glm::identity<glm::mat4>();;
     ViewParam.view = m_Camera->GetViewMatrix();
     ViewParam.projection = m_Camera->GetProjection();
@@ -259,9 +262,8 @@ void InputAttachment::OnRender()
         const auto ViewBufferView =  m_RingBuffer->AllocConstantBuffer(sizeof(ViewProjectionBlock),&ViewParam);
         vkCmdBindPipeline(VkContext->GetCommandList(), VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline0->Pipeline);
         for (int32 meshIndex = 0; meshIndex < m_Model->Meshes.size(); ++meshIndex)
-        // for (int32 meshIndex = 0; meshIndex < 1; ++meshIndex)
-        {
-            ModelMatrix.model =  glm::scale(m_Model->Meshes[meshIndex]->LinkNode.lock()->GetGlobalMatrix(),glm::vec3(0.1,0.1,0.1));
+        { 
+            ModelMatrix.model =  m_Model->Meshes[meshIndex]->LinkNode.lock()->GetGlobalMatrix();
             const auto BufferView = m_RingBuffer->AllocConstantBuffer(sizeof(ModelBlock),&ModelMatrix);
             
             m_DescriptorSet0->WriteBindOffset("uboViewProj",ViewBufferView.offset);

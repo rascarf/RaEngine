@@ -5,6 +5,8 @@ Open Asset Import Library (assimp)
 
 Copyright (c) 2006-2019, assimp team
 
+
+
 All rights reserved.
 
 Redistribution and use of this software in source and binary forms,
@@ -51,7 +53,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "matrix4x4.h"
 #include "matrix3x3.h"
 #include "quaternion.h"
-#include "MathFunctions.h"
 
 #include <algorithm>
 #include <limits>
@@ -419,8 +420,8 @@ inline void aiMatrix4x4t<TReal>::Decompose (aiVector3t<TReal>& pScaling, aiQuate
 }
 
 template <typename TReal>
-inline
-void aiMatrix4x4t<TReal>::Decompose(aiVector3t<TReal>& pScaling, aiVector3t<TReal>& pRotation, aiVector3t<TReal>& pPosition) const {
+inline void aiMatrix4x4t<TReal>::Decompose(aiVector3t<TReal>& pScaling, aiVector3t<TReal>& pRotation, aiVector3t<TReal>& pPosition) const
+{
 	ASSIMP_MATRIX4_4_DECOMPOSE_PART;
 
     /*
@@ -441,7 +442,7 @@ void aiMatrix4x4t<TReal>::Decompose(aiVector3t<TReal>& pScaling, aiVector3t<TRea
 	*/
 
 	// Use a small epsilon to solve floating-point inaccuracies
-    const TReal epsilon = Assimp::Math::getEpsilon<TReal>();
+    const TReal epsilon = 10e-3f;
 
 	pRotation.y  = std::asin(-vCols[0].z);// D. Angle around oY.
 
