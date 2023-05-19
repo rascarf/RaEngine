@@ -1,6 +1,5 @@
 ﻿#include "VulkanTexture.h"
 #include "ImageLoader.h"
-#include "assimp/code/OpenGEX/OpenGEXStructs.h"
 #include "Math/Math.h"
 #include "Platform/Vulkan/VulkanInstance.h"
 #include "Resource/AssetManager/AssetManager.h"

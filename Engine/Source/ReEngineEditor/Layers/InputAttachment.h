@@ -3,17 +3,40 @@
 #include "Camera/EditorCamera.h"
 #include "Platform/Vulkan/Mesh/VulkanMesh.h"
 
+#define NUM_LIGHTS 64
+
+struct PointLight
+{
+    glm::vec4 Position;
+    glm::vec3 Color;
+    float Radius;
+};
+
+struct LightSpawnBlock
+{
+    glm::vec3 Position[NUM_LIGHTS];
+    glm::vec3 Direction[NUM_LIGHTS];
+    float Speed[NUM_LIGHTS];
+};
+
+struct LightDataBlock
+{
+    PointLight Lights[NUM_LIGHTS];
+};
+
 class InputAttachmentBackBuffer : public VulkanBackBuffer
 {
 public:
     InputAttachmentBackBuffer(int32 width, int32 height, const char* title,
                             std::vector<Ref<VulkanTexture>>* AttachmentDepth,
                             std::vector<Ref<VulkanTexture>>* AttachmentNormals,
-                            std::vector<Ref<VulkanTexture>>* AttachmentColors)
+                            std::vector<Ref<VulkanTexture>>* AttachmentColors,
+                            std::vector<Ref<VulkanTexture>>* AttachmentPositions)
     : VulkanBackBuffer(width,height,title),
     m_AttachmentColors(AttachmentColors),
     m_AttachmentDepth(AttachmentDepth),
-    m_AttachmentNormals(AttachmentNormals)
+    m_AttachmentNormals(AttachmentNormals),
+    m_AttachmentPositions(AttachmentPositions)
     {
     }
 public:
@@ -24,6 +47,7 @@ public:
     std::vector<Ref<VulkanTexture>>*             m_AttachmentDepth;
     std::vector<Ref<VulkanTexture>>*             m_AttachmentNormals;
     std::vector<Ref<VulkanTexture>>*             m_AttachmentColors;
+    std::vector<Ref<VulkanTexture>>*             m_AttachmentPositions;
 };
 
 struct ModelBlock
@@ -62,6 +86,9 @@ public:
     void CreateDescriptor();
     void CreateAttachments();
     void CreatePipeline();
+
+private:
+    void UpdateLight(Timestep ts);
     
 protected:
 
@@ -83,11 +110,18 @@ protected:
     std::vector<Ref<VulkanTexture>>                 m_AttachmentDepth;
     std::vector<Ref<VulkanTexture>>                 m_AttachmentNormals;
     std::vector<Ref<VulkanTexture>>                 m_AttachmentColors;
+    std::vector<Ref<VulkanTexture>>                 m_AttachmentPositions;
 
     ModelBlock ModelMatrix;
+    ViewProjectionBlock ViewParam;
+    
+    LightDataBlock LightDatas;
+    LightSpawnBlock LightInfos;
+    
     AttachmentParamBlock m_DebugParam;
     std::vector<const char*> m_DebugNames;
-    ViewProjectionBlock ViewParam;
+
+    float CurrentTime;
 };
 
 

@@ -78,3 +78,64 @@ float ReEngine::Math::Atan2(float y, float x)
 
     return t3;
 }
+
+
+// TODO 
+float ReEngine::Math::InterpConstantTo(float current, float target, float deltaTime, float interpSpeed)
+{
+    return 1.0f;
+}
+
+float ReEngine::Math::InterpTo(float current, float target, float deltaTime, float interpSpeed)
+{
+    return 1.0f;
+}
+
+float ReEngine::Math::TruncateToHalfIfClose(float f)
+{
+    return 1.0f;
+}
+
+double ReEngine::Math::TruncateToHalfIfClose(double f)
+{
+    return 1.0;
+}
+
+void ReEngine::Math::WindRelativeAnglesDegrees(float inAngle0, float& inOutAngle1)
+{
+}
+
+float ReEngine::Math::RoundHalfToEven(float f)
+{
+    return 1.0f;
+}
+
+double ReEngine::Math::RoundHalfToEven(double f)
+{
+    return 1.0;
+}
+
+float ReEngine::Math::RoundHalfFromZero(float f)
+{
+    return 1.0f;
+}
+
+double ReEngine::Math::RoundHalfFromZero(double f)
+{
+    return 1.0;
+}
+
+float ReEngine::Math::RoundHalfToZero(float f)
+{
+    return 1.0f;
+}
+
+double ReEngine::Math::RoundHalfToZero(double f)
+{
+    return 1.0;
+}
+
+float ReEngine::Math::PerlinNoise1D(const float value)
+{
+    return 1.0f;
+}
