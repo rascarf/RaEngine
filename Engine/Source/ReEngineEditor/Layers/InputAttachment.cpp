@@ -236,7 +236,7 @@ void InputAttachment::OnRender()
         { 0.2f, 0.2f, 0.2f, 0.0f }
     };
     clearValues[2].color        = {
-        { 0.2f, 0.2f, 0.2f, 0.0f }
+        { 0.0f, 0.0f, 0.0f, 0.0f }
     };
     clearValues[3].depthStencil = { 1.0f, 0 };
     clearValues[4].color = {0.0f,0.0f,0.0f,0.0f};
@@ -502,9 +502,10 @@ void InputAttachment::CreateBuffers()
 
     m_Camera = CreateRef<EditorCamera>();
 
+    auto Bounds = m_Model->RootNode->GetBounds();
+    
     for (int32 i = 0; i < NUM_LIGHTS; ++i)
     {
-        auto Bounds = m_Model->RootNode->GetBounds();
         LightDatas.Lights[i].Position.x = Math::RandRange(Bounds.Min.x, Bounds.Max.x);
         LightDatas.Lights[i].Position.y = Math::RandRange(Bounds.Min.y, Bounds.Max.y);
         LightDatas.Lights[i].Position.z = Math::RandRange(Bounds.Min.z, Bounds.Max.z);

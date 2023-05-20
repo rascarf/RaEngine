@@ -94,11 +94,10 @@ public:
                 const glm::mat4& matrix = GetGlobalMatrix();
 
                 glm::vec4 TempMin(Meshes[i]->m_BoundingBox.Min.x,Meshes[i]->m_BoundingBox.Min.y,Meshes[i]->m_BoundingBox.Min.z,1.0);
-                glm::vec4 mmin = TempMin * matrix;
+                glm::vec4 mmin = TempMin * glm::transpose(matrix);
 
                 glm::vec4 TempMax(Meshes[i]->m_BoundingBox.Max.x,Meshes[i]->m_BoundingBox.Max.y,Meshes[i]->m_BoundingBox.Max.z,1.0);
-                glm::vec4 mmax = TempMax * matrix;
-                
+                glm::vec4 mmax = TempMax * glm::transpose(matrix);
 
                 OutBounds.Min.x = min(OutBounds.Min.x, mmin.x);
                 OutBounds.Min.y = min(OutBounds.Min.y, mmin.y);
