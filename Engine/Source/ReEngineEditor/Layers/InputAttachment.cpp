@@ -5,6 +5,7 @@
 #include "quad_vert.h"
 #include "quad_frag.h"
 #include "Math/Math.h"
+#include "Mesh/Quad.h"
 
 void InputAttachmentBackBuffer::CreateFrameBuffers()
 {
@@ -220,7 +221,7 @@ void InputAttachment::OnRender()
         { 0.2f, 0.2f, 0.2f, 0.0f }
     };
     clearValues[2].color        = {
-        { 0.0f, 0.0f, 0.0f, 0.0f }
+        { 0.5f, 0.5f, 0.5f, 0.5f }
     };
     clearValues[3].depthStencil = { 1.0f, 0 };
 
@@ -376,7 +377,7 @@ void InputAttachment::CreatePipeline()
     auto Device = VkContext->GetVulkanInstance()->GetDevice();
     VulkanPipelineInfo pipelineInfo0;
     pipelineInfo0.Shader = m_Shader0;
-    pipelineInfo0.ColorAttachMenst = 2;
+    pipelineInfo0.ColorAttachmentsCount = 2;
     m_Pipeline0 = VulkanPipeline::Create(
         Device,
         VkContext->CommandPool->m_PipelineCache,
@@ -439,21 +440,13 @@ void InputAttachment::CreateBuffers()
     );
 
     // quad model
-    std::vector<float> vertices = {
-        -1.0f,  1.0f, 0.0f, 0.0f, 0.0f,
-        1.0f,  1.0f, 0.0f, 1.0f, 0.0f,
-        1.0f, -1.0f, 0.0f, 1.0f, 1.0f,
-        -1.0f, -1.0f, 0.0f, 0.0f, 1.0f
-    };
-    std::vector<uint16> indices = {
-        0, 1, 2, 0, 2, 3
-    };
+    Quad DebugQuad;
 
     m_Quad = VulkanModel::Create(
         device,
         cmdBuffer,
-        vertices,
-        indices,
+        DebugQuad.GetVertexs(),
+        DebugQuad.GetIndices(),
         m_Shader1->perVertexAttributes
     );
     

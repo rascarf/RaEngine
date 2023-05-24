@@ -18,7 +18,7 @@ Ref<VulkanPipeline> VulkanPipeline::Create(Ref<VulkanDevice> VulkanDeviceRef, Vk
 
 		VkPipelineColorBlendStateCreateInfo colorBlendState;
 		ZeroVulkanStruct(colorBlendState, VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO);
-		colorBlendState.attachmentCount = PipelineInfo.ColorAttachMenst;
+		colorBlendState.attachmentCount = PipelineInfo.ColorAttachmentsCount;
 		colorBlendState.pAttachments    = PipelineInfo.BlendAttachmentStates;
 		
 		VkPipelineViewportStateCreateInfo viewportState;

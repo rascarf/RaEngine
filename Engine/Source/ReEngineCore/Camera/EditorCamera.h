@@ -11,7 +11,7 @@ namespace ReEngine
     class EditorCamera : public Camera
     {
     public:
-        EditorCamera() = default;
+        EditorCamera(){ EditorCamera(mFOV , mAspectRatio,mNearClip,mFarClip);}
         EditorCamera(float fov,float aspectRatio,float nearClip,float farClip);
 
         void OnUpdate(Timestep ts);

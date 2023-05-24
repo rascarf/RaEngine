@@ -86,7 +86,6 @@ public:
 
 private:
     void UpdateLight(Timestep ts);
-    void Validate();
     
 protected:
 

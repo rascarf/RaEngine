@@ -7,7 +7,16 @@
 
 ReEngine::EditorCamera::EditorCamera(float fov, float aspectRatio, float nearClip, float farClip)
 {
+    mPosition = {0.0f,0.0f,0.0f};
+    mFocalPoint = {0.0f,0.0f,0.0f};
+    mInitialMousePosition = {0.0f,0.0f};
+    mDistance = 10.0f;
+    mPitch = 0.0f,mYaw = 0.0f;
+    mViewportWidth = 1280,mViewportHeight = 720;
+    bInit = true;
+    
     UpdateView();
+    UpdateProjection();
 }
 
 void ReEngine::EditorCamera::OnUpdate(Timestep ts)
