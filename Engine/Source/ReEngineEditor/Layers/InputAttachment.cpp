@@ -14,12 +14,12 @@ void InputAttachmentBackBuffer::CreateFrameBuffers()
     int32 fheight   = g_VulkanInstance->GetSwapChain()->GetHeight();
     VkDevice device = g_VulkanInstance->GetDevice()->GetInstanceHandle();
 
-    VkImageView attachments[5];
+    VkImageView attachments[4]; 
 
     VkFramebufferCreateInfo frameBufferCreateInfo;
     ZeroVulkanStruct(frameBufferCreateInfo, VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO);
     frameBufferCreateInfo.renderPass      = m_RenderPass;
-    frameBufferCreateInfo.attachmentCount = 5;
+    frameBufferCreateInfo.attachmentCount = 4;
     frameBufferCreateInfo.pAttachments    = attachments;
     frameBufferCreateInfo.width			  = fwidth;
     frameBufferCreateInfo.height		  = fheight;
@@ -34,7 +34,6 @@ void InputAttachmentBackBuffer::CreateFrameBuffers()
         attachments[1] = (*m_AttachmentColors)[i]->ImageView;
         attachments[2] = (*m_AttachmentNormals)[i]->ImageView;
         attachments[3] = (*m_AttachmentDepth)[i]->ImageView;
-        attachments[4] = (*m_AttachmentPositions)[i]->ImageView;
         
         VERIFYVULKANRESULT(vkCreateFramebuffer(device, &frameBufferCreateInfo, VULKAN_CPU_ALLOCATOR, &m_FrameBuffers[i]));
     }
@@ -47,7 +46,7 @@ void InputAttachmentBackBuffer::CreateRenderPass()
     VkDevice device = g_VulkanInstance->GetDevice()->GetInstanceHandle();
     PixelFormat pixelFormat = g_VulkanInstance->GetPixelFormat();
 
-    std::vector<VkAttachmentDescription> attachments(5);
+    std::vector<VkAttachmentDescription> attachments(4);
 
     // swap chain attachment
     attachments[0].format         = PixelFormatToVkFormat(pixelFormat, false);
@@ -86,24 +85,12 @@ void InputAttachmentBackBuffer::CreateRenderPass()
     attachments[3].stencilStoreOp = VK_ATTACHMENT_STORE_OP_STORE;
     attachments[3].initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
     attachments[3].finalLayout    = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-    //Position Attachment
-    attachments[4].format = VK_FORMAT_R16G16B16A16_SFLOAT;
-    attachments[4].samples        = m_SampleCount;
-    attachments[4].loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    attachments[4].storeOp        = VK_ATTACHMENT_STORE_OP_STORE;
-    attachments[4].stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    attachments[4].stencilStoreOp = VK_ATTACHMENT_STORE_OP_STORE;
-    attachments[4].initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
-    attachments[4].finalLayout    = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
     
     VkAttachmentReference colorReferences[3];
     colorReferences[0].attachment = 1;
     colorReferences[0].layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
     colorReferences[1].attachment = 2;
     colorReferences[1].layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-    colorReferences[2].attachment = 4;
-    colorReferences[2].layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
     VkAttachmentReference swapReference = { };
     swapReference.attachment = 0;
@@ -113,26 +100,24 @@ void InputAttachmentBackBuffer::CreateRenderPass()
     depthReference.attachment = 3;
     depthReference.layout     = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
-    VkAttachmentReference inputReferences[4];
+    VkAttachmentReference inputReferences[3];
     inputReferences[0].attachment = 1;
     inputReferences[0].layout     = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     inputReferences[1].attachment = 2;
     inputReferences[1].layout     = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     inputReferences[2].attachment = 3;
     inputReferences[2].layout     = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    inputReferences[3].attachment = 4;
-    inputReferences[3].layout     = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
     std::vector<VkSubpassDescription> subpassDescriptions(2);
     subpassDescriptions[0].pipelineBindPoint       = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    subpassDescriptions[0].colorAttachmentCount    = 3;
+    subpassDescriptions[0].colorAttachmentCount    = 2;
     subpassDescriptions[0].pColorAttachments       = colorReferences;
     subpassDescriptions[0].pDepthStencilAttachment = &depthReference;
 
     subpassDescriptions[1].pipelineBindPoint       = VK_PIPELINE_BIND_POINT_GRAPHICS;
     subpassDescriptions[1].colorAttachmentCount    = 1;
     subpassDescriptions[1].pColorAttachments       = &swapReference;
-    subpassDescriptions[1].inputAttachmentCount    = 4;
+    subpassDescriptions[1].inputAttachmentCount    = 3;
     subpassDescriptions[1].pInputAttachments       = inputReferences;
 
     std::vector<VkSubpassDependency> dependencies(3);
@@ -175,7 +160,7 @@ void InputAttachmentBackBuffer::CreateRenderPass()
 void InputAttachment::OnCreateBackBuffer()
 {
     CreateAttachments();
-    FrameBuffer = CreateRef<InputAttachmentBackBuffer>(VkContext->WinProperty->Width,VkContext->WinProperty->Height,VkContext->WinProperty->Title.c_str(),&m_AttachmentDepth,&m_AttachmentNormals,&m_AttachmentColors,&m_AttachmentPositions);
+    FrameBuffer = CreateRef<InputAttachmentBackBuffer>(VkContext->WinProperty->Width,VkContext->WinProperty->Height,VkContext->WinProperty->Title.c_str(),&m_AttachmentDepth,&m_AttachmentNormals,&m_AttachmentColors);
     FrameBuffer->Init(VkContext);
 }
 
@@ -205,7 +190,6 @@ void InputAttachment::OnDeInit()
         m_AttachmentColors[Index].reset();
         m_AttachmentDepth[Index].reset();
         m_AttachmentNormals[Index].reset();
-        m_AttachmentPositions[Index].reset();
     }
 }
 
@@ -228,7 +212,7 @@ void InputAttachment::OnRender()
     VkCommandBufferBeginInfo cmdBeginInfo;
     ZeroVulkanStruct(cmdBeginInfo, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
 
-    VkClearValue clearValues[5];
+    VkClearValue clearValues[4];
     clearValues[0].color        = {
         { 0.2f, 0.2f, 0.2f, 0.0f }
     };
@@ -239,12 +223,11 @@ void InputAttachment::OnRender()
         { 0.0f, 0.0f, 0.0f, 0.0f }
     };
     clearValues[3].depthStencil = { 1.0f, 0 };
-    clearValues[4].color = {0.0f,0.0f,0.0f,0.0f};
 
     VkRenderPassBeginInfo renderPassBeginInfo;
     ZeroVulkanStruct(renderPassBeginInfo, VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO);
     renderPassBeginInfo.renderPass      = FrameBuffer->m_RenderPass;
-    renderPassBeginInfo.clearValueCount = 5;
+    renderPassBeginInfo.clearValueCount = 4;
     renderPassBeginInfo.pClearValues    = clearValues;
     renderPassBeginInfo.renderArea.offset.x = 0;
     renderPassBeginInfo.renderArea.offset.y = 0;
@@ -275,16 +258,17 @@ void InputAttachment::OnRender()
     vkCmdSetViewport(VkContext->GetCommandList(), 0, 1, &viewport);
     vkCmdSetScissor(VkContext->GetCommandList(),  0, 1, &scissor);
 
+    const auto ViewBufferView =  m_RingBuffer->AllocConstantBuffer(sizeof(ViewProjectionBlock),&ViewParam);
+
     // pass0
     {
-        const auto ViewBufferView =  m_RingBuffer->AllocConstantBuffer(sizeof(ViewProjectionBlock),&ViewParam);
         vkCmdBindPipeline(VkContext->GetCommandList(), VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline0->Pipeline);
         for (int32 meshIndex = 0; meshIndex < m_Model->Meshes.size(); ++meshIndex)
         { 
             ModelMatrix.model =  m_Model->Meshes[meshIndex]->LinkNode.lock()->GetGlobalMatrix();
             const auto BufferView = m_RingBuffer->AllocConstantBuffer(sizeof(ModelBlock),&ModelMatrix);
             
-            m_DescriptorSet0->WriteBindOffset("uboViewProj",ViewBufferView.offset);
+            m_DescriptorSet0->WriteBindOffset("uboViewProj",ViewBufferView.offset); 
             m_DescriptorSet0->WriteBindOffset("uboModel",BufferView.offset);
             m_DescriptorSet0->BindSet(VkContext->GetCommandList(),m_Pipeline0->PipelineLayout);
 
@@ -298,9 +282,10 @@ void InputAttachment::OnRender()
     {
         vkCmdBindPipeline(VkContext->GetCommandList(), VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline1->Pipeline);
         
-        auto BufferView = m_RingBuffer->AllocConstantBuffer(sizeof(LightDatas),&LightDatas);
+        auto BufferView = m_RingBuffer->AllocConstantBuffer(sizeof(LightDatas),&LightDatas);   
         
         m_DescriptorSets[i]->WriteBindOffset("lightDatas",BufferView.offset);
+        m_DescriptorSets[i]->WriteBindOffset("uboViewProj",ViewBufferView.offset);
         m_DescriptorSets[i]->BindSet(VkContext->GetCommandList(),m_Pipeline1->PipelineLayout);
         
         for (int32 meshIndex = 0; meshIndex < m_Quad->Meshes.size(); ++meshIndex)
@@ -348,7 +333,6 @@ void InputAttachment::CreateAttachments()
     m_AttachmentColors.resize(NumberBuffer);
     m_AttachmentDepth.resize(NumberBuffer);
     m_AttachmentNormals.resize(NumberBuffer);
-    m_AttachmentPositions.resize(NumberBuffer);
 
     for (int32 i = 0; i < m_AttachmentColors.size(); ++i) 
     {
@@ -385,18 +369,6 @@ void InputAttachment::CreateAttachments()
         VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT
         );
     }
-
-    for(int32 i = 0; i < m_AttachmentPositions.size(); ++i)
-    {
-        m_AttachmentPositions[i] = VulkanTexture::CreateAttachment(
-        VkContext->GetVulkanInstance()->GetDevice(),
-        VK_FORMAT_R16G16B16A16_SFLOAT,
-        VK_IMAGE_ASPECT_COLOR_BIT,
-        fWidth,fHeight,
-        VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT
-        );
-    }
-    
 }
 
 void InputAttachment::CreatePipeline()
@@ -404,7 +376,7 @@ void InputAttachment::CreatePipeline()
     auto Device = VkContext->GetVulkanInstance()->GetDevice();
     VulkanPipelineInfo pipelineInfo0;
     pipelineInfo0.Shader = m_Shader0;
-    pipelineInfo0.ColorAttachMenst = 3;
+    pipelineInfo0.ColorAttachMenst = 2;
     m_Pipeline0 = VulkanPipeline::Create(
         Device,
         VkContext->CommandPool->m_PipelineCache,
@@ -488,8 +460,8 @@ void InputAttachment::CreateBuffers()
     m_RingBuffer = CreateRef<VulkanDynamicBufferRing>();
     m_RingBuffer->OnCreate(VkContext->Instance->GetDevice(),3,200 * 1024 * 1024);
 
-    m_DebugParam.zNear = 300.0f;
-    m_DebugParam.zFar = 3000.0f;
+    m_DebugParam.zNear = 0.1f;
+    m_DebugParam.zFar = 1000.0f;
 
     ModelMatrix.model = glm::identity<glm::mat4>();
     ViewParam.projection = glm::identity<glm::mat4>();
@@ -535,8 +507,8 @@ void InputAttachment::CreateDescriptor()
         m_DescriptorSets[i]->WriteImage("inputColor", m_AttachmentColors[i]);
         m_DescriptorSets[i]->WriteImage("inputNormal", m_AttachmentNormals[i]);
         m_DescriptorSets[i]->WriteImage("inputDepth", m_AttachmentDepth[i]);
-        m_DescriptorSets[i]->WriteImage("inputPosition",m_AttachmentPositions[i]);
         
         m_DescriptorSets[i]->WriteBuffer("lightDatas", m_RingBuffer->GetSetDescriptor(sizeof(LightDataBlock)));
+        m_DescriptorSets[i]->WriteBuffer("uboViewProj", m_RingBuffer->GetSetDescriptor(sizeof(ViewProjectionBlock)));
     }
 }

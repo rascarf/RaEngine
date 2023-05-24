@@ -30,13 +30,11 @@ public:
     InputAttachmentBackBuffer(int32 width, int32 height, const char* title,
                             std::vector<Ref<VulkanTexture>>* AttachmentDepth,
                             std::vector<Ref<VulkanTexture>>* AttachmentNormals,
-                            std::vector<Ref<VulkanTexture>>* AttachmentColors,
-                            std::vector<Ref<VulkanTexture>>* AttachmentPositions)
+                            std::vector<Ref<VulkanTexture>>* AttachmentColors)
     : VulkanBackBuffer(width,height,title),
     m_AttachmentColors(AttachmentColors),
     m_AttachmentDepth(AttachmentDepth),
-    m_AttachmentNormals(AttachmentNormals),
-    m_AttachmentPositions(AttachmentPositions)
+    m_AttachmentNormals(AttachmentNormals)
     {
     }
 public:
@@ -47,7 +45,6 @@ public:
     std::vector<Ref<VulkanTexture>>*             m_AttachmentDepth;
     std::vector<Ref<VulkanTexture>>*             m_AttachmentNormals;
     std::vector<Ref<VulkanTexture>>*             m_AttachmentColors;
-    std::vector<Ref<VulkanTexture>>*             m_AttachmentPositions;
 };
 
 struct ModelBlock
@@ -89,6 +86,7 @@ public:
 
 private:
     void UpdateLight(Timestep ts);
+    void Validate();
     
 protected:
 
@@ -110,7 +108,6 @@ protected:
     std::vector<Ref<VulkanTexture>>                 m_AttachmentDepth;
     std::vector<Ref<VulkanTexture>>                 m_AttachmentNormals;
     std::vector<Ref<VulkanTexture>>                 m_AttachmentColors;
-    std::vector<Ref<VulkanTexture>>                 m_AttachmentPositions;
 
     ModelBlock ModelMatrix;
     ViewProjectionBlock ViewParam;
