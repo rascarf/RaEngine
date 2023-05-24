@@ -21,7 +21,7 @@ struct VulkanPipelineInfo
     //TODO Raytracing Shader
 	Ref<VulkanShader> Shader;
     int32 SubPass = 0;
-    int32 ColorAttachMenst = 1;
+    int32 ColorAttachmentsCount = 1;
     
     VulkanPipelineInfo()
     {
