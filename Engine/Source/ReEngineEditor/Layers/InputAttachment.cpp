@@ -168,8 +168,7 @@ void InputAttachment::OnCreateBackBuffer()
 void InputAttachment::OnInit()
 {
     CreateBuffers();
-    CreateDescriptor();
-    CreatePipeline();
+    CreateMaterial();
 }
 
 void InputAttachment::OnDeInit()
@@ -177,13 +176,12 @@ void InputAttachment::OnDeInit()
     m_Model.reset();
     m_Quad.reset();
 
-    m_Pipeline0.reset();
+    m_Material0.reset();
+    m_Material1.reset();
+    
     m_Shader0.reset();
-    m_DescriptorSet0.reset();
-
-    m_Pipeline1.reset();
     m_Shader1.reset();
-
+    
     m_RingBuffer.reset();
     
     for(auto Index = 0; Index < m_AttachmentColors.size(); Index++)
@@ -249,7 +247,6 @@ void InputAttachment::OnRender()
     scissor.offset.x      = 0;
     scissor.offset.y      = 0;
     
-
     int32 i = VkContext->GetCurrtIndex();
     renderPassBeginInfo.framebuffer = FrameBuffer->m_FrameBuffers[i];
 
@@ -258,41 +255,46 @@ void InputAttachment::OnRender()
 
     vkCmdSetViewport(VkContext->GetCommandList(), 0, 1, &viewport);
     vkCmdSetScissor(VkContext->GetCommandList(),  0, 1, &scissor);
-
-    const auto ViewBufferView =  m_RingBuffer->AllocConstantBuffer(sizeof(ViewProjectionBlock),&ViewParam);
-
+    
     // pass0
     {
-        vkCmdBindPipeline(VkContext->GetCommandList(), VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline0->Pipeline);
+        m_Material0->BeginFrame();
+        vkCmdBindPipeline(VkContext->GetCommandList(), VK_PIPELINE_BIND_POINT_GRAPHICS, m_Material0->mPipeline->Pipeline);
         for (int32 meshIndex = 0; meshIndex < m_Model->Meshes.size(); ++meshIndex)
         { 
             ModelMatrix.model =  m_Model->Meshes[meshIndex]->LinkNode.lock()->GetGlobalMatrix();
-            const auto BufferView = m_RingBuffer->AllocConstantBuffer(sizeof(ModelBlock),&ModelMatrix);
             
-            m_DescriptorSet0->WriteBindOffset("uboViewProj",ViewBufferView.offset); 
-            m_DescriptorSet0->WriteBindOffset("uboModel",BufferView.offset);
-            m_DescriptorSet0->BindSet(VkContext->GetCommandList(),m_Pipeline0->PipelineLayout);
+            m_Material0->BeginObject();
+            m_Material0->SetLocalUniform("uboViewProj",&ViewParam,sizeof(ViewProjectionBlock));
+            m_Material0->SetLocalUniform("uboModel",&ModelMatrix,sizeof(ModelBlock));
+            m_Material0->EndObject();
+            m_Material0->BindDescriptorSets(VkContext->GetCommandList(),VK_PIPELINE_BIND_POINT_GRAPHICS,meshIndex);
 
             m_Model->Meshes[meshIndex]->BindDraw(VkContext->GetCommandList());
         }
+        m_Material0->EndFrame();
     }
 
     vkCmdNextSubpass(VkContext->GetCommandList(), VK_SUBPASS_CONTENTS_INLINE);
     
     // // pass1
     {
-        vkCmdBindPipeline(VkContext->GetCommandList(), VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline1->Pipeline);
-        
-        auto BufferView = m_RingBuffer->AllocConstantBuffer(sizeof(LightDatas),&LightDatas);   
-        
-        m_DescriptorSets[i]->WriteBindOffset("lightDatas",BufferView.offset);
-        m_DescriptorSets[i]->WriteBindOffset("uboViewProj",ViewBufferView.offset);
-        m_DescriptorSets[i]->BindSet(VkContext->GetCommandList(),m_Pipeline1->PipelineLayout);
-        
+        m_Material1->BeginFrame();
+        vkCmdBindPipeline(VkContext->GetCommandList(), VK_PIPELINE_BIND_POINT_GRAPHICS, m_Material1->mPipeline->Pipeline);
         for (int32 meshIndex = 0; meshIndex < m_Quad->Meshes.size(); ++meshIndex)
         {
+            m_Material1->BeginObject();
+            m_Material1->SetLocalUniform("uboViewProj",&ViewParam,sizeof(ViewProjectionBlock));
+            m_Material1->SetLocalUniform("lightDatas",&LightDatas,sizeof(LightDatas));
+            m_Material1->SetInputAttachment("inputColor",  m_AttachmentColors[VkContext->GetCurrtIndex()]);
+            m_Material1->SetInputAttachment("inputNormal", m_AttachmentNormals[VkContext->GetCurrtIndex()]);
+            m_Material1->SetInputAttachment("inputDepth",  m_AttachmentDepth[VkContext->GetCurrtIndex()]);
+            m_Material1->EndObject();
+        
+            m_Material1->BindDescriptorSets(VkContext->GetCommandList(),VK_PIPELINE_BIND_POINT_GRAPHICS,meshIndex);
             m_Quad->Meshes[meshIndex]->BindDraw(VkContext->GetCommandList());
         }
+        m_Material1->EndFrame();
     }
 
     vkCmdEndRenderPass(VkContext->GetCommandList());
@@ -372,42 +374,34 @@ void InputAttachment::CreateAttachments()
     }
 }
 
-void InputAttachment::CreatePipeline()
+void InputAttachment::CreateMaterial()
 {
     auto Device = VkContext->GetVulkanInstance()->GetDevice();
-    VulkanPipelineInfo pipelineInfo0;
-    pipelineInfo0.Shader = m_Shader0;
-    pipelineInfo0.ColorAttachmentsCount = 2;
-    m_Pipeline0 = VulkanPipeline::Create(
+    m_Material0 = VulkanMaterial::Create(
         Device,
+        FrameBuffer->m_RenderPass,
         VkContext->CommandPool->m_PipelineCache,
-        pipelineInfo0,
-        {
-            m_Model->GetInputBinding()
-        },
-        m_Model->GetInputAttributes(),
-        m_Shader0->pipelineLayout,
-        FrameBuffer->m_RenderPass
-    ); 
-
-    VulkanPipelineInfo pipelineInfo1;
-    pipelineInfo1.DepthStencilState.depthTestEnable   = VK_FALSE;
-    pipelineInfo1.DepthStencilState.depthWriteEnable  = VK_FALSE;
-    pipelineInfo1.DepthStencilState.stencilTestEnable = VK_FALSE;
-    pipelineInfo1.Shader  = m_Shader1;
-    pipelineInfo1.SubPass = 1;
+        m_Shader0,
+        m_RingBuffer
+    );
     
-    m_Pipeline1 = VulkanPipeline::Create(
+    m_Material0->mPipelineInfo.ColorAttachmentsCount = 2;
+    m_Material0->PreparePipeline();
+
+    m_Material1 = VulkanMaterial::Create(
         Device,
+        FrameBuffer->m_RenderPass,
         VkContext->CommandPool->m_PipelineCache,
-        pipelineInfo1,
-        {
-            m_Quad->GetInputBinding()
-        },
-        m_Quad->GetInputAttributes(),
-        m_Shader1->pipelineLayout,
-        FrameBuffer->m_RenderPass
-    ); 
+        m_Shader1,
+        m_RingBuffer
+    );
+
+    m_Material1->mPipelineInfo.DepthStencilState.depthTestEnable   = VK_FALSE;
+    m_Material1->mPipelineInfo.DepthStencilState.depthWriteEnable  = VK_FALSE;
+    m_Material1->mPipelineInfo.DepthStencilState.stencilTestEnable = VK_FALSE;
+    m_Material1->mPipelineInfo.Shader  = m_Shader1;
+    m_Material1->mPipelineInfo.SubPass = 1;
+    m_Material1->PreparePipeline();
 }
 
 void InputAttachment::UpdateLight(Timestep ts)
@@ -438,7 +432,7 @@ void InputAttachment::CreateBuffers()
         cmdBuffer,
         m_Shader0->perVertexAttributes
     );
-
+    
     // quad model
     Quad DebugQuad;
 
@@ -452,7 +446,7 @@ void InputAttachment::CreateBuffers()
     
     m_RingBuffer = CreateRef<VulkanDynamicBufferRing>();
     m_RingBuffer->OnCreate(VkContext->Instance->GetDevice(),3,200 * 1024 * 1024);
-
+    
     m_DebugParam.zNear = 0.1f;
     m_DebugParam.zFar = 1000.0f;
 
@@ -484,24 +478,5 @@ void InputAttachment::CreateBuffers()
         LightInfos.Direction[i] = LightInfos.Position[i];
         LightInfos.Direction[i] = glm::normalize(LightInfos.Direction[i]);
         LightInfos.Speed[i] = 1.0f + Math::RandRange(0.0f, 5.0f);
-    }
-}
-
-void InputAttachment::CreateDescriptor()
-{
-    m_DescriptorSet0 = m_Shader0->AllocateDescriptorSet();
-    m_DescriptorSet0->WriteBuffer("uboViewProj", m_RingBuffer->GetSetDescriptor(sizeof(ViewProjectionBlock)));
-    m_DescriptorSet0->WriteBuffer("uboModel",m_RingBuffer->GetSetDescriptor(sizeof(ModelBlock)));
-
-    m_DescriptorSets.resize(m_AttachmentColors.size());
-    for (int32 i = 0; i < m_DescriptorSets.size(); ++i)
-    {
-        m_DescriptorSets[i] = m_Shader1->AllocateDescriptorSet();
-        m_DescriptorSets[i]->WriteImage("inputColor", m_AttachmentColors[i]);
-        m_DescriptorSets[i]->WriteImage("inputNormal", m_AttachmentNormals[i]);
-        m_DescriptorSets[i]->WriteImage("inputDepth", m_AttachmentDepth[i]);
-        
-        m_DescriptorSets[i]->WriteBuffer("lightDatas", m_RingBuffer->GetSetDescriptor(sizeof(LightDataBlock)));
-        m_DescriptorSets[i]->WriteBuffer("uboViewProj", m_RingBuffer->GetSetDescriptor(sizeof(ViewProjectionBlock)));
     }
 }

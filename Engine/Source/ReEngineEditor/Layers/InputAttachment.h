@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include "GraphicalLayer.h"
 #include "Camera/EditorCamera.h"
+#include "Platform/Vulkan/VulkanMaterial.h"
 #include "Platform/Vulkan/Mesh/VulkanMesh.h"
 
 #define NUM_LIGHTS 64
@@ -80,9 +81,9 @@ public:
 
 public:
     void CreateBuffers();
-    void CreateDescriptor();
+    void CreateMaterial();
     void CreateAttachments();
-    void CreatePipeline();
+
 
 private:
     void UpdateLight(Timestep ts);
@@ -96,13 +97,11 @@ protected:
     Ref<VulkanModel>                                m_Model = nullptr;
     Ref<VulkanModel>                                m_Quad = nullptr;
 
-    Ref<VulkanPipeline>                             m_Pipeline0 = nullptr;
+    Ref<VulkanMaterial>                             m_Material0 = nullptr;
     Ref<VulkanShader>                               m_Shader0 = nullptr;
-    Ref<VulkanDescriptorSet>                        m_DescriptorSet0 = nullptr;
 
-    Ref<VulkanPipeline>                             m_Pipeline1 = nullptr;
+    Ref<VulkanMaterial>                             m_Material1 = nullptr;
     Ref<VulkanShader>                               m_Shader1 = nullptr;
-    std::vector<Ref<VulkanDescriptorSet>>           m_DescriptorSets;
     
     std::vector<Ref<VulkanTexture>>                 m_AttachmentDepth;
     std::vector<Ref<VulkanTexture>>                 m_AttachmentNormals;

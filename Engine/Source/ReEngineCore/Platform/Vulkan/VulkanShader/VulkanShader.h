@@ -27,7 +27,7 @@ public:
         uint32 Set = 0;
         uint32 Binding = 0;
         VkDescriptorType DescriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        VkShaderStageFlags StagetFlags = 0;
+        VkShaderStageFlags StageFlags = 0;
     };
     
     static Ref<VulkanShader> Create(Ref<VulkanDevice> vulkanDevice,bool DynamicUBO,const std::vector<unsigned char>* Vert,const std::vector<unsigned char>* Frag,const std::vector<unsigned char>* Geom,const std::vector<unsigned char>* Compute,const std::vector<unsigned char>* Tesc,const std::vector<unsigned char>* Tese);

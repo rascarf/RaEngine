@@ -153,13 +153,13 @@ void VulkanShader::ProcessAttachment(spirv_cross::Compiler& compiler, spirv_cros
             ImageInfo ImageInfo = {};
             ImageInfo.Set = set;
             ImageInfo.Binding = binding;
-            ImageInfo.StagetFlags = stageFlags;
+            ImageInfo.StageFlags = stageFlags;
             ImageInfo.DescriptorType = setLayoutBinding.descriptorType;
             imageParams.insert(std::make_pair(varName, ImageInfo));
         }
         else
         {
-            it->second.StagetFlags |= stageFlags;
+            it->second.StageFlags |= stageFlags;
         }
     }
 }
@@ -236,13 +236,13 @@ void VulkanShader::ProcessTextures(spirv_cross::Compiler& compiler, spirv_cross:
             ImageInfo imageInfo = {};
             imageInfo.Set            = set;
             imageInfo.Binding        = binding;
-            imageInfo.StagetFlags     = stageFlags;
+            imageInfo.StageFlags     = stageFlags;
             imageInfo.DescriptorType = setLayoutBinding.descriptorType;
             imageParams.insert(std::make_pair(varName, imageInfo));
         }
         else
         {
-            it->second.StagetFlags |= stageFlags;
+            it->second.StageFlags |= stageFlags;
         }
     }
 }
