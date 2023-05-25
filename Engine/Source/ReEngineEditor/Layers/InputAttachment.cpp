@@ -255,46 +255,40 @@ void InputAttachment::OnRender()
 
     vkCmdSetViewport(VkContext->GetCommandList(), 0, 1, &viewport);
     vkCmdSetScissor(VkContext->GetCommandList(),  0, 1, &scissor);
-    
+
+    const auto ViewBufferView =  m_RingBuffer->AllocConstantBuffer(sizeof(ViewProjectionBlock),&ViewParam);
     // pass0
     {
-        m_Material0->BeginFrame();
         vkCmdBindPipeline(VkContext->GetCommandList(), VK_PIPELINE_BIND_POINT_GRAPHICS, m_Material0->mPipeline->Pipeline);
         for (int32 meshIndex = 0; meshIndex < m_Model->Meshes.size(); ++meshIndex)
         { 
             ModelMatrix.model =  m_Model->Meshes[meshIndex]->LinkNode.lock()->GetGlobalMatrix();
             
-            m_Material0->BeginObject();
-            m_Material0->SetLocalUniform("uboViewProj",&ViewParam,sizeof(ViewProjectionBlock));
             m_Material0->SetLocalUniform("uboModel",&ModelMatrix,sizeof(ModelBlock));
-            m_Material0->EndObject();
-            m_Material0->BindDescriptorSets(VkContext->GetCommandList(),VK_PIPELINE_BIND_POINT_GRAPHICS,meshIndex);
+            m_Material0->SetLocalUniform("uboViewProj",ViewBufferView);
+            m_Material0->BindDescriptorSets(VkContext->GetCommandList(),VK_PIPELINE_BIND_POINT_GRAPHICS);
 
             m_Model->Meshes[meshIndex]->BindDraw(VkContext->GetCommandList());
         }
-        m_Material0->EndFrame();
     }
 
     vkCmdNextSubpass(VkContext->GetCommandList(), VK_SUBPASS_CONTENTS_INLINE);
     
     // // pass1
     {
-        m_Material1->BeginFrame();
         vkCmdBindPipeline(VkContext->GetCommandList(), VK_PIPELINE_BIND_POINT_GRAPHICS, m_Material1->mPipeline->Pipeline);
         for (int32 meshIndex = 0; meshIndex < m_Quad->Meshes.size(); ++meshIndex)
         {
-            m_Material1->BeginObject();
-            m_Material1->SetLocalUniform("uboViewProj",&ViewParam,sizeof(ViewProjectionBlock));
+            m_Material1->SetLocalUniform("uboViewProj",ViewBufferView);
             m_Material1->SetLocalUniform("lightDatas",&LightDatas,sizeof(LightDatas));
             m_Material1->SetInputAttachment("inputColor",  m_AttachmentColors[VkContext->GetCurrtIndex()]);
             m_Material1->SetInputAttachment("inputNormal", m_AttachmentNormals[VkContext->GetCurrtIndex()]);
             m_Material1->SetInputAttachment("inputDepth",  m_AttachmentDepth[VkContext->GetCurrtIndex()]);
-            m_Material1->EndObject();
-        
-            m_Material1->BindDescriptorSets(VkContext->GetCommandList(),VK_PIPELINE_BIND_POINT_GRAPHICS,meshIndex);
+            
+            m_Material1->BindDescriptorSets(VkContext->GetCommandList(),VK_PIPELINE_BIND_POINT_GRAPHICS);
             m_Quad->Meshes[meshIndex]->BindDraw(VkContext->GetCommandList());
         }
-        m_Material1->EndFrame();
+
     }
 
     vkCmdEndRenderPass(VkContext->GetCommandList());

@@ -1,7 +1,5 @@
 ﻿#include "VulkanMaterial.h"
 
-#include "Core/MathDefine.h"
-
 VulkanMaterial::~VulkanMaterial()
 {
     mShader.reset();
@@ -34,16 +32,17 @@ Ref<VulkanMaterial> VulkanMaterial::Create(Ref<VulkanDevice> vulkanDevice, VkRen
     return Material;
 }
 
-Ref<VulkanMaterial> VulkanMaterial::Create(Ref<VulkanDevice> vulkanDevice, Ref<VulkanRenderTarget> RT,VkPipelineCache PipelineCache, Ref<VulkanShader> Shader,Ref<VulkanDynamicBufferRing> RingBuffer)
+Ref<VulkanMaterial> VulkanMaterial::Create(Ref<VulkanDevice> vulkanDevice, Ref<VulkanRenderTarget> RT,VkPipelineCache PipelineCache, Ref<VulkanShader> Shader,Ref<VulkanDynamicBufferRing> InRingBuffer)
 {
     // 创建材质
     Ref<VulkanMaterial> Material = CreateRef<VulkanMaterial>();
     Material->mPipelineInfo.ColorAttachmentsCount = RT->RenderPassInfo.NumColorRenderTargets;
-
     Material->mVulkanDevice  = vulkanDevice;
     Material->mShader        = Shader;
     Material->mRenderPass    = RT->GetRenderPass();
     Material->mPipelineCache = PipelineCache;
+    Material->RingBuffer     = InRingBuffer;
+    
     Material->Prepare();
 
     return Material;
@@ -118,7 +117,7 @@ void VulkanMaterial::Prepare()
         }
     }
 
-    GlobalOffsets.resize(DynamicOffsetCount);
+    DynamicOffsets.resize(DynamicOffsetCount);
     
     // 从Shader中获取Texture信息，包含attachment信息
     for (auto it = mShader->imageParams.begin(); it != mShader->imageParams.end(); ++it)
@@ -133,101 +132,9 @@ void VulkanMaterial::Prepare()
     }
 }
 
-void VulkanMaterial::BeginObject()
+
+void VulkanMaterial::BindDescriptorSets(VkCommandBuffer commandBuffer, VkPipelineBindPoint bindPoint)
 {
-    int32 Index = (int32)PerObjectIndexes.size();
-    PerObjectIndexes.push_back(Index);
-
-    // *每个DrawCall* 的 *每个UnifromBuffer* 都需要有自己的Offset
-    //需要把这些Uniform汇总起来
-    //比如说当前N个Drawcall，每个DrawCall有M个Offset，那么在这里收集N * M个
-    
-    //当前DrawCall的Offset
-    int32 offsetStart = Index * DynamicOffsetCount;
-    
-    if(offsetStart + DynamicOffsetCount > DynamicOffsets.size())
-    {
-        for (uint32 i = 0; i < DynamicOffsetCount; ++i)
-        {
-            DynamicOffsets.push_back(0);
-        }
-    }
-    
-    // 拷贝GlobalOffsets
-    for (uint32 offsetIndex = offsetStart; offsetIndex < DynamicOffsetCount; ++offsetIndex)
-    {
-        DynamicOffsets[offsetIndex] = GlobalOffsets[offsetIndex - offsetStart];
-    }
-    
-}
-
-void VulkanMaterial::EndObject()
-{
-    for(int32 i = 0 ; i < PerObjectIndexes.size();++i)
-    {
-        int32 OffsetStart = i * DynamicOffsetCount;
-        for(uint32 offsetIndex = OffsetStart ; offsetIndex < DynamicOffsetCount ; ++offsetIndex)
-        {
-            if(DynamicOffsets[offsetIndex] == MAX_uint32)
-            {
-                RE_CORE_ERROR("Uniform not set");
-            }
-        }
-    }
-
-    if (PerObjectIndexes.size() == 0)
-    {
-        for (uint32 i = 0; i < DynamicOffsetCount; ++i)
-        {
-            if (GlobalOffsets[i] == MAX_uint32)
-            {
-                RE_CORE_ERROR("Uniform not set\n");
-            }
-        }
-    }
-}
-
-void VulkanMaterial::BeginFrame()
-{
-    if(actived)
-    {
-        return;
-    }
-
-    actived = true;
-    PerObjectIndexes.clear();
-    memset(GlobalOffsets.data(),MAX_uint32,sizeof(uint32) * GlobalOffsets.size());
-    
-    for(auto it = uniformBuffers.begin(); it != uniformBuffers.end(); ++it)
-    {
-        if(!it->second.Global)
-        {
-            continue;
-        }
-        
-        auto BufferView =  RingBuffer->AllocConstantBuffer(it->second.DataSize,it->second.DataContent.data());
-        GlobalOffsets[it->second.DynamicIndex] = (uint32)BufferView.offset;
-    }
-    
-}
-
-void VulkanMaterial::EndFrame()
-{
-    actived = false;
-}
-
-void VulkanMaterial::BindDescriptorSets(VkCommandBuffer commandBuffer, VkPipelineBindPoint bindPoint, int32 objIndex)
-{
-    uint32* DynOffsets = nullptr;
-    if(objIndex < PerObjectIndexes.size())
-    {
-        DynOffsets = DynamicOffsets.data() + PerObjectIndexes[objIndex] * DynamicOffsetCount;
-    }
-    else if(GlobalOffsets.size() > 0)
-    {
-        DynOffsets = GlobalOffsets.data();
-    }
-
     vkCmdBindDescriptorSets(
             commandBuffer,
             bindPoint,
@@ -236,7 +143,7 @@ void VulkanMaterial::BindDescriptorSets(VkCommandBuffer commandBuffer, VkPipelin
             (uint32_t)DescriptorSet->DescriptorSets.size(),
             DescriptorSet->DescriptorSets.data(),
             DynamicOffsetCount,
-            DynOffsets
+            DynamicOffsets.data()
     );
 }
 
@@ -305,34 +212,28 @@ void VulkanMaterial::SetLocalUniform(const std::string& name, void* dataPtr, uin
         return;
     }
 
-    // 获取Object的起始位置以及DynamicOffset的起始位置
-    int32 objIndex     = PerObjectIndexes.back();
-    int32 offsetStart  = objIndex * DynamicOffsetCount;
-    uint32* dynOffsets = DynamicOffsets.data() + offsetStart;
-
     const auto BufferView =  RingBuffer->AllocConstantBuffer(it->second.DataSize,dataPtr);
+    
+    // 获取Object的起始位置以及DynamicOffset的起始位置
+    uint32* dynOffsets = DynamicOffsets.data();
 
     // 记录Offset
     dynOffsets[it->second.DynamicIndex] = (uint32)BufferView.offset;
 }
 
-void VulkanMaterial::SetGlobalUniform(const std::string& name, void* dataPtr, uint32 size)
+void VulkanMaterial::SetLocalUniform(const std::string& name, VkDescriptorBufferInfo BufferView)
 {
     auto it = uniformBuffers.find(name);
-    if (it == uniformBuffers.end())
+    if(it == uniformBuffers.end())
     {
-        RE_CORE_ERROR("Uniform %s not found.", name.c_str());
-        return;
+        RE_CORE_ERROR("Uniform {0} not found.", name.c_str());
     }
 
-    if (it->second.DataSize != size)
-    {
-        RE_CORE_ERROR("Uniform {0} size not match, dst={1} src={2}", name.c_str(), it->second.DataSize, size);
-        return;
-    }
-
-    it->second.Global = true;
-    memcpy(it->second.DataContent.data(), dataPtr, size);
+    // 获取Object的起始位置以及DynamicOffset的起始位置
+    uint32* dynOffsets = DynamicOffsets.data();
+    
+    // 记录Offset
+    dynOffsets[it->second.DynamicIndex] = (uint32)BufferView.offset;
 }
 
 

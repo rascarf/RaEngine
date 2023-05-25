@@ -51,19 +51,15 @@ namespace ReEngine
         void PreparePipeline();
         void Prepare();
 
-        void BeginObject();
-        void EndObject();
-
-        void BeginFrame();
-        void EndFrame();
-
-        void BindDescriptorSets(VkCommandBuffer commandBuffer,VkPipelineBindPoint bindPoint,int32 objIndex);
-        void SetTexture(const std::string& name,Ref<VulkanTexture> texture);
+        void BindDescriptorSets(VkCommandBuffer commandBuffer,VkPipelineBindPoint bindPoint);
+        
         void SetLocalUniform(const std::string& name, void* dataPtr, uint32 size);
-        void SetGlobalUniform(const std::string& name, void* dataPtr, uint32 size);
-        void SetStorageBuffer(const std::string& name, Ref<VulkanBuffer> buffer);
+        void SetLocalUniform(const std::string& name,VkDescriptorBufferInfo BufferView);
+        
+        void SetTexture(const std::string& name,Ref<VulkanTexture> texture);
         void SetInputAttachment(const std::string& name, Ref<VulkanTexture> texture);
     
+        void SetStorageBuffer(const std::string& name, Ref<VulkanBuffer> buffer);
     public:
         VulkanMaterial();
 
@@ -79,10 +75,7 @@ namespace ReEngine
         Ref<VulkanDescriptorSet> DescriptorSet;
 
         uint32 DynamicOffsetCount;
-        
-        std::vector<uint32>     GlobalOffsets;
         std::vector<uint32>     DynamicOffsets;
-        std::vector<uint32>     PerObjectIndexes;
 
         BuffersMap              uniformBuffers;
         BuffersMap              storageBuffers;
