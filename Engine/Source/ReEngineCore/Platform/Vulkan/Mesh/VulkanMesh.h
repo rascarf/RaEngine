@@ -1,5 +1,7 @@
 ﻿#pragma once
+#include "assimp/material.h"
 #include "assimp/matrix4x4.h"
+#include "assimp/StringComparison.h"
 #include "Core/Core.h"
 #include "glm/ext/matrix_transform.hpp"
 #include "Mesh/BoundingBox.h"
@@ -12,6 +14,15 @@ struct aiScene;
 struct aiMesh;
 
 using namespace std;
+
+struct VulkanMaterialInfo
+{
+    std::string Diffuse;
+    std::string Normal;
+    std::string Specular;
+    std::string Metalic;
+};
+
 class VulkanMesh
 {
 public:
@@ -24,6 +35,8 @@ public:
     //TODO Material
     int32 VertexCount;
     int32 TriangleCount;
+
+    VulkanMaterialInfo Material;
 
     VulkanMesh():LinkNode(),VertexCount(0),TriangleCount(0){}
 
@@ -163,6 +176,8 @@ public:
     Ref<VulkanCommandBuffer>	CmdBuffer;
     
     void FillMatrixWithAiMatrix(glm::mat4x4& OutMatix,const aiMatrix4x4& aiMatrix);
+    void FillMaterialTextures(aiMaterial* aiMaterial, VulkanMaterialInfo& material);
+    
     void LoadVertexDatas(std::vector<float>& vertices, glm::vec3& mmax, glm::vec3& mmin, Ref<VulkanMesh> mesh, const aiMesh* aiMesh, const aiScene* aiScene);
     void LoadIndices(std::vector<uint32>& indices, const aiMesh* aiMesh, const aiScene* aiScene);
     void LoadPrimitives(std::vector<float>& vertices, std::vector<uint32>& indices, Ref<VulkanMesh> mesh,const aiMesh* aiMesh, const aiScene* aiScene);

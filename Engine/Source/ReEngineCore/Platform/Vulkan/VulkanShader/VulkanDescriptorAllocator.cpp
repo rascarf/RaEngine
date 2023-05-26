@@ -87,6 +87,7 @@ bool VulkanDescriptorAllocator::CreateDescriptorSetLayout(std::vector<VkDescript
     descriptor_layout.pNext = NULL;
     descriptor_layout.bindingCount = (uint32_t)pDescriptorLayoutBinding->size();
     descriptor_layout.pBindings = pDescriptorLayoutBinding->data();
+    descriptor_layout.flags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT_EXT;
 
     VkResult res = vkCreateDescriptorSetLayout(mDevice->GetInstanceHandle(), &descriptor_layout, NULL, pDescSetLayout);
 
@@ -142,6 +143,7 @@ VulkanShaderDescriptorPool::VulkanShaderDescriptorPool(VkDevice Device, uint32 i
     descriptorPoolInfo.poolSizeCount = (uint32_t)poolSizes.size();
     descriptorPoolInfo.pPoolSizes    = poolSizes.data();
     descriptorPoolInfo.maxSets       = maxSet;
+    descriptorPoolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT;
     VERIFYVULKANRESULT(vkCreateDescriptorPool(device, &descriptorPoolInfo, VULKAN_CPU_ALLOCATOR, &descriptorPool));
 }
 

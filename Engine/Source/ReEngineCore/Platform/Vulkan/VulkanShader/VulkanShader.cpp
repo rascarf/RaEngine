@@ -431,7 +431,32 @@ void VulkanShader::GenerateLayout()
         ZeroVulkanStruct(descSetLayoutInfo, VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO);
         descSetLayoutInfo.bindingCount = (uint32_t)setLayoutInfo.Bindings.size();
         descSetLayoutInfo.pBindings    = setLayoutInfo.Bindings.data();
-        VERIFYVULKANRESULT(vkCreateDescriptorSetLayout(device, &descSetLayoutInfo, VULKAN_CPU_ALLOCATOR, &descriptorSetLayout));
+        descSetLayoutInfo.flags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT;
+
+        VkDescriptorBindingFlags bindless_flags =VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT_EXT |VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT_EXT;
+        std::vector<VkDescriptorBindingFlags> binding_flags;
+        for(int32 i = 0 ; i < (uint32_t)setLayoutInfo.Bindings.size() ; i++)
+        {
+            if(setLayoutInfo.Bindings[i].descriptorType == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE|| setLayoutInfo.Bindings[i].descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
+            {
+                binding_flags.push_back(bindless_flags);
+            }
+            else
+            {
+                binding_flags.push_back(0);
+            }
+        }
+        
+        VkDescriptorSetLayoutBindingFlagsCreateInfoEXT extended_info
+        {
+            VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO_EXT, nullptr
+        };
+        
+        extended_info.bindingCount = (uint32_t)setLayoutInfo.Bindings.size();
+        extended_info.pBindingFlags = binding_flags.data();
+        descSetLayoutInfo.pNext = &extended_info;
+        
+        VERIFYVULKANRESULT(vkCreateDescriptorSetLayout(device, &descSetLayoutInfo, VULKAN_CPU_ALLOCATOR, &descriptorSetLayout)); 
 
         descriptorSetLayouts.push_back(descriptorSetLayout);
     }

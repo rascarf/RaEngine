@@ -67,6 +67,14 @@ struct AttachmentParamBlock
     float padding;
 };
 
+struct RayParamBlock
+{
+    glm::vec3    color;
+    float        power;
+    glm::vec3    viewDir;
+    float        padding;
+};
+
 class InputAttachment : public GraphicalLayer
 {
 public:
@@ -95,13 +103,26 @@ protected:
     Ref<VulkanDynamicBufferRing>                    m_RingBuffer = nullptr;
     
     Ref<VulkanModel>                                m_Model = nullptr;
-    Ref<VulkanModel>                                m_Quad = nullptr;
-
+    std::vector<Ref<VulkanTexture>>                 m_ModelDiffuses;
+    std::vector<std::vector<Ref<VulkanMesh>>>       m_SceneMeshes;
+    
+    
     Ref<VulkanMaterial>                             m_Material0 = nullptr;
     Ref<VulkanShader>                               m_Shader0 = nullptr;
-
+    
+    Ref<VulkanModel>                                m_Quad = nullptr;
     Ref<VulkanMaterial>                             m_Material1 = nullptr;
     Ref<VulkanShader>                               m_Shader1 = nullptr;
+
+    Ref<VulkanModel>                                m_Role = nullptr;
+    Ref<VulkanTexture>                              m_RoleDiffuse = nullptr;
+    Ref<VulkanMaterial>                             m_RoleMaterial = nullptr;
+    
+    glm::vec3                                       m_RolePosition;
+    glm::vec3                                       m_RoleScale;
+    
+    Ref<VulkanMaterial>                             m_EffectMaterial1 = nullptr;
+    Ref<VulkanShader>                               m_EffectShader = nullptr;
     
     std::vector<Ref<VulkanTexture>>                 m_AttachmentDepth;
     std::vector<Ref<VulkanTexture>>                 m_AttachmentNormals;
@@ -114,6 +135,7 @@ protected:
     LightSpawnBlock LightInfos;
     
     AttachmentParamBlock m_DebugParam;
+    RayParamBlock        m_RayData;
     std::vector<const char*> m_DebugNames;
 
     float CurrentTime;

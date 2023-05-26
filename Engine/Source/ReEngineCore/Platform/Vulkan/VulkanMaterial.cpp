@@ -206,11 +206,11 @@ void VulkanMaterial::SetLocalUniform(const std::string& name, void* dataPtr, uin
         RE_CORE_ERROR("Uniform {0} not found.", name.c_str());
     }
 
-    if (it->second.DataSize != size)
-    {
-        RE_CORE_ERROR("Uniform {0} size not match, dst={1} src={2}", name.c_str(), it->second.DataSize, size);
-        return;
-    }
+    // if (it->second.DataSize != size)
+    // {
+    //     RE_CORE_ERROR("Uniform {0} size not match, dst={1} src={2}", name.c_str(), it->second.DataSize, size);
+    //     return;
+    // }
 
     const auto BufferView =  RingBuffer->AllocConstantBuffer(it->second.DataSize,dataPtr);
     

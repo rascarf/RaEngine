@@ -4,6 +4,8 @@
 #include "obj_frag.h"
 #include "quad_vert.h"
 #include "quad_frag.h"
+#include "Debug_frag.h"
+#include "Ray_frag.h"
 #include "Math/Math.h"
 #include "Mesh/Quad.h"
 
@@ -175,12 +177,31 @@ void InputAttachment::OnDeInit()
 {
     m_Model.reset();
     m_Quad.reset();
+    m_Role.reset();
 
     m_Material0.reset();
     m_Material1.reset();
+    m_RoleMaterial.reset();
+    m_EffectMaterial1.reset();
+
+    for(auto& scene:m_SceneMeshes)
+    {
+        for(auto& Mesh : scene)
+        {
+            Mesh.reset();
+        }
+    }
+
+    for(auto& tex: m_ModelDiffuses)
+    {
+        tex.reset();
+    }
+
+    m_RoleDiffuse.reset();
     
     m_Shader0.reset();
     m_Shader1.reset();
+    m_EffectShader.reset();
     
     m_RingBuffer.reset();
     
@@ -259,16 +280,48 @@ void InputAttachment::OnRender()
     const auto ViewBufferView =  m_RingBuffer->AllocConstantBuffer(sizeof(ViewProjectionBlock),&ViewParam);
     // pass0
     {
-        vkCmdBindPipeline(VkContext->GetCommandList(), VK_PIPELINE_BIND_POINT_GRAPHICS, m_Material0->mPipeline->Pipeline);
-        for (int32 meshIndex = 0; meshIndex < m_Model->Meshes.size(); ++meshIndex)
-        { 
-            ModelMatrix.model =  m_Model->Meshes[meshIndex]->LinkNode.lock()->GetGlobalMatrix();
-            
-            m_Material0->SetLocalUniform("uboModel",&ModelMatrix,sizeof(ModelBlock));
-            m_Material0->SetLocalUniform("uboViewProj",ViewBufferView);
-            m_Material0->BindDescriptorSets(VkContext->GetCommandList(),VK_PIPELINE_BIND_POINT_GRAPHICS);
+        //Role
+        vkCmdBindPipeline(VkContext->GetCommandList(), VK_PIPELINE_BIND_POINT_GRAPHICS, m_RoleMaterial->mPipeline->Pipeline);
+        for (int32 meshIndex = 0; meshIndex < m_Role->Meshes.size(); ++meshIndex)
+        {
+            ModelMatrix.model =  m_Role->Meshes[meshIndex]->LinkNode.lock()->GetGlobalMatrix();
+            m_RoleMaterial->SetTexture("DiffuseMap",m_RoleDiffuse);
+            m_RoleMaterial->SetLocalUniform("uboViewProj",ViewBufferView);
+            m_RoleMaterial->SetLocalUniform("uboModel",&ModelMatrix,sizeof(ModelBlock));
+            m_RoleMaterial->BindDescriptorSets(VkContext->GetCommandList(),VK_PIPELINE_BIND_POINT_GRAPHICS);
+            m_Role->Meshes[meshIndex]->BindDraw(VkContext->GetCommandList());
+        }
 
-            m_Model->Meshes[meshIndex]->BindDraw(VkContext->GetCommandList());
+        //Room
+        vkCmdBindPipeline(VkContext->GetCommandList(), VK_PIPELINE_BIND_POINT_GRAPHICS, m_Material0->mPipeline->Pipeline); 
+        for (int32 textureIndex = 0; textureIndex < m_SceneMeshes.size(); ++textureIndex)
+        {
+            m_Material0->SetTexture("DiffuseMap",m_ModelDiffuses[textureIndex]);
+            for(const auto& Meshes : m_SceneMeshes[textureIndex])
+            {
+                ModelMatrix.model =  Meshes->LinkNode.lock()->GetGlobalMatrix();
+            
+                m_Material0->SetLocalUniform("uboModel",&ModelMatrix,sizeof(ModelBlock));
+                m_Material0->SetLocalUniform("uboViewProj",ViewBufferView);
+                m_Material0->BindDescriptorSets(VkContext->GetCommandList(),VK_PIPELINE_BIND_POINT_GRAPHICS);
+
+                Meshes->BindDraw(VkContext->GetCommandList());
+            }
+        }
+
+        //Ray
+        vkCmdBindPipeline(VkContext->GetCommandList(), VK_PIPELINE_BIND_POINT_GRAPHICS, m_EffectMaterial1->mPipeline->Pipeline);
+        for (int32 meshIndex = 0; meshIndex < m_Role->Meshes.size(); ++meshIndex)
+        { 
+            ModelMatrix.model =  m_Role->Meshes[meshIndex]->LinkNode.lock()->GetGlobalMatrix();
+            
+            m_EffectMaterial1->SetLocalUniform("uboModel",&ModelMatrix,sizeof(ModelBlock));
+            m_EffectMaterial1->SetLocalUniform("uboViewProj",ViewBufferView);
+            m_EffectMaterial1->SetLocalUniform("rayParam",&m_RayData,sizeof(RayParamBlock));
+
+            m_EffectMaterial1->BindDescriptorSets(VkContext->GetCommandList(),VK_PIPELINE_BIND_POINT_GRAPHICS);
+
+            m_Role->Meshes[meshIndex]->BindDraw(VkContext->GetCommandList());
         }
     }
 
@@ -279,8 +332,8 @@ void InputAttachment::OnRender()
         vkCmdBindPipeline(VkContext->GetCommandList(), VK_PIPELINE_BIND_POINT_GRAPHICS, m_Material1->mPipeline->Pipeline);
         for (int32 meshIndex = 0; meshIndex < m_Quad->Meshes.size(); ++meshIndex)
         {
-            m_Material1->SetLocalUniform("uboViewProj",ViewBufferView);
-            m_Material1->SetLocalUniform("lightDatas",&LightDatas,sizeof(LightDatas));
+            
+            m_Material1->SetLocalUniform("param",&m_DebugParam,sizeof(AttachmentParamBlock));
             m_Material1->SetInputAttachment("inputColor",  m_AttachmentColors[VkContext->GetCurrtIndex()]);
             m_Material1->SetInputAttachment("inputNormal", m_AttachmentNormals[VkContext->GetCurrtIndex()]);
             m_Material1->SetInputAttachment("inputDepth",  m_AttachmentDepth[VkContext->GetCurrtIndex()]);
@@ -304,6 +357,17 @@ void InputAttachment::OnUIRender(Timestep ts)
         ImGui::Combo("Attachment", &m_DebugParam.attachmentIndex, m_DebugNames.data(), m_DebugNames.size());
         ImGui::SliderFloat("Z-Near", &m_DebugParam.zNear, 0.1f, 3000.0f);
         ImGui::SliderFloat("Z-Far", &m_DebugParam.zFar, 0.1f, 6000.0f);
+
+        
+        ImGui::SliderFloat3("Position", (float*)&m_RolePosition, -500.0f, 500.0f);
+        ImGui::SliderFloat3("Scale", (float*)&m_RoleScale, 1.0f, 100.0f);
+        
+        m_Role->RootNode->LocalMatrix = glm::identity<glm::mat4>();
+        m_Role->RootNode->LocalMatrix = glm::scale(m_Role->RootNode->LocalMatrix,m_RoleScale);
+        m_Role->RootNode->LocalMatrix = glm::translate(m_Role->RootNode->LocalMatrix,m_RolePosition);
+
+        ImGui::ColorEdit3("Color", (float*)&m_RayData.color);
+        ImGui::SliderFloat("Pow", &m_RayData.power, 1.0f, 10.0f);
 
         if (m_DebugParam.zNear >= m_DebugParam.zFar)
         {
@@ -380,15 +444,66 @@ void InputAttachment::CreateMaterial()
     );
     
     m_Material0->mPipelineInfo.ColorAttachmentsCount = 2;
+    VkPipelineDepthStencilStateCreateInfo& depthStencilState = m_Material0->mPipelineInfo.DepthStencilState;
+    depthStencilState.stencilTestEnable = VK_TRUE;
+    depthStencilState.back.reference    = 1;
+    depthStencilState.back.writeMask    = 0xFF;
+    depthStencilState.back.compareMask  = 0xFF;
+    depthStencilState.back.compareOp    = VK_COMPARE_OP_ALWAYS;
+    depthStencilState.back.failOp       = VK_STENCIL_OP_REPLACE;
+    depthStencilState.back.depthFailOp  = VK_STENCIL_OP_REPLACE;
+    depthStencilState.back.passOp       = VK_STENCIL_OP_REPLACE;
+    depthStencilState.front             = depthStencilState.back;
     m_Material0->PreparePipeline();
 
-    m_Material1 = VulkanMaterial::Create(
+    m_RoleMaterial = VulkanMaterial::Create(
         Device,
         FrameBuffer->m_RenderPass,
         VkContext->CommandPool->m_PipelineCache,
-        m_Shader1,
+        m_Shader0,
         m_RingBuffer
     );
+    m_RoleMaterial->mPipelineInfo.ColorAttachmentsCount = 2;
+    m_RoleMaterial->PreparePipeline();
+    
+    m_EffectMaterial1 = VulkanMaterial::Create(
+        Device,
+        FrameBuffer->m_RenderPass,
+        VkContext->CommandPool->m_PipelineCache,
+        m_EffectShader,
+        m_RingBuffer
+    );
+
+    m_EffectMaterial1->mPipelineInfo.ColorAttachmentsCount = 2;
+
+    VkPipelineColorBlendAttachmentState& blendState = m_EffectMaterial1->mPipelineInfo.BlendAttachmentStates[0];
+    blendState.blendEnable         = VK_TRUE;
+    blendState.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
+    blendState.dstColorBlendFactor = VK_BLEND_FACTOR_ONE;
+    blendState.colorBlendOp        = VK_BLEND_OP_ADD;
+    
+    VkPipelineDepthStencilStateCreateInfo& RaydepthStencilState = m_EffectMaterial1->mPipelineInfo.DepthStencilState;
+    RaydepthStencilState.stencilTestEnable = VK_TRUE;
+    RaydepthStencilState.back.reference    = 1;
+    RaydepthStencilState.back.writeMask    = 0xFF;
+    RaydepthStencilState.back.compareMask  = 0xFF;
+    RaydepthStencilState.back.compareOp    = VK_COMPARE_OP_EQUAL;
+    RaydepthStencilState.back.failOp       = VK_STENCIL_OP_KEEP;
+    RaydepthStencilState.back.depthFailOp  = VK_STENCIL_OP_KEEP;
+    RaydepthStencilState.back.passOp       = VK_STENCIL_OP_REPLACE;
+    RaydepthStencilState.front             = depthStencilState.back;
+    RaydepthStencilState.depthTestEnable   = VK_FALSE;
+    RaydepthStencilState.depthWriteEnable   = VK_FALSE;
+    
+    m_EffectMaterial1->PreparePipeline();
+    
+    m_Material1 = VulkanMaterial::Create( 
+        Device,
+        FrameBuffer->m_RenderPass,
+        VkContext->CommandPool->m_PipelineCache,
+        m_Shader1, 
+        m_RingBuffer
+    ); 
 
     m_Material1->mPipelineInfo.DepthStencilState.depthTestEnable   = VK_FALSE;
     m_Material1->mPipelineInfo.DepthStencilState.depthWriteEnable  = VK_FALSE;
@@ -400,14 +515,14 @@ void InputAttachment::CreateMaterial()
 
 void InputAttachment::UpdateLight(Timestep ts)
 {
-    CurrentTime += ts.GetSeconds();
-    for (int32 i = 0; i < NUM_LIGHTS; ++i)
-    { 
-        float bias = Math::Sin(CurrentTime * LightInfos.Speed[i]) / 5.0f;
-        LightDatas.Lights[i].Position.x = LightInfos.Position[i].x + bias * LightInfos.Direction[i].x * 500.0f;
-        LightDatas.Lights[i].Position.y = LightInfos.Position[i].y + bias * LightInfos.Direction[i].y * 500.0f;
-        LightDatas.Lights[i].Position.z = LightInfos.Position[i].z + bias * LightInfos.Direction[i].z * 500.0f;
-    }
+    // CurrentTime += ts.GetSeconds();
+    // for (int32 i = 0; i < NUM_LIGHTS; ++i)
+    // { 
+    //     float bias = Math::Sin(CurrentTime * LightInfos.Speed[i]) / 5.0f;
+    //     LightDatas.Lights[i].Position.x = LightInfos.Position[i].x + bias * LightInfos.Direction[i].x * 500.0f;
+    //     LightDatas.Lights[i].Position.y = LightInfos.Position[i].y + bias * LightInfos.Direction[i].y * 500.0f;
+    //     LightDatas.Lights[i].Position.z = LightInfos.Position[i].z + bias * LightInfos.Direction[i].z * 500.0f;
+    // }
 }
 
 void InputAttachment::CreateBuffers()
@@ -415,7 +530,8 @@ void InputAttachment::CreateBuffers()
     auto device = VkContext->Instance->GetDevice();
     
     m_Shader0 = VulkanShader::Create(device,true,&OBJ_VERT,&OBJ_FRAG,nullptr,nullptr,nullptr,nullptr);
-    m_Shader1 = VulkanShader::Create(device,true,&QUAD_VERT,&QUAD_FRAG,nullptr,nullptr,nullptr,nullptr);
+    m_Shader1 = VulkanShader::Create(device,true,&QUAD_VERT,&DEBUG_FRAG,nullptr,nullptr,nullptr,nullptr);
+    m_EffectShader = VulkanShader::Create(device,true,&OBJ_VERT,&RAY_FRAG,nullptr,nullptr,nullptr,nullptr);
     
     auto cmdBuffer = VulkanCommandBuffer::Create(device, VkContext->CommandPool->m_CommandPool);
 
@@ -425,6 +541,58 @@ void InputAttachment::CreateBuffers()
         device,
         cmdBuffer,
         m_Shader0->perVertexAttributes
+    );
+
+    std::vector<std::string> diffusePaths = {
+        "Assets/Mesh/Room/miniHouse_Part1.jpg",
+        "Assets/Mesh/Room/miniHouse_Part2.jpg",
+        "Assets/Mesh/Room/miniHouse_Part3.jpg",
+        "Assets/Mesh/Room/miniHouse_Part4.jpg"
+    };
+
+    m_ModelDiffuses.resize(diffusePaths.size());
+    for(int32 index = 0 ; index < diffusePaths.size();index++)
+    {
+        m_ModelDiffuses[index] = VulkanTexture::Create2D(
+            diffusePaths[index],
+            device,
+            cmdBuffer
+        );
+    }
+
+    m_SceneMeshes.resize(diffusePaths.size());
+    for(const auto& Mesh : m_Model->Meshes)
+    {
+        const std::string& DiffuseName = Mesh->Material.Diffuse;
+        if (DiffuseName == "miniHouse_Part1")
+        {
+            m_SceneMeshes[0].push_back(Mesh);
+        }
+        else if (DiffuseName == "miniHouse_Part2")
+        {
+            m_SceneMeshes[1].push_back(Mesh);
+        }
+        else if (DiffuseName == "miniHouse_Part3")
+        {
+            m_SceneMeshes[2].push_back(Mesh);
+        }
+        else if (DiffuseName == "miniHouse_Part4")
+        {
+            m_SceneMeshes[3].push_back(Mesh);
+        }
+    }
+    
+    // role modle
+    m_Role = VulkanModel::LoadFromFile(
+        "Assets/Mesh/LizardMage/LizardMage_Lowpoly.obj",
+        device,
+        cmdBuffer,
+        m_Shader0->perVertexAttributes
+    );
+    m_RoleDiffuse = VulkanTexture::Create2D(
+            "Assets/Mesh/LizardMage/Body_colors1.jpg",
+            device,
+            cmdBuffer
     );
     
     // quad model
@@ -444,6 +612,8 @@ void InputAttachment::CreateBuffers()
     m_DebugParam.zNear = 0.1f;
     m_DebugParam.zFar = 1000.0f;
 
+    m_DebugParam.attachmentIndex = 0;
+
     ModelMatrix.model = glm::identity<glm::mat4>();
     ViewParam.projection = glm::identity<glm::mat4>();
     ViewParam.view = glm::identity<glm::mat4>();
@@ -455,22 +625,27 @@ void InputAttachment::CreateBuffers()
 
     m_Camera = CreateRef<EditorCamera>();
 
+    m_RayData.viewDir = -m_Camera->GetForwardDirection();
+    m_RayData.color   = glm::vec3(0.0f, 0.6f, 1.0f);
+    m_RayData.power   = 5.0f;
+    m_RayData.padding = 0;
+
     auto Bounds = m_Model->RootNode->GetBounds();
     
-    for (int32 i = 0; i < NUM_LIGHTS; ++i)
-    {
-        LightDatas.Lights[i].Position.x = Math::RandRange(Bounds.Min.x, Bounds.Max.x);
-        LightDatas.Lights[i].Position.y = Math::RandRange(Bounds.Min.y, Bounds.Max.y);
-        LightDatas.Lights[i].Position.z = Math::RandRange(Bounds.Min.z, Bounds.Max.z);
-        
-        LightDatas.Lights[i].Color.x = Math::RandRange(0.0f, 1.0f);
-        LightDatas.Lights[i].Color.y = Math::RandRange(0.0f, 1.0f);
-        LightDatas.Lights[i].Color.z = Math::RandRange(0.0f, 1.0f);
-        LightDatas.Lights[i].Radius = Math::RandRange(50.0f, 200.0f);
-
-        LightInfos.Position[i]  = LightDatas.Lights[i].Position;
-        LightInfos.Direction[i] = LightInfos.Position[i];
-        LightInfos.Direction[i] = glm::normalize(LightInfos.Direction[i]);
-        LightInfos.Speed[i] = 1.0f + Math::RandRange(0.0f, 5.0f);
-    }
+    // for (int32 i = 0; i < NUM_LIGHTS; ++i)
+    // {
+    //     LightDatas.Lights[i].Position.x = Math::RandRange(Bounds.Min.x, Bounds.Max.x);
+    //     LightDatas.Lights[i].Position.y = Math::RandRange(Bounds.Min.y, Bounds.Max.y);
+    //     LightDatas.Lights[i].Position.z = Math::RandRange(Bounds.Min.z, Bounds.Max.z);
+    //     
+    //     LightDatas.Lights[i].Color.x = Math::RandRange(0.0f, 1.0f);
+    //     LightDatas.Lights[i].Color.y = Math::RandRange(0.0f, 1.0f);
+    //     LightDatas.Lights[i].Color.z = Math::RandRange(0.0f, 1.0f);
+    //     LightDatas.Lights[i].Radius = Math::RandRange(50.0f, 200.0f);
+    //
+    //     LightInfos.Position[i]  = LightDatas.Lights[i].Position;
+    //     LightInfos.Direction[i] = LightInfos.Position[i];
+    //     LightInfos.Direction[i] = glm::normalize(LightInfos.Direction[i]);
+    //     LightInfos.Speed[i] = 1.0f + Math::RandRange(0.0f, 5.0f);
+    // }
 }

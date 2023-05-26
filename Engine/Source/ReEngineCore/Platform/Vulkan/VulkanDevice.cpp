@@ -40,6 +40,31 @@ void VulkanDevice::CreateDevice()
 			RE_INFO("* {0}", m_AppDeviceExtensions[i]);
 		}
 	}
+
+	//Bindless
+	VkPhysicalDeviceDescriptorIndexingFeaturesEXT indexingFeatures{};
+	indexingFeatures.sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT;
+	indexingFeatures.pNext = nullptr;
+
+	VkPhysicalDeviceFeatures2 deviceFeatures{};
+	deviceFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+	deviceFeatures.pNext = &indexingFeatures;
+	vkGetPhysicalDeviceFeatures2(m_PhysicalDevice, &deviceFeatures);
+
+	// 需要 Features 中这三个字段同时满足，才是启用真 Bindless 特性
+	if(indexingFeatures.runtimeDescriptorArray&& indexingFeatures.descriptorBindingVariableDescriptorCount&& indexingFeatures.shaderSampledImageArrayNonUniformIndexing)
+	{
+		RE_CORE_INFO("Try to Use Bindless Feature");
+	 }
+
+	VkPhysicalDeviceDescriptorIndexingFeaturesEXT indexingFeaturesCreateInfo{};
+	indexingFeaturesCreateInfo.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT;
+	indexingFeaturesCreateInfo.pNext = nullptr;
+	indexingFeaturesCreateInfo.runtimeDescriptorArray = VK_TRUE;
+	indexingFeaturesCreateInfo.descriptorBindingVariableDescriptorCount = VK_TRUE;
+	indexingFeaturesCreateInfo.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
+	indexingFeaturesCreateInfo.descriptorBindingSampledImageUpdateAfterBind = VK_TRUE;
+	indexingFeaturesCreateInfo.descriptorBindingPartiallyBound = VK_TRUE;
 	
     VkDeviceCreateInfo deviceInfo;
     ZeroVulkanStruct(deviceInfo, VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO);
@@ -47,7 +72,8 @@ void VulkanDevice::CreateDevice()
 	deviceInfo.ppEnabledExtensionNames = deviceExtensions.data();
 	deviceInfo.enabledLayerCount       = uint32_t(validationLayers.size());
 	deviceInfo.ppEnabledLayerNames     = validationLayers.data();
-
+	deviceInfo.pNext = &indexingFeaturesCreateInfo;
+	
 	if (m_PhysicalDeviceFeatures2)
 	{
 		deviceInfo.pNext            = m_PhysicalDeviceFeatures2;

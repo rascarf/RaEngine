@@ -175,12 +175,12 @@ Ref<VulkanMesh> VulkanModel::LoadMesh(const aiMesh* Inmesh, const aiScene* Insce
 {
     Ref<VulkanMesh> Mesh = CreateRef<VulkanMesh>();
 
-    // // load material
-    // aiMaterial* material = aiScene->mMaterials[aiMesh->mMaterialIndex];
-    // if (material)
-    // {
-    //     FillMaterialTextures(material, mesh->material);
-    // }
+    // load material
+    aiMaterial* material = Inscene->mMaterials[Inmesh->mMaterialIndex];
+    if (material)
+    {
+        FillMaterialTextures(material, Mesh->Material);
+    }
 
     // // load bones
     // std::unordered_map<uint32, DVKVertexSkin> skinInfoMap;
@@ -217,6 +217,48 @@ void VulkanModel::FillMatrixWithAiMatrix(glm::mat4x4& OutMatix, const aiMatrix4x
         (double)from.a2, (double)from.b2, (double)from.c2, (double)from.d2,
         (double)from.a3, (double)from.b3, (double)from.c3, (double)from.d3,
         (double)from.a4, (double)from.b4, (double)from.c4, (double)from.d4};
+}
+
+void SimplifyTexturePath(std::string& path)
+{
+    const size_t lastSlashIdx = path.find_last_of("\\/");
+    if (std::string::npos != lastSlashIdx)
+    {
+        path.erase(0, lastSlashIdx + 1);
+    }
+
+    const size_t periodIdx = path.rfind('.');
+    if (std::string::npos != periodIdx)
+    {
+        path.erase(periodIdx);
+    }
+}
+
+void VulkanModel::FillMaterialTextures(aiMaterial* aiMaterial, VulkanMaterialInfo& material)
+{
+    if (aiMaterial->GetTextureCount(aiTextureType::aiTextureType_DIFFUSE))
+    {
+        aiString texturePath;
+        aiMaterial->GetTexture(aiTextureType::aiTextureType_DIFFUSE, 0, &texturePath);
+        material.Diffuse = texturePath.C_Str();
+        SimplifyTexturePath(material.Diffuse);
+    }
+
+    if (aiMaterial->GetTextureCount(aiTextureType::aiTextureType_NORMALS))
+    {
+        aiString texturePath;
+        aiMaterial->GetTexture(aiTextureType::aiTextureType_NORMALS, 0, &texturePath);
+        material.Normal = texturePath.C_Str();
+        SimplifyTexturePath(material.Normal);
+    }
+
+    if (aiMaterial->GetTextureCount(aiTextureType::aiTextureType_SPECULAR))
+    {
+        aiString texturePath;
+        aiMaterial->GetTexture(aiTextureType::aiTextureType_SPECULAR, 0, &texturePath);
+        material.Specular = texturePath.C_Str();
+        SimplifyTexturePath(material.Specular);
+    }
 }
 
 void VulkanModel::LoadVertexDatas(std::vector<float>& vertices, glm::vec3& mmax, glm::vec3& mmin, Ref<VulkanMesh> mesh,const aiMesh* aiMesh, const aiScene* aiScene)

@@ -51,6 +51,7 @@ public:
         allocInfo.descriptorPool     = descriptorPool;
         allocInfo.descriptorSetCount = (uint32_t)descriptorSetLayouts.size();
         allocInfo.pSetLayouts        = descriptorSetLayouts.data();
+        
         VERIFYVULKANRESULT(vkAllocateDescriptorSets(device, &allocInfo, descriptorSet));
 
         return true;
