@@ -80,7 +80,7 @@ void InputAttachmentBackBuffer::CreateRenderPass()
     attachments[2].initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
     attachments[2].finalLayout    = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
     // depth stencil attachment
-    attachments[3].format         = PixelFormatToVkFormat(m_DepthFormat, false);
+    attachments[3].format         = PixelFormatToVkFormat(PF_DepthStencil, false);
     attachments[3].samples        = m_SampleCount;
     attachments[3].loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR;
     attachments[3].storeOp        = VK_ATTACHMENT_STORE_OP_STORE;
@@ -491,9 +491,8 @@ void InputAttachment::CreateMaterial()
     RaydepthStencilState.back.failOp       = VK_STENCIL_OP_KEEP;
     RaydepthStencilState.back.depthFailOp  = VK_STENCIL_OP_KEEP;
     RaydepthStencilState.back.passOp       = VK_STENCIL_OP_REPLACE;
-    RaydepthStencilState.front             = depthStencilState.back;
+    RaydepthStencilState.front             = RaydepthStencilState.back;
     RaydepthStencilState.depthTestEnable   = VK_FALSE;
-    RaydepthStencilState.depthWriteEnable   = VK_FALSE;
     
     m_EffectMaterial1->PreparePipeline();
     

@@ -24,7 +24,18 @@ struct VulkanRenderPassInfo
         VkAttachmentStoreOp StoreAction = VK_ATTACHMENT_STORE_OP_STORE;
     };
 
+    ~VulkanRenderPassInfo()
+    {
+        for(auto& Texture : ColorRenderTargets)
+        {
+            Texture.RenderTarget.reset();
+            Texture.ResolveTarget.reset();
+        }
 
+        DepthStencilRenderTarget.ResolveTarget.reset();
+        DepthStencilRenderTarget.DepthStencilTarget.reset();
+    }
+    
     ColorEntry ColorRenderTargets[(int32)ResLimit::MaxSimultaneousRenderTargets];
     DepthStencilEntry DepthStencilRenderTarget;
     int32 NumColorRenderTargets;

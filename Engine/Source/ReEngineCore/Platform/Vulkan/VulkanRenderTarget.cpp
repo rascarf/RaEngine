@@ -96,21 +96,25 @@ uint16 VulkanRenderTargetLayout::SetupSubpasses(VkSubpassDescription* OutDescs, 
 VulkanRenderPass::VulkanRenderPass(VkDevice InDevice, const VulkanRenderTargetLayout& RtLayout):Device(InDevice),Layout(RtLayout)
 {
     //TODO 这里不应该只能有一个SubPass
-    VkSubpassDescription SubpassDesc[1];
-    VkSubpassDependency SubpasssDep[1];
-
-    uint32 NumDependencies = 0;
-    uint16 numSubpasses = RtLayout.SetupSubpasses(SubpassDesc, 1, SubpasssDep, 1, NumDependencies);
-
+    VkSubpassDescription SubpassDesc = {};
+    
+    SubpassDesc.pipelineBindPoint       = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    SubpassDesc.colorAttachmentCount    = RtLayout.NumColorAttachments;
+    SubpassDesc.pColorAttachments       = RtLayout.NumColorAttachments > 0 ? RtLayout.ColorReferences : nullptr;
+    SubpassDesc.pResolveAttachments     = RtLayout.HasResolveAttachments ? RtLayout.ResolveReferences : nullptr;
+    SubpassDesc.pDepthStencilAttachment = RtLayout.HasDepthStencil ? &RtLayout.DepthStencilReference : nullptr;
+    SubpassDesc.pInputAttachments       = RtLayout.NumInputAttachments > 0 ? RtLayout.InputAttachments : nullptr; 
+    
     VkRenderPassCreateInfo renderPassCreateInfo;
     ZeroVulkanStruct(renderPassCreateInfo, VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO);
     renderPassCreateInfo.attachmentCount = RtLayout.NumAttachmentDescriptions;
     renderPassCreateInfo.pAttachments    = RtLayout.Descriptions;
-    renderPassCreateInfo.subpassCount    = numSubpasses;
-    renderPassCreateInfo.pSubpasses      = SubpassDesc;
-    renderPassCreateInfo.dependencyCount = NumDependencies;
-    renderPassCreateInfo.pDependencies   = SubpasssDep;
-
+    renderPassCreateInfo.subpassCount    = 1;
+    renderPassCreateInfo.pSubpasses      = &SubpassDesc;
+    // renderPassCreateInfo.dependencyCount = NumDependencies;
+    // renderPassCreateInfo.pDependencies   = SubpasssDep;
+    
+    
     if (RtLayout.extent3D.depth > 1 && RtLayout.multiview)
     {
         uint32 MultiviewMask = (0b1 << RtLayout.extent3D.depth) - 1;
@@ -121,7 +125,7 @@ VulkanRenderPass::VulkanRenderPass(VkDevice InDevice, const VulkanRenderTargetLa
         VkRenderPassMultiviewCreateInfo multiviewCreateInfo;
         ZeroVulkanStruct(multiviewCreateInfo, VK_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_CREATE_INFO);
         multiviewCreateInfo.pNext                = nullptr;
-        multiviewCreateInfo.subpassCount         = numSubpasses;
+        multiviewCreateInfo.subpassCount         = 1;
         multiviewCreateInfo.pViewMasks           = ViewMask;
         multiviewCreateInfo.dependencyCount      = 0;
         multiviewCreateInfo.pViewOffsets         = nullptr;
@@ -134,8 +138,10 @@ VulkanRenderPass::VulkanRenderPass(VkDevice InDevice, const VulkanRenderTargetLa
     VERIFYVULKANRESULT(vkCreateRenderPass(InDevice, &renderPassCreateInfo, VULKAN_CPU_ALLOCATOR, &RenderPass));
 }
 
-VulkanFrameBuffer::VulkanFrameBuffer(VkDevice Device,const VulkanRenderTargetLayout& RtLayout,const VulkanRenderPass& RenderPass,const VulkanRenderPassInfo& RenderPassInfo)
+VulkanFrameBuffer::VulkanFrameBuffer(VkDevice InDevice,const VulkanRenderTargetLayout& RtLayout,const VulkanRenderPass& RenderPass,const VulkanRenderPassInfo& RenderPassInfo)
 {
+    Device = InDevice;
+    
     //可能包含多Resolve
     NumColorAttachments = RtLayout.NumColorAttachments;
     NumColorRenderTargets = RenderPassInfo.NumColorRenderTargets;

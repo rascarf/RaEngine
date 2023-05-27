@@ -12,10 +12,8 @@ public:
           : m_Width(width)
         , m_Height(height)
         , m_Title(title)
-        , DepthStencil(nullptr)
         , m_RenderPass(VK_NULL_HANDLE)
         , m_SampleCount(VK_SAMPLE_COUNT_1_BIT)
-        , m_DepthFormat(PF_DepthStencil)
     {
 
     }
@@ -55,7 +53,6 @@ public:
     {
         DestroyFrameBuffers();
         DestoryRenderPass();
-        DestoryDepthStencil();
     }
     
     void Init(class VulkanContext* Context);
@@ -72,19 +69,17 @@ protected:
         int32 fheight   = g_VulkanInstance->GetSwapChain()->GetHeight();
         VkDevice device = g_VulkanInstance->GetDevice()->GetInstanceHandle();
 
-        VkImageView attachments[2];
-        attachments[1] = DepthStencil->ImageView;
+        VkImageView attachments[1];
 
         VkFramebufferCreateInfo frameBufferCreateInfo;
         ZeroVulkanStruct(frameBufferCreateInfo, VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO);
         frameBufferCreateInfo.renderPass      = m_RenderPass;
-        frameBufferCreateInfo.attachmentCount = 2;
+        frameBufferCreateInfo.attachmentCount = 1;
         frameBufferCreateInfo.pAttachments    = attachments;
         frameBufferCreateInfo.width           = fwidth;
         frameBufferCreateInfo.height          = fheight;
         frameBufferCreateInfo.layers          = 1;
-
-
+        
         m_FrameBuffers.resize(backbufferViews.size());
         for (uint32 i = 0; i < m_FrameBuffers.size(); ++i)
         {
@@ -94,11 +89,6 @@ protected:
         
     }
 
-    virtual void CreateDepthStencil()
-    {
-        DepthStencil = VulkanTexture::CreateDepthStencil(m_Width,m_Height,g_VulkanInstance->GetDevice(),PixelFormat::PF_DepthStencil);
-    }
-
     virtual void CreateRenderPass()
     {
         DestoryRenderPass();
@@ -106,7 +96,7 @@ protected:
         VkDevice device = g_VulkanInstance->GetDevice()->GetInstanceHandle();
         PixelFormat pixelFormat = g_VulkanInstance->GetPixelFormat();
 
-        std::vector<VkAttachmentDescription> attachments(2);
+        std::vector<VkAttachmentDescription> attachments(1);
         // color attachment
         attachments[0].format         = PixelFormatToVkFormat(pixelFormat, false);
         attachments[0].samples        = m_SampleCount;
@@ -116,30 +106,16 @@ protected:
         attachments[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
         attachments[0].initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
         attachments[0].finalLayout    = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
-        
-        // depth stencil attachment
-        attachments[1].format         = PixelFormatToVkFormat(m_DepthFormat, false);
-        attachments[1].samples        = m_SampleCount;
-        attachments[1].loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR;
-        attachments[1].storeOp        = VK_ATTACHMENT_STORE_OP_STORE;
-        attachments[1].stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_CLEAR;
-        attachments[1].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        attachments[1].initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
-        attachments[1].finalLayout    = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
         VkAttachmentReference colorReference = { };
         colorReference.attachment = 0;
         colorReference.layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-        VkAttachmentReference depthReference = { };
-        depthReference.attachment = 1;
-        depthReference.layout     = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
         VkSubpassDescription subpassDescription = { };
         subpassDescription.pipelineBindPoint       = VK_PIPELINE_BIND_POINT_GRAPHICS;
         subpassDescription.colorAttachmentCount    = 1;
         subpassDescription.pColorAttachments       = &colorReference;
-        subpassDescription.pDepthStencilAttachment = &depthReference;
+        subpassDescription.pDepthStencilAttachment = nullptr;
         subpassDescription.pResolveAttachments     = nullptr;
         subpassDescription.inputAttachmentCount    = 0;
         subpassDescription.pInputAttachments       = nullptr;
@@ -177,14 +153,6 @@ protected:
         }
     }
 
-    virtual void DestoryDepthStencil()
-    {
-        if(DepthStencil != nullptr)
-        {
-            DepthStencil.reset();
-        }
-    }
-
 public:
     std::vector<const char*>    deviceExtensions;
     std::vector<const char*>    instanceExtensions;
@@ -201,8 +169,6 @@ public:
     VkSampleCountFlagBits       m_SampleCount;
 
     Ref<VulkanInstance>         g_VulkanInstance;
-    Ref<VulkanTexture>          DepthStencil;
-    PixelFormat                 m_DepthFormat;
 };
 }
 

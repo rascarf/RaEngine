@@ -26,3 +26,22 @@ protected:
     ReEngine::VulkanContext* VkContext;
     Ref<VulkanBackBuffer> FrameBuffer;
 };
+
+struct ModelBlock
+{
+    glm::mat4 model;
+};
+
+struct ViewProjectionBlock
+{
+    glm::mat4 view;
+    glm::mat4 projection;
+};
+
+struct AttachmentParamBlock
+{
+    int attachmentIndex = 0;
+    float zNear = 0.1f;
+    float zFar = 3000.0f;
+    float padding;
+};

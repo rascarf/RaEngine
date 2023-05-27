@@ -41,30 +41,10 @@ public:
 public:
     virtual void CreateFrameBuffers() override;
     virtual void CreateRenderPass() override;
-    virtual void CreateDepthStencil() override{};
 public:
     std::vector<Ref<VulkanTexture>>*             m_AttachmentDepth;
     std::vector<Ref<VulkanTexture>>*             m_AttachmentNormals;
     std::vector<Ref<VulkanTexture>>*             m_AttachmentColors;
-};
-
-struct ModelBlock
-{
-    glm::mat4 model;
-};
-
-struct ViewProjectionBlock
-{
-    glm::mat4 view;
-    glm::mat4 projection;
-};
-
-struct AttachmentParamBlock
-{
-    int attachmentIndex;
-    float zNear;
-    float zFar;
-    float padding;
 };
 
 struct RayParamBlock
