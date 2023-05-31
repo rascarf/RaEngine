@@ -114,22 +114,13 @@ void RTLayer::OnRender()
     //Second Pass
     {
         VkClearValue clearValues[1];
-        clearValues[0].color        = {
+        clearValues[0].color        =
+        {
             { 0.2f, 0.2f, 0.2f, 1.0f }
         };
-        
-        VkRenderPassBeginInfo renderPassBeginInfo;
-        ZeroVulkanStruct(renderPassBeginInfo, VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO);
-        renderPassBeginInfo.renderPass      = FrameBuffer->m_RenderPass;
-        renderPassBeginInfo.clearValueCount = 1;
-        renderPassBeginInfo.pClearValues    = clearValues;
-        renderPassBeginInfo.renderArea.offset.x = 0;
-        renderPassBeginInfo.renderArea.offset.y = 0;
-        renderPassBeginInfo.renderArea.extent.width  = FrameBuffer->m_Width;
-        renderPassBeginInfo.renderArea.extent.height = FrameBuffer->m_Height;
-        renderPassBeginInfo.framebuffer = FrameBuffer->m_FrameBuffers[VkContext->GetCurrtIndex()];
 
-        vkCmdBeginRenderPass(VkContext->GetCommandList(), &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE); 
+        FrameBuffer->BeginPass(VkContext->GetCurrtIndex(),clearValues,VkContext->GetCommandList());
+        
         vkCmdSetViewport(VkContext->GetCommandList(), 0, 1, &viewport);
         vkCmdSetScissor(VkContext->GetCommandList(),  0, 1, &scissor);
 

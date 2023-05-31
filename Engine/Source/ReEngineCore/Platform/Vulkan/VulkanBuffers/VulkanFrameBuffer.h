@@ -154,6 +154,23 @@ protected:
     }
 
 public:
+        virtual void BeginPass(int32 CurIndex,VkClearValue* ColorValue,VkCommandBuffer& Cmd)
+        {
+            VkRenderPassBeginInfo renderPassBeginInfo;
+            ZeroVulkanStruct(renderPassBeginInfo, VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO);
+            renderPassBeginInfo.renderPass      = m_RenderPass;
+            renderPassBeginInfo.clearValueCount = 1;
+            renderPassBeginInfo.pClearValues    = ColorValue;
+            renderPassBeginInfo.renderArea.offset.x = 0;
+            renderPassBeginInfo.renderArea.offset.y = 0;
+            renderPassBeginInfo.renderArea.extent.width  = m_Width;
+            renderPassBeginInfo.renderArea.extent.height = m_Height;
+            renderPassBeginInfo.framebuffer = m_FrameBuffers[CurIndex];
+
+            vkCmdBeginRenderPass(Cmd, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE); 
+        }
+
+public:
     std::vector<const char*>    deviceExtensions;
     std::vector<const char*>    instanceExtensions;
     VkPhysicalDeviceFeatures2*  physicalDeviceFeatures = nullptr;
