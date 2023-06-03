@@ -1,26 +1,28 @@
-#include "StencilLayer.h"
+#include "AnimationLayer.h"
 
 #include <obj_frag.h>
 #include <obj_vert.h>
 #include <quad_vert.h>
+#include <AnimObj_vert.h>
+#include <AnimObj_frag.h>
 #include <FilterPixelation_frag.h>
 #include <ColorFilter_frag.h>
 
 #include "Mesh/Quad.h"
 #include "Platform/Vulkan/VulkanContext.h"
 
-void RTLayer::OnCreateBackBuffer()
+void AnimationLayer::OnCreateBackBuffer()
 {
     GraphicalLayer::OnCreateBackBuffer();
 }
 
-void RTLayer::OnInit()
+void AnimationLayer::OnInit()
 {
     CreateRenderTarget();
     LoadAsset();
 }
 
-void RTLayer::OnDeInit()
+void AnimationLayer::OnDeInit()
 {
     m_Camera.reset();        
  
@@ -32,15 +34,7 @@ void RTLayer::OnDeInit()
     {
         tex.reset();
     }
-
-    for(auto& obj : RenderObject)
-    {
-        for(auto& mesh: obj)
-        {
-            mesh.reset();
-        }
-    }
-
+    
     ColorRT.reset();
     DepthRT.reset();
 
@@ -54,13 +48,17 @@ void RTLayer::OnDeInit()
     m_RingBuffer.reset();
 }
 
-void RTLayer::OnUpdate(Timestep ts)
+void AnimationLayer::OnUpdate(Timestep ts)
 {
     m_RingBuffer->OnBeginFrame();
     m_Camera->OnUpdate(ts);
     
-    SceneModel->RootNode->LocalMatrix = glm::rotate(SceneModel->RootNode->LocalMatrix,ts.GetSeconds() *  glm::radians(45.0f),glm::vec3(0.0f, 1.0f, 0.0f));
+    // SceneModel->EvaluateAnimation(m_AnimTime);
 
+    SceneModel->UpdateAnimation(ts.GetSeconds());
+
+   SceneModel->RootNode->LocalMatrix = glm::rotate(SceneModel->RootNode->LocalMatrix,ts.GetSeconds() *  glm::radians(45.0f),glm::vec3(0.0f, 1.0f, 0.0f));
+    
     m_Camera->SetFarPlane(DebugParam.zFar);
     m_Camera->SetNearPlane(DebugParam.zNear);
     
@@ -68,7 +66,7 @@ void RTLayer::OnUpdate(Timestep ts)
     m_MVPData.projection = m_Camera->GetProjection();
 }
 
-void RTLayer::OnRender()
+void AnimationLayer::OnRender()
 {
     VkCommandBufferBeginInfo cmdBeginInfo;
     ZeroVulkanStruct(cmdBeginInfo, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
@@ -87,31 +85,48 @@ void RTLayer::OnRender()
     scissor.extent.height = FrameBuffer->m_Height;
     scissor.offset.x      = 0;
     scissor.offset.y      = 0;
-
-    // const auto ViewBufferView = m_RingBuffer->AllocConstantBuffer(sizeof(ViewProjectionBlock),&m_VPData);
+    
+    
+    RenderTarget->BeginRenderPass(VkContext->GetCommandList());
+    
+    vkCmdBindPipeline(VkContext->GetCommandList(),VK_PIPELINE_BIND_POINT_GRAPHICS,SceneMaterial->mPipeline->Pipeline);
+    
     {
-        RenderTarget->BeginRenderPass(VkContext->GetCommandList());
-        
-        vkCmdBindPipeline(VkContext->GetCommandList(),VK_PIPELINE_BIND_POINT_GRAPHICS,SceneMaterial->mPipeline->Pipeline);
-        for(int32 i = 0; i < RenderObject.size(); i++)
+        SceneMaterial->SetTexture("DiffuseMap",TextureArray[0]);
+
+        for(auto& Mesh :SceneModel->Meshes )
         {
-            SceneMaterial->SetTexture("DiffuseMap",TextureArray[i]);
-            for(auto& Mesh : RenderObject[i])
+            m_MVPData.model = Mesh->LinkNode.lock()->GetGlobalMatrix();
+    
+            for(int32 j = 0 ; j < Mesh->Bones.size() ; j++)
             {
-                m_MVPData.model = Mesh->LinkNode.lock()->GetGlobalMatrix();
-                
+                int32 BoneIndex = Mesh->Bones[j];
+                Ref<Bone> bone = SceneModel->Bones[BoneIndex];
+            
+                //最终的应该是：
+                /* SkinVertex =  Vertex * InvBindPose * FinalTransform * ModelTransform 
+                 */
 
-                // SceneMaterial->SetLocalUniform("uboViewProj",ViewBufferView);
-                SceneMaterial->SetLocalUniform("uboMVP",&m_MVPData,sizeof(ModelViewProjectionBlock));
-                SceneMaterial->BindDescriptorSets(VkContext->GetCommandList(),VK_PIPELINE_BIND_POINT_GRAPHICS);
-
-                Mesh->BindDraw(VkContext->GetCommandList());
+                //现在的bone->FinalTransform = node->GetGlobalMatrix() * bone->InverseBindPose;
+                m_BonesData.bones[j] = bone->FinalTransform;
+                m_BonesData.bones[j] = glm::inverse(m_MVPData.model) * m_BonesData.bones[j]; //node->GetGlobalMatrix() * bone->InverseBindPose;
             }
+    
+            if(Mesh->Bones.size() ==0)
+            {
+                m_BonesData.bones[0] = glm::identity<glm::mat4>();
+            }
+
+            SceneMaterial->SetLocalUniform("BonesData",&m_BonesData,sizeof(BonesTransformBlock));
+            SceneMaterial->SetLocalUniform("uboMVP",&m_MVPData,sizeof(ModelViewProjectionBlock));
+            SceneMaterial->BindDescriptorSets(VkContext->GetCommandList(),VK_PIPELINE_BIND_POINT_GRAPHICS);
+
+            Mesh->BindDraw(VkContext->GetCommandList());
         }
-
-        RenderTarget->EndRenderPass(VkContext->GetCommandList());
     }
-
+    
+    RenderTarget->EndRenderPass(VkContext->GetCommandList());
+    
     //Second Pass
     {
         VkClearValue clearValues[1];
@@ -136,24 +151,34 @@ void RTLayer::OnRender()
     }
 }
 
-void RTLayer::OnUIRender(Timestep ts)
+void AnimationLayer::OnUIRender(Timestep ts)
 {
     ImGui::SetNextWindowPos(ImVec2(0, 0));
     ImGui::Begin("InputAttachmentsDemo", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
     ImGui::Text("Color Depth");
     
+    
+    ImGui::SliderFloat("Time", &m_AnimTime, 0.0f, m_AnimDuration);
     ImGui::SliderFloat("Z-Near", &DebugParam.zNear, 0.1f, 3000.0f);
     ImGui::SliderFloat("Z-Far", &DebugParam.zFar, 0.1f, 6000.0f);
 
     ImGui::End();
 }
 
-void RTLayer::OnChangeWindowSize(std::shared_ptr<ReEngine::Event> e)
+void AnimationLayer::OnChangeWindowSize(std::shared_ptr<ReEngine::Event> e)
 {
     
 }
 
-void RTLayer::CreateRenderTarget()
+void AnimationLayer::UpdateAnimation()
+{
+    for (int32 i = 0; i < SceneModel->Meshes.size(); ++i)
+    {
+        Ref<VulkanMesh> Mesh = SceneModel->Meshes[i];
+    }
+}
+
+void AnimationLayer::CreateRenderTarget()
 {
     auto device = VkContext->Instance->GetDevice();
     
@@ -175,19 +200,19 @@ void RTLayer::CreateRenderTarget()
         VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
     );
 
-    VulkanRenderPassInfo PassInfo
+    VulkanRenderPassInfo PassInfo 
     {
         ColorRT,VK_ATTACHMENT_LOAD_OP_CLEAR,VK_ATTACHMENT_STORE_OP_NONE,
         DepthRT,VK_ATTACHMENT_LOAD_OP_CLEAR,VK_ATTACHMENT_STORE_OP_STORE
     };
 
-    RenderTarget = VulkanRenderTarget::Create(
+    RenderTarget = VulkanRenderTarget::Create( 
         device,
         PassInfo
     );
 }
 
-void RTLayer::LoadAsset()
+void AnimationLayer::LoadAsset()
 {
     auto device = VkContext->Instance->GetDevice();
     
@@ -195,7 +220,7 @@ void RTLayer::LoadAsset()
     m_RingBuffer->OnCreate(VkContext->Instance->GetDevice(),3,200 * 1024 * 1024);
 
     {
-        SceneShader = VulkanShader::Create(device,true,&OBJ_VERT,&OBJ_FRAG,nullptr,nullptr,nullptr,nullptr);
+        SceneShader = VulkanShader::Create(device,true,&ANIMOBJ_VERT,&ANIMOBJ_FRAG,nullptr,nullptr,nullptr,nullptr); 
         SceneMaterial = VulkanMaterial::Create(
             device,
             RenderTarget->GetRenderPass(),
@@ -204,6 +229,30 @@ void RTLayer::LoadAsset()
             m_RingBuffer
         );
         SceneMaterial->PreparePipeline();
+    }
+    
+    auto cmdBuffer = VulkanCommandBuffer::Create(device, VkContext->CommandPool->m_CommandPool);
+
+    // scene model
+    SceneModel = VulkanModel::LoadFromFile(
+        "Assets/Mesh/xiaonan/nvhai.FBX",
+        device,
+        cmdBuffer,
+        SceneShader->perVertexAttributes
+    );
+    
+    std::vector<std::string> diffusePaths = {
+        "Assets/Mesh/xiaonan/b001.jpg"
+    };
+    
+    TextureArray.resize(diffusePaths.size());
+    for(int32 index = 0 ; index < diffusePaths.size();index++)
+    {
+        TextureArray[index] = VulkanTexture::Create2D(
+            diffusePaths[index],
+            device,
+            cmdBuffer
+        );
     }
 
     {
@@ -218,54 +267,9 @@ void RTLayer::LoadAsset()
         mFilterMaterial->PreparePipeline();
     }
     
-    auto cmdBuffer = VulkanCommandBuffer::Create(device, VkContext->CommandPool->m_CommandPool);
-
-    // scene model
-    SceneModel = VulkanModel::LoadFromFile(
-        "Assets/Mesh/Room/miniHouse_FBX.FBX",
-        device,
-        cmdBuffer,
-        SceneShader->perVertexAttributes
-    );
-
-    std::vector<std::string> diffusePaths = {
-        "Assets/Mesh/Room/miniHouse_Part1.jpg",
-        "Assets/Mesh/Room/miniHouse_Part2.jpg",
-        "Assets/Mesh/Room/miniHouse_Part3.jpg",
-        "Assets/Mesh/Room/miniHouse_Part4.jpg"
-    };
-
-    TextureArray.resize(diffusePaths.size());
-    for(int32 index = 0 ; index < diffusePaths.size();index++)
-    {
-        TextureArray[index] = VulkanTexture::Create2D(
-            diffusePaths[index],
-            device,
-            cmdBuffer
-        );
-    }
-
-    RenderObject.resize(diffusePaths.size());
-    for(const auto& Mesh : SceneModel->Meshes)
-    {
-        const std::string& DiffuseName = Mesh->Material.Diffuse;
-        if (DiffuseName == "miniHouse_Part1")
-        {
-            RenderObject[0].push_back(Mesh);
-        }
-        else if (DiffuseName == "miniHouse_Part2")
-        {
-            RenderObject[1].push_back(Mesh);
-        }
-        else if (DiffuseName == "miniHouse_Part3")
-        {
-            RenderObject[2].push_back(Mesh);
-        }
-        else if (DiffuseName == "miniHouse_Part4")
-        {
-            RenderObject[3].push_back(Mesh);
-        }
-    }
+    SceneModel->SetAnimation(0);
+    m_AnimDuration = SceneModel->Animations[0].Duration;
+    m_AnimTime = 0.0f;
     
     // quad model
     Quad FilterQuad;
@@ -278,9 +282,14 @@ void RTLayer::LoadAsset()
         mFilterShader->perVertexAttributes
     );
 
-    m_MVPData.model = glm::identity<glm::mat4>();
-    m_MVPData.projection = glm::identity<glm::mat4>();
-    m_MVPData.view = glm::identity<glm::mat4>();
+    BoundingBox Bounds = SceneModel->RootNode->GetBounds();
+    glm::vec3 BoundsSize = Bounds.Max - Bounds.Min;
+    glm::vec3 BoundsCenter = Bounds.Min + BoundsSize * 0.5f;
 
     m_Camera = CreateRef<EditorCamera>();
+    m_Camera->SetCenter(glm::vec3(BoundsCenter.x,BoundsCenter.y,BoundsCenter.z - BoundsSize.length() * 2.0));
+    
+    m_MVPData.model = glm::identity<glm::mat4>();
+    m_MVPData.projection = glm::identity<glm::mat4>();
+    m_MVPData.view = m_Camera->GetViewMatrix();
 }

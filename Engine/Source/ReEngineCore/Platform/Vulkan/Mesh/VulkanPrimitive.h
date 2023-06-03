@@ -8,9 +8,6 @@ public:
     Ref<VulkanIndexBuffer> IndexBuffer = nullptr;
     Ref<VulkanVertexBuffer> VertexBuffer = nullptr;
 
-    int32 VertexCount = 0;
-    int32 IndexCount = 0;
-
     std::vector<float>  vertices;
     std::vector<float>  instanceDatas;
     std::vector<uint16> indices;

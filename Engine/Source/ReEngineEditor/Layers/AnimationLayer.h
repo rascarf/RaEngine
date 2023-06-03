@@ -5,7 +5,7 @@
 #include "Platform/Vulkan/Mesh/VulkanMesh.h"
 
 
-class RTLayer : public GraphicalLayer
+class AnimationLayer : public GraphicalLayer
 {
 public:
     virtual void OnCreateBackBuffer() override;
@@ -19,6 +19,7 @@ public:
 
 private:
 
+    void UpdateAnimation();
     void CreateRenderTarget();
     void LoadAsset();
 private:
@@ -36,19 +37,22 @@ private:
     Ref<VulkanMaterial> SceneMaterial;
     std::vector<Ref<VulkanTexture>> TextureArray;
 
-    std::vector<std::vector<Ref<VulkanMesh>>> RenderObject;
-
-    // ViewProjectionBlock    m_VPData;
-    // ModelBlock             m_ModelData;
-
-
+    float                       m_AnimDuration = 0.0f;
+    float                       m_AnimTime = 0.0f;
+    
     struct ModelViewProjectionBlock
     {
         glm::mat4 model;
         glm::mat4 view;
         glm::mat4 projection;
     }m_MVPData;
-    
+
+#define MAX_BONES 64
+    struct BonesTransformBlock
+    {
+        glm::mat4 bones[MAX_BONES];
+    }m_BonesData;
+
     AttachmentParamBlock DebugParam;
 
     Ref<EditorCamera>                               m_Camera = nullptr;        

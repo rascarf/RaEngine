@@ -1,4 +1,6 @@
 ﻿#pragma once
+#include "../../../../../../build/Engine/Source/ReEngineCore/Animation/AnimationClip.h"
+#include "../../../../../../build/Engine/Source/ReEngineCore/Animation/Bone.h"
 #include "assimp/material.h"
 #include "assimp/matrix4x4.h"
 #include "assimp/StringComparison.h"
@@ -14,6 +16,13 @@ struct aiScene;
 struct aiMesh;
 
 using namespace std;
+
+struct VertexSkin
+{
+    int32 Used = 0;
+    int32 Indices[4];
+    float Weights[4]; // sum to 1.0f
+};
 
 struct VulkanMaterialInfo
 {
@@ -32,7 +41,9 @@ public:
     BoundingBox m_BoundingBox;
     std::weak_ptr<VulkanMeshNode> LinkNode;
 
-    //TODO Material
+    std::vector<int32> Bones;
+    bool IsSkin = false;
+    
     int32 VertexCount;
     int32 TriangleCount;
 
@@ -40,6 +51,7 @@ public:
 
     VulkanMesh():LinkNode(),VertexCount(0),TriangleCount(0){}
 
+    //TODO 可以优化一下这个接口
     void BindDraw(VkCommandBuffer cmdBuffer)
     {
         for(auto& Primitive : m_Primitives)
@@ -167,6 +179,9 @@ public:
         
     Ref<VulkanMeshNode> LoadNode(const aiNode* node, const aiScene* scene);
     Ref<VulkanMesh> LoadMesh(const aiMesh* mesh, const aiScene* scene);
+    void LoadBones(const aiScene* aiScene);
+    void LoadAnimations(const aiScene* aiScene);
+    void LoadSkin(std::unordered_map<uint32, VertexSkin>& skinInfoMap, Ref<VulkanMesh> mesh, const aiMesh* aiMesh, const aiScene* aiScene);
     
     Ref<VulkanDevice>	Device;
     Ref<VulkanMeshNode>	RootNode;
@@ -174,11 +189,31 @@ public:
     std::vector<Ref<VulkanMesh>> Meshes;
     std::vector<VertexAttribute> Attributes;
     Ref<VulkanCommandBuffer>	CmdBuffer;
+
+public:
+
+    int32 AnimIndex = -1;
+    std::vector<Ref<Bone>> Bones;
+    std::vector<ReEngine::Animation> Animations;
+    
+    std::unordered_map<std::string,weak_ptr<Bone>> BonesMap;
+    std::unordered_map<std::string,weak_ptr<VulkanMeshNode>> NodesMap;
+
+
+    void UpdateAnimation(float DeltaTime);
+    void SetAnimation(int32 index);
+    Animation& GetAnimation(int32 index = -1);
+    void EvaluateAnimation(float time);
+    
+
+public:
+    bool  loadSkin = false;
     
     void FillMatrixWithAiMatrix(glm::mat4x4& OutMatix,const aiMatrix4x4& aiMatrix);
     void FillMaterialTextures(aiMaterial* aiMaterial, VulkanMaterialInfo& material);
     
-    void LoadVertexDatas(std::vector<float>& vertices, glm::vec3& mmax, glm::vec3& mmin, Ref<VulkanMesh> mesh, const aiMesh* aiMesh, const aiScene* aiScene);
+    void LoadVertexDatas(std::unordered_map<uint32,VertexSkin>& skinInfoMap,std::vector<float>& vertices, glm::vec3& mmax, glm::vec3& mmin, Ref<VulkanMesh> mesh, const aiMesh* aiMesh, const aiScene* aiScene);
     void LoadIndices(std::vector<uint32>& indices, const aiMesh* aiMesh, const aiScene* aiScene);
     void LoadPrimitives(std::vector<float>& vertices, std::vector<uint32>& indices, Ref<VulkanMesh> mesh,const aiMesh* aiMesh, const aiScene* aiScene);
 };
+

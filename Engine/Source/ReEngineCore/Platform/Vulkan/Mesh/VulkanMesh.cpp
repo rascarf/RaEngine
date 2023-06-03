@@ -5,9 +5,19 @@
 #include "assimp/postprocess.h"
 #include "assimp/scene.h"
 #include "glm/ext/matrix_transform.hpp"
+#include "glm/gtc/quaternion.hpp"
+#include "glm/gtx/quaternion.hpp"
+#include "Math/Math.h"
 #include "Resource/AssetManager/AssetManager.h"
 
 using namespace std;
+
+inline glm::quat GetGLMQuat(const aiQuaternion& pOrientation)
+{
+    return glm::quat(pOrientation.w, pOrientation.x, pOrientation.y, pOrientation.z);
+}
+
+
 VkVertexInputBindingDescription VulkanModel::GetInputBinding()
 {
     int32 stride = 0;
@@ -43,6 +53,120 @@ std::vector<VkVertexInputAttributeDescription> VulkanModel::GetInputAttributes()
     return vertexInputAttributs;
 }
 
+void VulkanModel::LoadAnimations(const aiScene* aiScene)
+{
+    for(int32 i = 0 ;i < (int32)aiScene->mNumAnimations; i++)
+    {
+        aiAnimation* aianimation = aiScene->mAnimations[i];
+        float timeTick = aianimation->mTicksPerSecond != 0 ? (float)aianimation->mTicksPerSecond : 25.0f;
+
+        Animations.push_back(Animation());
+        Animation& Animation = Animations.back();
+
+        for(int32 j = 0 ; j < (int32)aianimation->mNumChannels ; ++j )
+        {
+            aiNodeAnim* nodeAnim = aianimation->mChannels[j];
+            std::string NodeName = nodeAnim->mNodeName.C_Str();
+
+            Animation.Clips.insert(std::make_pair(NodeName,AnimationClip()));
+            
+            AnimationClip& animClip = Animation.Clips[NodeName];
+            animClip.NodeName = NodeName;
+            animClip.Duration = 0.0f;
+
+            for(int32 Index = 0 ; Index < (int32)nodeAnim->mNumPositionKeys;++Index)
+            {
+                aiVectorKey& aiKey = nodeAnim->mPositionKeys[Index];
+
+                animClip.Positions.Keys.push_back((float)aiKey.mTime / timeTick);
+                animClip.Positions.Values.push_back(glm::vec3(aiKey.mValue.x, aiKey.mValue.y, aiKey.mValue.z));
+                animClip.Duration = Math::Max((float)aiKey.mTime / timeTick,animClip.Duration);
+            }
+
+            // scale
+            for (int32 index = 0; index < (int32)nodeAnim->mNumScalingKeys; ++index)
+            {
+                aiVectorKey& aikey = nodeAnim->mScalingKeys[index];
+                animClip.Scales.Keys.push_back((float)aikey.mTime / timeTick);
+                animClip.Scales.Values.push_back(glm::vec3(aikey.mValue.x, aikey.mValue.y, aikey.mValue.z));
+                animClip.Duration = Math::Max((float)aikey.mTime / timeTick, animClip.Duration);
+            }
+
+            // rotation
+            for (int32 index = 0; index < (int32)nodeAnim->mNumRotationKeys; ++index)
+            {
+                aiQuatKey& aikey = nodeAnim->mRotationKeys[index];
+                animClip.Rotations.Keys.push_back((float)aikey.mTime / timeTick);
+                animClip.Rotations.Values.push_back(GetGLMQuat(aikey.mValue));
+                animClip.Duration = Math::Max((float)aikey.mTime / timeTick, animClip.Duration);
+            }
+
+            Animation.Duration = Math::Max(animClip.Duration,Animation.Duration);
+        }
+    }
+}
+
+void VulkanModel::LoadSkin(std::unordered_map<uint32, VertexSkin>& skinInfoMap, Ref<VulkanMesh> mesh,const aiMesh* aiMesh, const aiScene* aiScene)
+{
+    std::unordered_map<int32, int32> BoneIndexMap;
+
+    for(int32 i = 0; i < (int32) aiMesh->mNumBones; ++i)
+    {
+        aiBone* boneInfo = aiMesh->mBones[i];
+        std::string BoneName(boneInfo->mName.C_Str());
+
+        int32 BoneIndex = BonesMap[BoneName].lock()->Index;
+
+        //Bone 在Mesh中的索引
+        int32 MeshBoneIndex = 0;
+        auto it = BoneIndexMap.find(BoneIndex);
+        if(it == BoneIndexMap.end())
+        {
+            MeshBoneIndex = (int32)mesh->Bones.size();
+            mesh->Bones.push_back(BoneIndex);
+            BoneIndexMap.insert(std::make_pair(BoneIndex,MeshBoneIndex));
+        }
+        else
+        {
+            MeshBoneIndex = it->second;
+        }
+
+        for(uint32 j = 0 ; j < boneInfo->mNumWeights ; ++j)
+        {
+            uint32 VertexID = boneInfo->mWeights[j].mVertexId;
+            float Weight = boneInfo->mWeights[j].mWeight;
+
+            if(skinInfoMap.find(VertexID) == skinInfoMap.end())
+            {
+                skinInfoMap.insert(std::make_pair(VertexID,VertexSkin()));
+            }
+
+            VertexSkin& Info = skinInfoMap[VertexID];
+            Info.Indices[Info.Used] = MeshBoneIndex;
+            Info.Weights[Info.Used] = Weight;
+            Info.Used += 1 ;
+
+            if(Info.Used >= 4 )
+            {
+                RE_INFO("Only Support 4 Weights for a vertex");
+                break;
+            }
+        }
+
+        for(auto it = skinInfoMap.begin(); it != skinInfoMap.end() ; ++it)
+        {
+            VertexSkin& Info = it->second;
+            for(int32 i = Info.Used ; i < 4 ; ++i)
+            {
+                Info.Indices[i] = 0;
+                Info.Weights[i] = 0.0f;
+            }
+        }
+        
+        mesh->IsSkin = true;
+    }
+}
+
 Ref<VulkanModel> VulkanModel::LoadFromFile(const std::string& filename, Ref<VulkanDevice> vulkanDevice,Ref<VulkanCommandBuffer> cmdBuffer, const std::vector<VertexAttribute>& attributes)
 {
     Ref<VulkanModel> model   = CreateRef<VulkanModel>();
@@ -50,8 +174,7 @@ Ref<VulkanModel> VulkanModel::LoadFromFile(const std::string& filename, Ref<Vulk
     model->Attributes = attributes;
     model->CmdBuffer  = cmdBuffer;
         
-    int assimpFlags =
-        aiProcess_Triangulate | aiProcess_FlipUVs| aiProcess_FlipWindingOrder | aiProcess_MakeLeftHanded;
+    int assimpFlags = aiProcess_Triangulate | aiProcess_FlipUVs;
         
     for (int32 i = 0; i < attributes.size(); ++i)
     {
@@ -67,6 +190,18 @@ Ref<VulkanModel> VulkanModel::LoadFromFile(const std::string& filename, Ref<Vulk
         {
             assimpFlags = assimpFlags | aiProcess_GenSmoothNormals;
         }
+        else if (attributes[i] == VertexAttribute::VA_SkinIndex)
+        {
+            model->loadSkin = true;
+        }
+        else if (attributes[i] == VertexAttribute::VA_SkinWeight)
+        {
+            model->loadSkin = true;
+        }
+        else if (attributes[i] == VertexAttribute::VA_SkinPack)
+        {
+            model->loadSkin = true;
+        }
     }
 
     uint32 dataSize = 0;
@@ -79,9 +214,11 @@ Ref<VulkanModel> VulkanModel::LoadFromFile(const std::string& filename, Ref<Vulk
 
     Assimp::Importer importer;
     const aiScene* scene = importer.ReadFileFromMemory(dataPtr, dataSize, assimpFlags);
-    
-    model->LoadNode(scene->mRootNode, scene);
 
+    model->LoadBones(scene);
+    model->LoadNode(scene->mRootNode, scene);
+    model->LoadAnimations(scene);
+    
     delete[] dataPtr;
 
     return model;
@@ -158,7 +295,18 @@ Ref<VulkanMeshNode> VulkanModel::LoadNode(const aiNode* Innode, const aiScene* I
         }
     }
 
+    NodesMap.insert(std::make_pair(Node->name,Node));
     LinearNodes.push_back(Node);
+
+    //Bone Parent
+    int32 BoneParentIndex = -1;
+    {
+        auto it = BonesMap.find(Node->name);
+        if(it != BonesMap.end())
+        {
+            BoneParentIndex = it->second.lock()->Index;
+        }
+    }
     
     // children node
     for (int32 i = 0; i < (int32)Innode->mNumChildren; ++i)
@@ -166,9 +314,52 @@ Ref<VulkanMeshNode> VulkanModel::LoadNode(const aiNode* Innode, const aiScene* I
         Ref<VulkanMeshNode> childNode = LoadNode(Innode->mChildren[i], Inscene);
         childNode->Parent  = std::weak_ptr(Node);
         Node->Children.push_back(childNode);
+
+        //子节点
+        {
+            auto it = BonesMap.find(childNode->name);
+            if (it != BonesMap.end())
+            {
+                it->second.lock()->Parent = BoneParentIndex;
+            }
+        }
     }
 
     return Node;
+}
+
+void VulkanModel::LoadBones(const aiScene* aiScene)
+{
+    std::unordered_map<std::string,int32> BoneIndexMap;
+
+    for(int32 i = 0 ; i < (int32)aiScene->mNumMeshes;++i)
+    {
+        aiMesh* aimesh = aiScene->mMeshes[i];
+        for(int32 BoneIndex = 0; BoneIndex < aimesh->mNumBones;BoneIndex++)
+        {
+            aiBone* AiBone = aimesh->mBones[BoneIndex];
+            std::string name = AiBone->mName.C_Str();
+
+            auto it = BoneIndexMap.find(name);
+            if(it == BoneIndexMap.end())
+            {
+                int32 Index = (int32)Bones.size();
+                Ref<Bone> bone = CreateRef<Bone>();
+
+                bone->Index = Index;
+                bone->Parent = -1;
+                bone->Name = name;
+
+                FillMatrixWithAiMatrix(bone->InverseBindPose,AiBone->mOffsetMatrix);
+
+                Bones.push_back(bone);
+                BonesMap.insert(std::make_pair(name,bone));
+                BoneIndexMap.insert(std::make_pair(name,Index));
+            }
+        }
+    }
+        
+    
 }
 
 Ref<VulkanMesh> VulkanModel::LoadMesh(const aiMesh* Inmesh, const aiScene* Inscene)
@@ -183,17 +374,17 @@ Ref<VulkanMesh> VulkanModel::LoadMesh(const aiMesh* Inmesh, const aiScene* Insce
     }
 
     // // load bones
-    // std::unordered_map<uint32, DVKVertexSkin> skinInfoMap;
-    // if (aiMesh->mNumBones > 0 && loadSkin)
-    // {
-    //     LoadSkin(skinInfoMap, mesh, aiMesh, aiScene);
-    // }
+    std::unordered_map<uint32, VertexSkin> skinInfoMap;
+    if (Inmesh->mNumBones > 0 && loadSkin)
+    {
+        LoadSkin(skinInfoMap, Mesh, Inmesh, Inscene);
+    }
 
     // load vertex data
     std::vector<float> vertices;
     glm::vec3 mmin( MAX_FLT,  MAX_FLT,  MAX_FLT);
     glm::vec3 mmax(-MAX_FLT, -MAX_FLT, -MAX_FLT);
-    LoadVertexDatas(vertices, mmax, mmin, Mesh, Inmesh, Inscene);
+    LoadVertexDatas(skinInfoMap,vertices, mmax, mmin, Mesh, Inmesh, Inscene);
 
     // load indices
     std::vector<uint32> indices;
@@ -207,6 +398,107 @@ Ref<VulkanMesh> VulkanModel::LoadMesh(const aiMesh* Inmesh, const aiScene* Insce
     Mesh->m_BoundingBox.UpdateCorners();
     
     return Mesh;
+}
+
+void VulkanModel::UpdateAnimation(float DeltaTime)
+{
+    if(AnimIndex == -1)
+    {
+        RE_WARN("AnimIndex is a invalid value");
+        return;
+    }
+
+    Animation& animation = Animations[AnimIndex];
+    animation.Time += DeltaTime * animation.Speed;
+
+    if(animation.Time >= animation.Duration)
+    {
+        animation.Time = animation.Time - animation.Duration;
+    }
+
+    EvaluateAnimation(animation.Time);
+}
+
+void VulkanModel::SetAnimation(int32 index)
+{
+
+    if (index >= Animations.size())
+    {
+        RE_WARN("AnimIndex is a invalid value");
+        return;
+    }
+    
+    if (index < 0)
+    {
+        RE_WARN("AnimIndex is a invalid value");
+        return;
+    }
+    
+    AnimIndex = index;
+}
+
+Animation& VulkanModel::GetAnimation(int32 index)
+{
+    if (index == -1)
+    {
+        RE_WARN("input Index is a invalid value, return current Animation");
+        index = AnimIndex;
+    }
+    return Animations[index];
+}
+
+void VulkanModel::EvaluateAnimation(float time)
+{
+    if(AnimIndex == -1)
+    {
+        RE_WARN("AnimIndex is a invalid value");
+        return;
+    }
+
+    Animation& animation = Animations[AnimIndex];
+    animation.Time = Math::Clamp(time,0.0f,animation.Time);
+
+    for(auto it = animation.Clips.begin(); it != animation.Clips.end() ; ++it)
+    {
+        AnimationClip& clip = it->second;
+        Ref<VulkanMeshNode> node = NodesMap[clip.NodeName].lock();
+
+        float alpha = 0.0f;
+        // rotation
+        glm::quat prevRot(1, 0, 0, 0);
+        glm::quat nextRot(1, 0, 0, 0);
+        clip.Rotations.GetValue(animation.Time, prevRot, nextRot, alpha);
+        glm::quat retRot = glm::slerp(prevRot, nextRot, alpha);
+
+        // position
+        glm::vec3 prevPos(0, 0, 0);
+        glm::vec3 nextPos(0, 0, 0);
+        clip.Positions.GetValue(animation.Time, prevPos, nextPos, alpha);
+        glm::vec3 retPos = glm::mix(prevPos, nextPos, alpha);
+        glm::mat4 RotationMatrix = glm::toMat4(retRot);
+
+        // scale
+        glm::vec3 prevScale(1, 1, 1);
+        glm::vec3 nextScale(1, 1, 1);
+        clip.Scales.GetValue(animation.Time, prevScale, nextScale, alpha);
+        glm::vec3 retScale = glm::mix(prevScale, nextScale, alpha);
+
+        node->LocalMatrix = glm::identity<glm::mat4>();
+        node->LocalMatrix = glm::scale(node->LocalMatrix,retScale);
+        node->LocalMatrix = RotationMatrix * node->LocalMatrix;
+        node->LocalMatrix = glm::translate(glm::identity<glm::mat4>(),retPos) * node->LocalMatrix;
+        
+    }
+
+    // update bones
+    for (int32 i = 0; i < Bones.size(); ++i)
+    {
+        Ref<Bone> bone = Bones[i];
+        Ref<VulkanMeshNode> node = NodesMap[bone->Name].lock();
+        
+        bone->FinalTransform = bone->InverseBindPose;
+        bone->FinalTransform = node->GetGlobalMatrix() * bone->FinalTransform;
+    }
 }
 
 void VulkanModel::FillMatrixWithAiMatrix(glm::mat4x4& OutMatix, const aiMatrix4x4& from)
@@ -261,7 +553,7 @@ void VulkanModel::FillMaterialTextures(aiMaterial* aiMaterial, VulkanMaterialInf
     }
 }
 
-void VulkanModel::LoadVertexDatas(std::vector<float>& vertices, glm::vec3& mmax, glm::vec3& mmin, Ref<VulkanMesh> mesh,const aiMesh* aiMesh, const aiScene* aiScene)
+void VulkanModel::LoadVertexDatas(std::unordered_map<uint32,VertexSkin>& skinInfoMap,std::vector<float>& vertices, glm::vec3& mmax, glm::vec3& mmin, Ref<VulkanMesh> mesh,const aiMesh* aiMesh, const aiScene* aiScene)
 {
     glm::vec3 defaultColor(0.5,0.5,0.5);
 
@@ -324,6 +616,72 @@ void VulkanModel::LoadVertexDatas(std::vector<float>& vertices, glm::vec3& mmax,
                     vertices.push_back(aiMesh->mTangents[i].y);
                     vertices.push_back(aiMesh->mTangents[i].z);
                     vertices.push_back(1);
+                }
+                 else if (Attributes[j] == VertexAttribute::VA_SkinPack)
+                {
+                    if (mesh->IsSkin)
+                    {
+                        VertexSkin& skin = skinInfoMap[i];
+
+                        int32 idx0 = skin.Indices[0];
+                        int32 idx1 = skin.Indices[1];
+                        int32 idx2 = skin.Indices[2];
+                        int32 idx3 = skin.Indices[3];
+                        uint32 packIndex = (idx0 << 24) + (idx1 << 16) + (idx2 << 8) + idx3;
+
+                        uint16 weight0 = uint16(skin.Weights[0] * 65535);
+                        uint16 weight1 = uint16(skin.Weights[1] * 65535);
+                        uint16 weight2 = uint16(skin.Weights[2] * 65535);
+                        uint16 weight3 = uint16(skin.Weights[3] * 65535);
+                        uint32 packWeight0 = (weight0 << 16) + weight1;
+                        uint32 packWeight1 = (weight2 << 16) + weight3;
+
+                        vertices.push_back((float)packIndex);
+                        vertices.push_back((float)packWeight0);
+                        vertices.push_back((float)packWeight1);
+                    }
+                    else
+                    {
+                        vertices.push_back(0);
+                        vertices.push_back(65535);
+                        vertices.push_back(0);
+                    }
+                }
+                else if (Attributes[j] == VertexAttribute::VA_SkinIndex)
+                {
+                    if (mesh->IsSkin)
+                    {
+                        VertexSkin& skin = skinInfoMap[i];
+                        vertices.push_back((float)skin.Indices[0]);
+                        vertices.push_back((float)skin.Indices[1]);
+                        vertices.push_back((float)skin.Indices[2]);
+                        vertices.push_back((float)skin.Indices[3]);
+                    }
+                    else
+                    {
+                        vertices.push_back(0);
+                        vertices.push_back(0);
+                        vertices.push_back(0);
+                        vertices.push_back(0);
+                    }
+                }
+                else if (Attributes[j] == VertexAttribute::VA_SkinWeight)
+                {
+                    if (mesh->IsSkin)
+                    {
+                        VertexSkin& skin = skinInfoMap[i];
+                        vertices.push_back(skin.Weights[0]);
+                        vertices.push_back(skin.Weights[1]);
+                        vertices.push_back(skin.Weights[2]);
+                        vertices.push_back(skin.Weights[3]);
+                    }
+                    else
+                    {
+                        vertices.push_back(1.0f);
+                        vertices.push_back(0.0f);
+                        vertices.push_back(0.0f);
+                        vertices.push_back(0.0f);
+                    }
                 }
                 else if (Attributes[j] == VertexAttribute::VA_Color)
                 {

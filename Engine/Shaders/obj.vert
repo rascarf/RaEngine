@@ -4,16 +4,12 @@ layout (location = 0) in vec3 inPosition;
 layout (location = 1) in vec3 inNormal;
 layout (location = 2) in vec2 inUV0;
 
-layout (binding = 0) uniform ViewProjBlock 
-{
-	mat4 viewMatrix;
-	mat4 projectionMatrix;
-} uboViewProj;
-
-layout (binding = 1) uniform ModelDynamicBlock
+layout (binding = 0) uniform MVPBlock
 {
 	mat4 modelMatrix;
-} uboModel;
+	mat4 viewMatrix;
+	mat4 projectionMatrix;
+} uboMVP;
 
 layout (location = 0) out vec3 outNormal;
 layout (location = 1) out vec2 outUV;
@@ -25,10 +21,10 @@ out gl_PerVertex
 
 void main() 
 {
-	mat3 normalMatrix = transpose(inverse(mat3(uboModel.modelMatrix)));
+	mat3 normalMatrix = transpose(inverse(mat3(uboMVP.modelMatrix)));
 	vec3 normal = normalize(normalMatrix * inNormal);
 
 	outUV = inUV0;
 	outNormal   = normal;
-	gl_Position = uboViewProj.projectionMatrix * uboViewProj.viewMatrix * uboModel.modelMatrix * vec4(inPosition.xyz, 1.0);
+	gl_Position = uboMVP.projectionMatrix * uboMVP.viewMatrix * uboMVP.modelMatrix * vec4(inPosition.xyz, 1.0);
 }
