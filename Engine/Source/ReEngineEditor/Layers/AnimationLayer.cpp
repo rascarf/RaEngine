@@ -4,6 +4,7 @@
 #include <obj_vert.h>
 #include <quad_vert.h>
 #include <AnimObj_vert.h>
+#include <AnimObjPack_vert.h>
 #include <AnimObj_frag.h>
 #include <FilterPixelation_frag.h>
 #include <ColorFilter_frag.h>
@@ -220,7 +221,7 @@ void AnimationLayer::LoadAsset()
     m_RingBuffer->OnCreate(VkContext->Instance->GetDevice(),3,200 * 1024 * 1024);
 
     {
-        SceneShader = VulkanShader::Create(device,true,&ANIMOBJ_VERT,&ANIMOBJ_FRAG,nullptr,nullptr,nullptr,nullptr); 
+        SceneShader = VulkanShader::Create(device,true,&ANIMOBJPACK_VERT,&ANIMOBJ_FRAG,nullptr,nullptr,nullptr,nullptr); 
         SceneMaterial = VulkanMaterial::Create(
             device,
             RenderTarget->GetRenderPass(),

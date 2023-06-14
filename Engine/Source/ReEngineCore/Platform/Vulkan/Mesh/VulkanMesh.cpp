@@ -358,8 +358,6 @@ void VulkanModel::LoadBones(const aiScene* aiScene)
             }
         }
     }
-        
-    
 }
 
 Ref<VulkanMesh> VulkanModel::LoadMesh(const aiMesh* Inmesh, const aiScene* Inscene)
@@ -617,16 +615,16 @@ void VulkanModel::LoadVertexDatas(std::unordered_map<uint32,VertexSkin>& skinInf
                     vertices.push_back(aiMesh->mTangents[i].z);
                     vertices.push_back(1);
                 }
-                 else if (Attributes[j] == VertexAttribute::VA_SkinPack)
+                 else if (Attributes[j] == VertexAttribute::VA_SkinPack) //PackIndex
                 {
                     if (mesh->IsSkin)
                     {
-                        VertexSkin& skin = skinInfoMap[i];
+                        VertexSkin& skin = skinInfoMap[i]; 
 
                         int32 idx0 = skin.Indices[0];
                         int32 idx1 = skin.Indices[1];
                         int32 idx2 = skin.Indices[2];
-                        int32 idx3 = skin.Indices[3];
+                        int32 idx3 = skin.Indices[3]; 
                         uint32 packIndex = (idx0 << 24) + (idx1 << 16) + (idx2 << 8) + idx3;
 
                         uint16 weight0 = uint16(skin.Weights[0] * 65535);
@@ -636,9 +634,9 @@ void VulkanModel::LoadVertexDatas(std::unordered_map<uint32,VertexSkin>& skinInf
                         uint32 packWeight0 = (weight0 << 16) + weight1;
                         uint32 packWeight1 = (weight2 << 16) + weight3;
 
-                        vertices.push_back((float)packIndex);
-                        vertices.push_back((float)packWeight0);
-                        vertices.push_back((float)packWeight1);
+                        vertices.push_back(packIndex);
+                        vertices.push_back(packWeight0);
+                        vertices.push_back(packWeight1);
                     }
                     else
                     {
