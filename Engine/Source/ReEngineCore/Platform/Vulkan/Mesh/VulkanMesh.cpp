@@ -499,6 +499,77 @@ void VulkanModel::EvaluateAnimation(float time)
     }
 }
 
+Ref<VulkanTexture> VulkanModel::GenerateAnimationTexture(int index)
+{
+    std::vector<glm::mat4> AnimData;      
+    Animation& GeneratedAnim = GetAnimation(index); 
+    
+    GetKeys(index);
+     
+    auto Mesh = Meshes[0]; 
+    
+    for(int32 i = 0 ; i < Keys.size(); i++)
+    {
+        UpdateAnimation(Keys[i]);
+
+        //一个骨骼的数据是Mat4
+        for(int32 j = 0 ; j < Bones.size(); ++j)
+        {
+            int32 BoneIndex = Mesh->Bones[j];
+            const auto Bone = Bones[BoneIndex];
+            glm::mat4 BoneMatrix = glm::inverse(Mesh->LinkNode.lock()->GetGlobalMatrix()) * Bone->FinalTransform;
+
+            AnimData.emplace_back(BoneMatrix);
+        }
+    }
+    
+    auto AnimTexture = VulkanTexture::Create2D(
+        (uint8*)AnimData.data(),AnimData.size() * sizeof(glm::mat4),
+        VK_FORMAT_R32G32B32A32_SFLOAT,
+        64,64,
+        Device,
+        CmdBuffer
+    );
+
+    AnimTexture->UpdateSampler(
+        VK_FILTER_NEAREST,
+        VK_FILTER_NEAREST,
+        VK_SAMPLER_MIPMAP_MODE_NEAREST,
+        VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+        VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+        VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE
+    );
+
+    return AnimTexture;
+}
+
+void VulkanModel::GetKeys(int index)
+{
+    Keys = GetAnimation(index).GetKeys();
+    
+}
+
+int VulkanModel::AnimationIndex()
+{
+    if(AnimIndex == -1)
+    {
+        RE_WARN("AnimIndex is a invalid value");
+        return 0;
+    }
+
+    Animation& animation = Animations[AnimIndex];
+    
+    for(int32 i = 0; i < Keys.size(); ++i)
+    {
+        if(animation.Time <= Keys[i])
+        {
+            return  i;
+        }
+    }
+
+    return 0;
+}
+
 void VulkanModel::FillMatrixWithAiMatrix(glm::mat4x4& OutMatix, const aiMatrix4x4& from)
 {
 

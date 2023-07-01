@@ -7,6 +7,27 @@
 
 void VulkanTexture::UpdateSampler(VkFilter magFilter, VkFilter minFilter, VkSamplerMipmapMode mipmapMode,VkSamplerAddressMode addressModeU, VkSamplerAddressMode addressModeV, VkSamplerAddressMode addressModeW)
 {
+    VkSamplerCreateInfo samplerInfo;
+    ZeroVulkanStruct(samplerInfo, VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO);
+    samplerInfo.magFilter        = magFilter;
+    samplerInfo.minFilter        = minFilter;
+    samplerInfo.mipmapMode       = mipmapMode;
+    samplerInfo.addressModeU     = addressModeU;
+    samplerInfo.addressModeV     = addressModeV;
+    samplerInfo.addressModeW     = addressModeW;
+    samplerInfo.compareOp        = VK_COMPARE_OP_NEVER;
+    samplerInfo.borderColor      = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+    samplerInfo.maxAnisotropy    = 1.0;
+    samplerInfo.anisotropyEnable = VK_FALSE;
+    samplerInfo.maxLod           = 1.0f;
+    VERIFYVULKANRESULT(vkCreateSampler(Device, &samplerInfo, VULKAN_CPU_ALLOCATOR, &ImageSampler));
+
+    if (DescriptorInfo.sampler)
+    {
+        vkDestroySampler(Device, DescriptorInfo.sampler, VULKAN_CPU_ALLOCATOR);
+    }
+    
+    DescriptorInfo.sampler = ImageSampler;
 }
 
 Ref<VulkanTexture> VulkanTexture::Create2D(const std::string& filename, std::shared_ptr<VulkanDevice> vulkanDevice, Ref<VulkanCommandBuffer> cmdBuffer, VkImageUsageFlags imageUsageFlags, ImageLayoutBarrier imageLayout)
@@ -229,10 +250,13 @@ Ref<VulkanTexture> VulkanTexture::Create2D(const uint8* rgbaData,uint32 size,VkF
     int32 MipLevels = Math::FloorToInt(Math::Log2(Math::Max(width,height))) + 1;
     VkDevice device = vulkanDevice->GetInstanceHandle();
     
+    const uint32 ImageSize = width * height *  G_PixelFormats[format].blockBytes;
+    const uint32 Size =  ImageSize > size ? ImageSize : size;
+    
     auto StagingBuffer =  VulkanBuffer::CreateBuffer(
         vulkanDevice,VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
-        , size);
+        , Size); 
 
     StagingBuffer->Map();
     StagingBuffer->CopyFrom((void*)rgbaData,size);

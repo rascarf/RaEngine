@@ -9,6 +9,7 @@
 #include "Mesh/BoundingBox.h"
 #include "Platform/Vulkan/VulkanCommonDefine.h"
 #include "Platform/Vulkan/Mesh/VulkanPrimitive.h"
+#include "Platform/Vulkan/VulkanBuffers/VulkanTexture.h"
 
 struct VulkanMeshNode;
 struct aiNode;
@@ -190,6 +191,8 @@ public:
     std::vector<VertexAttribute> Attributes;
     Ref<VulkanCommandBuffer>	CmdBuffer;
 
+    std::vector<Ref<VulkanTexture>> AnimationTexture;
+
 public:
 
     int32 AnimIndex = -1;
@@ -204,7 +207,12 @@ public:
     void SetAnimation(int32 index);
     Animation& GetAnimation(int32 index = -1);
     void EvaluateAnimation(float time);
-    
+
+    // -----创建AnimTexture-----
+    std::vector<float> Keys;
+    Ref<VulkanTexture> GenerateAnimationTexture(int index);
+    void GetKeys(int index);
+    int AnimationIndex();
 
 public:
     bool  loadSkin = false;

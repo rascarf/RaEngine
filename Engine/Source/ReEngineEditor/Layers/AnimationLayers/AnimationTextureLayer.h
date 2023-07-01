@@ -1,11 +1,11 @@
 #pragma once
-#include "GraphicalLayer.h"
+#include "ReEngineEditor/Layers/GraphicalLayer.h"
 #include "Camera/EditorCamera.h"
 #include "Platform/Vulkan/VulkanMaterial.h"
 #include "Platform/Vulkan/Mesh/VulkanMesh.h"
 
 
-class AnimationLayer : public GraphicalLayer
+class AnimationTextureLayer : public GraphicalLayer
 {
 public:
     virtual void OnCreateBackBuffer() override;
@@ -18,8 +18,7 @@ public:
     virtual void OnChangeWindowSize(std::shared_ptr<ReEngine::Event> e) override;
 
 private:
-
-    void UpdateAnimation();
+    
     void CreateRenderTarget();
     void LoadAsset();
 private:
@@ -37,6 +36,8 @@ private:
     Ref<VulkanMaterial> SceneMaterial;
     std::vector<Ref<VulkanTexture>> TextureArray;
 
+    Ref<VulkanTexture> AnimTexture;
+
     float                       m_AnimDuration = 0.0f;
     float                       m_AnimTime = 0.0f;
     
@@ -45,13 +46,9 @@ private:
         glm::mat4 model;
         glm::mat4 view;
         glm::mat4 projection;
+        glm::vec4 animIndex;
     }m_MVPData;
-
-#define MAX_BONES 64
-    struct BonesTransformBlock
-    {
-        glm::mat4 bones[MAX_BONES];
-    }m_BonesData;
+    
 
     AttachmentParamBlock DebugParam;
 

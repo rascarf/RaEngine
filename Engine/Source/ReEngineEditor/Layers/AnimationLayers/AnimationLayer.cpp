@@ -53,11 +53,9 @@ void AnimationLayer::OnUpdate(Timestep ts)
 {
     m_RingBuffer->OnBeginFrame();
     m_Camera->OnUpdate(ts);
-    
-    // SceneModel->EvaluateAnimation(m_AnimTime);
 
     SceneModel->UpdateAnimation(ts.GetSeconds());
-
+    
    SceneModel->RootNode->LocalMatrix = glm::rotate(SceneModel->RootNode->LocalMatrix,ts.GetSeconds() *  glm::radians(45.0f),glm::vec3(0.0f, 1.0f, 0.0f));
     
     m_Camera->SetFarPlane(DebugParam.zFar);
@@ -108,9 +106,12 @@ void AnimationLayer::OnRender()
                 /* SkinVertex =  Vertex * InvBindPose * FinalTransform * ModelTransform 
                  */
 
-                //现在的bone->FinalTransform = node->GetGlobalMatrix() * bone->InverseBindPose;
+                // 现在的bone->FinalTransform = node->GetGlobalMatrix() * bone->InverseBindPose;
+                // 其实也就是FinalTransform包含了从根节点到当前骨骼节点的 ‘累乘’世界空间累乘，在最后的时候要把这个世界空间的影响给去掉，还原到模型空间
                 m_BonesData.bones[j] = bone->FinalTransform;
-                m_BonesData.bones[j] = glm::inverse(m_MVPData.model) * m_BonesData.bones[j]; //node->GetGlobalMatrix() * bone->InverseBindPose;
+
+                //Inverse(node->GetGlobalMatrix()) * node->GetGlobalMatrix * node->Bone1 * node->Bone11 *... * bone->InverseBindPose;
+                m_BonesData.bones[j] = glm::inverse(m_MVPData.model) * m_BonesData.bones[j]; 
             }
     
             if(Mesh->Bones.size() ==0)
@@ -169,14 +170,6 @@ void AnimationLayer::OnUIRender(Timestep ts)
 void AnimationLayer::OnChangeWindowSize(std::shared_ptr<ReEngine::Event> e)
 {
     
-}
-
-void AnimationLayer::UpdateAnimation()
-{
-    for (int32 i = 0; i < SceneModel->Meshes.size(); ++i)
-    {
-        Ref<VulkanMesh> Mesh = SceneModel->Meshes[i];
-    }
 }
 
 void AnimationLayer::CreateRenderTarget()
