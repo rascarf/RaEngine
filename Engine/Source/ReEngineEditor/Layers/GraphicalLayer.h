@@ -38,6 +38,13 @@ struct ViewProjectionBlock
     glm::mat4 projection;
 };
 
+struct MVPBlock
+{
+    glm::mat4 model;
+    glm::mat4 view;
+    glm::mat4 projection;
+};
+
 struct AttachmentParamBlock
 {
     int attachmentIndex = 0;

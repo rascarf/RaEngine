@@ -29,7 +29,14 @@ public:
     void BindDraw(VkCommandBuffer CmdBuffer)
     {
         VertexBuffer->Bind(CmdBuffer);
-        IndexBuffer->BindAndDraw(CmdBuffer);
+        if(IndexBuffer)
+        {
+            IndexBuffer->BindAndDraw(CmdBuffer);
+        }
+        else
+        {
+            vkCmdDraw(CmdBuffer, vertexCount, 1, 0, 0);
+        }
     }
     
 };
