@@ -325,5 +325,6 @@ void MSAALayer::CreateBuffer()
     MSAAMaterial->PreparePipeline();
 
     m_Camera = CreateRef<EditorCamera>();
+    m_Camera->SetSpeed(1.0f);
     
 }

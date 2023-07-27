@@ -1,6 +1,6 @@
 ﻿#pragma once
-#include "../../../../../../build/Engine/Source/ReEngineCore/Animation/AnimationClip.h"
-#include "../../../../../../build/Engine/Source/ReEngineCore/Animation/Bone.h"
+#include "Animation/AnimationClip.h"
+#include "Animation/Bone.h"
 #include "assimp/material.h"
 #include "assimp/matrix4x4.h"
 #include "assimp/StringComparison.h"
