@@ -12,6 +12,7 @@ typedef signed char         int8;
 typedef signed short int    int16;
 typedef signed int          int32;
 typedef signed long long    int64;
+typedef const char*         cstring;
 
 #ifdef RE_PLATFORM_WINDOWS
     #ifdef RE_BUILD_DLL
@@ -42,6 +43,7 @@ namespace ReEngine
         return std::make_unique<T>(std::forward<Args>(args)...);
     }
 
+    // 16 Bytes
     template<typename T>
     using Ref = std::shared_ptr<T>;
     template<typename T, typename ... Args>

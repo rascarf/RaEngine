@@ -53,11 +53,11 @@ void VulkanCommandBuffer::Submit(VkSemaphore* SignalSemaphore)
     }
 
     vkResetFences(m_VulkanDevice.lock()->GetInstanceHandle(), 1, &Fence);
-    vkQueueSubmit(m_VulkanDevice.lock()->GetGraphicsQueue()->GetHandle(), 1, &submitInfo, Fence); //TODO 这里可以斟酌下换成多线程提交
+    vkQueueSubmit(queue->GetHandle(), 1, &submitInfo, Fence); //TODO 这里可以斟酌下换成多线程提交
     vkWaitForFences(m_VulkanDevice.lock()->GetInstanceHandle(), 1, &Fence, true, ((uint64)	0xffffffffffffffff));
 }
 
-Ref<VulkanCommandBuffer> VulkanCommandBuffer::Create(std::shared_ptr<::VulkanDevice> vulkanDevice,VkCommandPool commandPool, VkCommandBufferLevel level)
+Ref<VulkanCommandBuffer> VulkanCommandBuffer::Create(std::shared_ptr<::VulkanDevice> vulkanDevice,VkCommandPool commandPool, VkCommandBufferLevel level,std::shared_ptr<VulkanQueue> InQueue)
 {
     VkDevice device = vulkanDevice->GetInstanceHandle();
 
@@ -66,6 +66,15 @@ Ref<VulkanCommandBuffer> VulkanCommandBuffer::Create(std::shared_ptr<::VulkanDev
     cmdBuffer->m_VulkanDevice = vulkanDevice;
     cmdBuffer->CommandPool  = commandPool;
     cmdBuffer->IsBegun      = false;
+
+    if(InQueue)
+    {
+        cmdBuffer->queue = InQueue;
+    }
+    else
+    {
+        cmdBuffer->queue = vulkanDevice->GetGraphicsQueue();
+    }
 
     VkCommandBufferAllocateInfo cmdBufferAllocateInfo;
     ZeroVulkanStruct(cmdBufferAllocateInfo, VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO);

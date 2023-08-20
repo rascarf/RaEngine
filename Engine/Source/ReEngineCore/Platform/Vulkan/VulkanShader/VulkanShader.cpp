@@ -295,10 +295,81 @@ void VulkanShader::ProcessInput(spirv_cross::Compiler& compiler, spirv_cross::Sh
 
 void VulkanShader::ProcessStorageBuffers(spirv_cross::Compiler& compiler, spirv_cross::ShaderResources& resources,VkShaderStageFlags stageFlags)
 {
+    for (int32 i = 0; i < resources.storage_buffers.size(); ++i)
+    {
+        spirv_cross::Resource& res      = resources.storage_buffers[i];
+        spirv_cross::SPIRType type      = compiler.get_type(res.type_id);
+        spirv_cross::SPIRType base_type = compiler.get_type(res.base_type_id);
+        const std::string &varName      = compiler.get_name(res.id);
+
+        int32 set     = compiler.get_decoration(res.id, spv::DecorationDescriptorSet);
+        int32 binding = compiler.get_decoration(res.id, spv::DecorationBinding);
+
+        VkDescriptorSetLayoutBinding setLayoutBinding = {};
+        setLayoutBinding.binding            = binding;
+        setLayoutBinding.descriptorType     = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        setLayoutBinding.descriptorCount    = 1;
+        setLayoutBinding.stageFlags         = stageFlags;
+        setLayoutBinding.pImmutableSamplers = nullptr;
+
+        SetLayoutsInfo.AddDescriptorSetLayoutBinding(varName, set, setLayoutBinding);
+
+        // 保存UBO变量信息
+        auto it = bufferParams.find(varName);
+        if (it == bufferParams.end())
+        {
+            BufferInfo bufferInfo = {};
+            bufferInfo.Set            = set;
+            bufferInfo.Binding        = binding;
+            bufferInfo.BufferSize     = 0;
+            bufferInfo.StageFlags     = stageFlags;
+            bufferInfo.DescriptorType = setLayoutBinding.descriptorType;
+            bufferParams.insert(std::make_pair(varName, bufferInfo));
+        }
+        else
+        {
+            it->second.StageFlags = it->second.StageFlags | setLayoutBinding.stageFlags;
+        }
+    }
 }
 
 void VulkanShader::ProcessStorageImages(spirv_cross::Compiler& compiler, spirv_cross::ShaderResources& resources,VkShaderStageFlags stageFlags)
 {
+    for (int32 i = 0; i < resources.storage_images.size(); ++i)
+    {
+        spirv_cross::Resource& res      = resources.storage_images[i];
+        spirv_cross::SPIRType type      = compiler.get_type(res.type_id);
+        spirv_cross::SPIRType base_type = compiler.get_type(res.base_type_id);
+        const std::string&      varName = compiler.get_name(res.id);
+
+        int32 set     = compiler.get_decoration(res.id, spv::DecorationDescriptorSet);
+        int32 binding = compiler.get_decoration(res.id, spv::DecorationBinding);
+
+        VkDescriptorSetLayoutBinding setLayoutBinding = {};
+        setLayoutBinding.binding             = binding;
+        setLayoutBinding.descriptorType     = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+        setLayoutBinding.descriptorCount    = 1;
+        setLayoutBinding.stageFlags         = stageFlags;
+        setLayoutBinding.pImmutableSamplers = nullptr;
+
+        SetLayoutsInfo.AddDescriptorSetLayoutBinding(varName, set, setLayoutBinding);
+
+        auto it = imageParams.find(varName);
+        if (it == imageParams.end())
+        {
+            ImageInfo imageInfo = {};
+            imageInfo.Set            = set;
+            imageInfo.Binding        = binding;
+            imageInfo.StageFlags     = stageFlags;
+            imageInfo.DescriptorType = setLayoutBinding.descriptorType;
+            imageParams.insert(std::make_pair(varName, imageInfo));
+        }
+        else
+        {
+            it->second.StageFlags |= stageFlags;
+        }
+
+    }
 }
 
 void VulkanShader::GenerateInputInfo()

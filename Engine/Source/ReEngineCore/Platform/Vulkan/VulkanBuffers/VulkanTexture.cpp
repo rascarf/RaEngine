@@ -295,7 +295,7 @@ Ref<VulkanTexture> VulkanTexture::Create2D(const uint8* rgbaData,uint32 size,VkF
     ImageCreateInfo.sharingMode     = VK_SHARING_MODE_EXCLUSIVE;
     ImageCreateInfo.initialLayout   = VK_IMAGE_LAYOUT_UNDEFINED;
     ImageCreateInfo.extent          = { (uint32_t)width, (uint32_t)height, 1 };
-    ImageCreateInfo.usage           = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+    ImageCreateInfo.usage           = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | imageUsageFlags;
     VERIFYVULKANRESULT(vkCreateImage(device, &ImageCreateInfo, VULKAN_CPU_ALLOCATOR, &image));
     
     // bind image Memory

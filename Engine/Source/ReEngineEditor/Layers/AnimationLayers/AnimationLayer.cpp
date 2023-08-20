@@ -38,8 +38,8 @@ void AnimationLayer::OnDeInit()
     
     ColorRT.reset();
     DepthRT.reset();
-
     RenderTarget.reset();
+    
     SceneShader.reset();
     mFilterShader.reset();
     

@@ -5,6 +5,7 @@
 
 
 //单个SetLayout的信息
+// 一个SetLayout会知道当前Set有什么BufferView，再去向Pool申请Set
 class VulkanDescriptorSetLayoutInfo
 {
 private:
@@ -107,6 +108,8 @@ struct VulkanAttribute
 };
 
 //Shader所产生的Set
+//通过函数填写根据SetLayout产生的Set中的具体的Bind
+//在Vulkan中不能直接操纵BufferView，而是只能绑定Set，所以有了BufferView之后更新Set
 class VulkanDescriptorSet
 {
 public:
