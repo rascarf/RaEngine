@@ -1,11 +1,11 @@
 #pragma once
 #include "Core/Core.h"
-#include "ReEngineEditor/Layers/GraphicalLayer.h"
+#include "GraphicalLayer.h"
 #include "Platform/Vulkan/VulkanMaterial.h"
 #include "Platform/Vulkan/Mesh/VulkanMesh.h"
 #include "Camera/EditorCamera.h"
 
-class ComputeLayer : public GraphicalLayer
+class TemplateLayer : public GraphicalLayer
 {
 public:
     virtual void OnCreateBackBuffer() override;
@@ -20,23 +20,7 @@ public:
 private:
     void CreateRenderTarget();
     void LoadAsset();
-    void ProcessImage();
     
-private:
-    bool mReady = false;
-
-    Ref<VulkanModel> PlaneModel = nullptr;
-    Ref<VulkanMaterial> mMaterial = nullptr;
-    Ref<VulkanShader> mShader = nullptr;
-    Ref<VulkanTexture> mTexture = nullptr;
-    
-    std::vector<Ref<VulkanTexture>> ComputeTargets;
-    std::vector<Ref<VulkanShader>> ComputeShaders;
-    std::vector<Ref<VulkanComputeMaterial>> ComputeMaterial;
-
-    std::vector<const char*> m_FilterNames;
-    int32 m_FilterIndex;
-
 private:
     Ref<VulkanTexture>                              ColorRT;
     Ref<VulkanTexture>                              DepthRT;
