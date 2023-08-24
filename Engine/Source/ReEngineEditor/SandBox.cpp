@@ -6,7 +6,8 @@
 #include "Layers/SandBoxLayer.h"
 #include "Layers/AnimationLayers/AnimationLayer.h"
 #include "Layers/AnimationLayers/AnimationTextureLayer.h"
-#include "Layers/ConputeLayers/ComputeLayer.h"
+#include "Layers/ComputeLayers/ComputeLayer.h"
+#include "Layers/RenderPath/TileBasedForwardLayer.h"
 
 namespace ReEngine
 {
@@ -14,12 +15,13 @@ namespace ReEngine
     {
         app.Init();
 
+        app.PushLayer(CreateRef<TileBasedForwardLayer>());
         // app.PushLayer(CreateRef<MSAALayer>());
         // app.PushLayer(CreateRef<AnimationTextureLayer>());
         // app.PushLayer(CreateRef<AnimationLayer>());
         // app.PushLayer(CreateRef<RTLayer>());
         // app.PushLayer(CreateRef<InputAttachment>());
         // app.PushLayer(CreateRef<SandBoxLayer>());
-        app.PushLayer(CreateRef<ComputeLayer>());
+        // app.PushLayer(CreateRef<ComputeLayer>());
     }
 }

@@ -38,10 +38,6 @@ private:
 
     std::vector<std::vector<Ref<VulkanMesh>>> RenderObject;
 
-    // ViewProjectionBlock    m_VPData;
-    // ModelBlock             m_ModelData;
-
-
     struct ModelViewProjectionBlock
     {
         glm::mat4 model;

@@ -6,12 +6,7 @@
 
 #define NUM_LIGHTS 64
 
-struct PointLight
-{
-    glm::vec4 Position;
-    glm::vec3 Color;
-    float Radius;
-};
+
 
 struct LightSpawnBlock
 {
@@ -108,8 +103,7 @@ protected:
     std::vector<Ref<VulkanTexture>>                 m_AttachmentNormals;
     std::vector<Ref<VulkanTexture>>                 m_AttachmentColors;
 
-    ModelBlock ModelMatrix;
-    ViewProjectionBlock ViewParam;
+    MVPBlock MvpBlock;
     
     LightDataBlock LightDatas;
     LightSpawnBlock LightInfos;

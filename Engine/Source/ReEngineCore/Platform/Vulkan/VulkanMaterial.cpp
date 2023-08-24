@@ -204,6 +204,7 @@ void VulkanMaterial::SetLocalUniform(const std::string& name, void* dataPtr, uin
     if(it == uniformBuffers.end())
     {
         RE_CORE_ERROR("Uniform {0} not found.", name.c_str());
+        return;
     }
 
     const auto BufferView =  RingBuffer->AllocConstantBuffer(it->second.DataSize,dataPtr);
@@ -221,6 +222,7 @@ void VulkanMaterial::SetLocalUniform(const std::string& name, VkDescriptorBuffer
     if(it == uniformBuffers.end())
     {
         RE_CORE_ERROR("Uniform {0} not found.", name.c_str());
+        return;
     }
 
     // 获取Object的起始位置以及DynamicOffset的起始位置
@@ -264,6 +266,21 @@ Ref<VulkanComputeMaterial> VulkanComputeMaterial::Create(Ref<VulkanDevice> vulka
     Material->mShader        = Shader;
     Material->mPipelineCache = PipelineCache;
     Material->RingBuffer     = RingBuffer;
+    
+    Material->Prepare();
+    Material->PreparePipeline();
+
+    return Material;
+}
+
+Ref<VulkanComputeMaterial> VulkanComputeMaterial::Create(Ref<VulkanDevice> vulkanDevice, VkPipelineCache PipelineCache,Ref<VulkanShader> Shader)
+{
+    // 创建材质
+    Ref<VulkanComputeMaterial> Material = CreateRef<VulkanComputeMaterial>();
+    Material->mVulkanDevice  = vulkanDevice;
+    Material->mShader        = Shader;
+    Material->mPipelineCache = PipelineCache;
+    Material->RingBuffer     = nullptr;
     
     Material->Prepare();
     Material->PreparePipeline();
@@ -418,6 +435,7 @@ void VulkanComputeMaterial::Prepare()
         {
             storageBuffers.insert(std::make_pair(it->first,UboBuffer));
             //todo 这里为啥不写入？
+            //answer storage不能绑定Dynamic的Ring，只有在需要的时候才能写入
         }
     }
 

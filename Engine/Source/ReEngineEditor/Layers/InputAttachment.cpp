@@ -70,6 +70,7 @@ void InputAttachmentBackBuffer::CreateRenderPass()
     attachments[1].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
     attachments[1].initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
     attachments[1].finalLayout    = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    
     // normal attachment
     attachments[2].format         = VK_FORMAT_R8G8B8A8_UNORM;
     attachments[2].samples        = m_SampleCount;
@@ -79,6 +80,7 @@ void InputAttachmentBackBuffer::CreateRenderPass()
     attachments[2].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
     attachments[2].initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
     attachments[2].finalLayout    = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    
     // depth stencil attachment
     attachments[3].format         = PixelFormatToVkFormat(PF_DepthStencil, false);
     attachments[3].samples        = m_SampleCount;
@@ -89,7 +91,7 @@ void InputAttachmentBackBuffer::CreateRenderPass()
     attachments[3].initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
     attachments[3].finalLayout    = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
     
-    VkAttachmentReference colorReferences[3];
+    VkAttachmentReference colorReferences[2];
     colorReferences[0].attachment = 1;
     colorReferences[0].layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
     colorReferences[1].attachment = 2;
@@ -221,10 +223,9 @@ void InputAttachment::OnUpdate(Timestep ts)
     
     m_Camera->SetFarPlane(m_DebugParam.zFar);
     m_Camera->SetNearPlane(m_DebugParam.zNear);
-    
-    ModelMatrix.model = glm::identity<glm::mat4>();
-    ViewParam.view = m_Camera->GetViewMatrix();
-    ViewParam.projection = m_Camera->GetProjection();
+
+    MvpBlock.view = m_Camera->GetViewMatrix();
+    MvpBlock.projection = m_Camera->GetProjection();
 }
 
 void InputAttachment::OnRender()
@@ -276,18 +277,17 @@ void InputAttachment::OnRender()
 
     vkCmdSetViewport(VkContext->GetCommandList(), 0, 1, &viewport);
     vkCmdSetScissor(VkContext->GetCommandList(),  0, 1, &scissor);
-
-    const auto ViewBufferView =  m_RingBuffer->AllocConstantBuffer(sizeof(ViewProjectionBlock),&ViewParam);
+    
     // pass0
     {
         //Role
         vkCmdBindPipeline(VkContext->GetCommandList(), VK_PIPELINE_BIND_POINT_GRAPHICS, m_RoleMaterial->mPipeline->Pipeline);
         for (int32 meshIndex = 0; meshIndex < m_Role->Meshes.size(); ++meshIndex)
         {
-            ModelMatrix.model =  m_Role->Meshes[meshIndex]->LinkNode.lock()->GetGlobalMatrix();
+            MvpBlock.model =  m_Role->Meshes[meshIndex]->LinkNode.lock()->GetGlobalMatrix();
             m_RoleMaterial->SetTexture("DiffuseMap",m_RoleDiffuse);
-            m_RoleMaterial->SetLocalUniform("uboViewProj",ViewBufferView);
-            m_RoleMaterial->SetLocalUniform("uboModel",&ModelMatrix,sizeof(ModelBlock));
+            m_RoleMaterial->SetLocalUniform("uboMVP",&MvpBlock,sizeof(MVPBlock));
+            
             m_RoleMaterial->BindDescriptorSets(VkContext->GetCommandList(),VK_PIPELINE_BIND_POINT_GRAPHICS);
             m_Role->Meshes[meshIndex]->BindDraw(VkContext->GetCommandList());
         }
@@ -299,10 +299,9 @@ void InputAttachment::OnRender()
             m_Material0->SetTexture("DiffuseMap",m_ModelDiffuses[textureIndex]);
             for(const auto& Meshes : m_SceneMeshes[textureIndex])
             {
-                ModelMatrix.model =  Meshes->LinkNode.lock()->GetGlobalMatrix();
+                MvpBlock.model = Meshes->LinkNode.lock()->GetGlobalMatrix();
             
-                m_Material0->SetLocalUniform("uboModel",&ModelMatrix,sizeof(ModelBlock));
-                m_Material0->SetLocalUniform("uboViewProj",ViewBufferView);
+                m_Material0->SetLocalUniform("uboMVP",&MvpBlock,sizeof(MVPBlock));
                 m_Material0->BindDescriptorSets(VkContext->GetCommandList(),VK_PIPELINE_BIND_POINT_GRAPHICS);
 
                 Meshes->BindDraw(VkContext->GetCommandList());
@@ -313,12 +312,10 @@ void InputAttachment::OnRender()
         vkCmdBindPipeline(VkContext->GetCommandList(), VK_PIPELINE_BIND_POINT_GRAPHICS, m_EffectMaterial1->mPipeline->Pipeline);
         for (int32 meshIndex = 0; meshIndex < m_Role->Meshes.size(); ++meshIndex)
         { 
-            ModelMatrix.model =  m_Role->Meshes[meshIndex]->LinkNode.lock()->GetGlobalMatrix();
+            MvpBlock.model =  m_Role->Meshes[meshIndex]->LinkNode.lock()->GetGlobalMatrix();
             
-            m_EffectMaterial1->SetLocalUniform("uboModel",&ModelMatrix,sizeof(ModelBlock));
-            m_EffectMaterial1->SetLocalUniform("uboViewProj",ViewBufferView);
+            m_EffectMaterial1->SetLocalUniform("uboMVP",&MvpBlock,sizeof(MVPBlock));
             m_EffectMaterial1->SetLocalUniform("rayParam",&m_RayData,sizeof(RayParamBlock));
-
             m_EffectMaterial1->BindDescriptorSets(VkContext->GetCommandList(),VK_PIPELINE_BIND_POINT_GRAPHICS);
 
             m_Role->Meshes[meshIndex]->BindDraw(VkContext->GetCommandList());
@@ -514,14 +511,7 @@ void InputAttachment::CreateMaterial()
 
 void InputAttachment::UpdateLight(Timestep ts)
 {
-    // CurrentTime += ts.GetSeconds();
-    // for (int32 i = 0; i < NUM_LIGHTS; ++i)
-    // { 
-    //     float bias = Math::Sin(CurrentTime * LightInfos.Speed[i]) / 5.0f;
-    //     LightDatas.Lights[i].Position.x = LightInfos.Position[i].x + bias * LightInfos.Direction[i].x * 500.0f;
-    //     LightDatas.Lights[i].Position.y = LightInfos.Position[i].y + bias * LightInfos.Direction[i].y * 500.0f;
-    //     LightDatas.Lights[i].Position.z = LightInfos.Position[i].z + bias * LightInfos.Direction[i].z * 500.0f;
-    // }
+    CurrentTime += ts.GetSeconds();
 }
 
 void InputAttachment::CreateBuffers()
@@ -612,10 +602,6 @@ void InputAttachment::CreateBuffers()
     m_DebugParam.zFar = 1000.0f;
 
     m_DebugParam.attachmentIndex = 0;
-
-    ModelMatrix.model = glm::identity<glm::mat4>();
-    ViewParam.projection = glm::identity<glm::mat4>();
-    ViewParam.view = glm::identity<glm::mat4>();
     
     m_DebugNames.push_back("Color");
     m_DebugNames.push_back("Depth");
@@ -630,21 +616,4 @@ void InputAttachment::CreateBuffers()
     m_RayData.padding = 0;
 
     auto Bounds = m_Model->RootNode->GetBounds();
-    
-    // for (int32 i = 0; i < NUM_LIGHTS; ++i)
-    // {
-    //     LightDatas.Lights[i].Position.x = Math::RandRange(Bounds.Min.x, Bounds.Max.x);
-    //     LightDatas.Lights[i].Position.y = Math::RandRange(Bounds.Min.y, Bounds.Max.y);
-    //     LightDatas.Lights[i].Position.z = Math::RandRange(Bounds.Min.z, Bounds.Max.z);
-    //     
-    //     LightDatas.Lights[i].Color.x = Math::RandRange(0.0f, 1.0f);
-    //     LightDatas.Lights[i].Color.y = Math::RandRange(0.0f, 1.0f);
-    //     LightDatas.Lights[i].Color.z = Math::RandRange(0.0f, 1.0f);
-    //     LightDatas.Lights[i].Radius = Math::RandRange(50.0f, 200.0f);
-    //
-    //     LightInfos.Position[i]  = LightDatas.Lights[i].Position;
-    //     LightInfos.Direction[i] = LightInfos.Position[i];
-    //     LightInfos.Direction[i] = glm::normalize(LightInfos.Direction[i]);
-    //     LightInfos.Speed[i] = 1.0f + Math::RandRange(0.0f, 5.0f);
-    // }
 }
