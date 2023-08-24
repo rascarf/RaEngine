@@ -52,3 +52,24 @@ struct AttachmentParamBlock
     float zFar = 3000.0f;
     float padding;
 };
+
+struct PointLight
+{
+    glm::vec3 Position;
+    float Radius;
+    glm::vec3 Color;
+    float Padding;
+
+    PointLight()
+    {
+
+    }
+
+    PointLight(const glm::vec3& inPosition, float inRadius, const glm::vec3& inColor)
+        : Position(inPosition)
+        , Radius(inRadius)
+        , Color(inColor)
+    {
+
+    }
+};

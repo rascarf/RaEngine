@@ -89,6 +89,21 @@ Ref<VulkanShader> VulkanShader::Create(Ref<VulkanDevice> vulkanDevice,bool Dynam
     return Shader;
 }
 
+Ref<VulkanShader> VulkanShader::CreateCompute(Ref<VulkanDevice> vulkanDevice, bool DynamicUBO,const std::vector<unsigned char>* Compute)
+{
+    using ShaderModuleRef = Ref<VulkanShaderModule>;
+
+    Ref<VulkanShader> Shader = CreateRef<VulkanShader>();
+    ShaderModuleRef compModule = Compute ? VulkanShaderModule::Create(vulkanDevice, *Compute, VK_SHADER_STAGE_COMPUTE_BIT) : nullptr;
+
+    Shader->device = vulkanDevice->GetInstanceHandle();
+    Shader->dynamicUBO = DynamicUBO;
+    Shader->compShaderModule = compModule;
+    Shader->Compile();
+
+    return Shader;
+}
+
 void VulkanShader::Compile()
 {
     ProcessShaderModule(vertShaderModule);

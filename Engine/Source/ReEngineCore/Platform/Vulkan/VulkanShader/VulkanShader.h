@@ -31,6 +31,7 @@ public:
     };
     
     static Ref<VulkanShader> Create(Ref<VulkanDevice> vulkanDevice,bool DynamicUBO,const std::vector<unsigned char>* Vert,const std::vector<unsigned char>* Frag,const std::vector<unsigned char>* Geom,const std::vector<unsigned char>* Compute,const std::vector<unsigned char>* Tesc,const std::vector<unsigned char>* Tese);
+    static Ref<VulkanShader> CreateCompute(Ref<VulkanDevice> vulkanDevice,bool DynamicUBO,const std::vector<unsigned char>* Compute);
 
     void Compile();
     void ProcessShaderModule(Ref<VulkanShaderModule> ShaderModule);

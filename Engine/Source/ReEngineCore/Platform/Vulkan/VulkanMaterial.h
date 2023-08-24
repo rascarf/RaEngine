@@ -95,6 +95,7 @@ namespace ReEngine
 
     public:
         static Ref<VulkanComputeMaterial> Create(Ref<VulkanDevice> vulkanDevice,VkPipelineCache PipelineCache,Ref<VulkanShader> Shader,Ref<VulkanDynamicBufferRing> RingBuffer);
+        static Ref<VulkanComputeMaterial> Create(Ref<VulkanDevice> vulkanDevice,VkPipelineCache PipelineCache,Ref<VulkanShader> Shader);
 
         void BindDispatch(VkCommandBuffer CommandBuffer,int groupX,int groupY,int groupZ);
         void BindDecriptorSets(VkCommandBuffer commandBuffer,VkPipelineBindPoint BindPoint);
@@ -102,7 +103,7 @@ namespace ReEngine
         void SetUniform(const std::string& name, void* dataPtr, uint32 size);
         void SetUniform(const std::string& name,VkDescriptorBufferInfo BufferView);
         void SetTexture(const std::string& name,Ref<VulkanTexture> texture);
-
+        
         void SetStorageBuffer(const std::string& name, Ref<VulkanBuffer> buffer);
         void SetStorageTexture(const std::string& name,Ref<VulkanTexture> texture);
 

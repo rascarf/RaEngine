@@ -15,6 +15,7 @@ public:
     }
     
     VkResult OnCreate(Ref<VulkanDevice> Device , uint32_t NUmberOfBackBuffers,uint32_t MemTotalSize,char *name = NULL);
+    VkResult OnCreate(Ref<VulkanDevice> Device , uint32_t NUmberOfBackBuffers,uint32_t MemTotalSize,VkBufferUsageFlagBits UsageFlagBit,VkMemoryPropertyFlagBits PropertyFlagBits,char *name = NULL);
     void OnDestroy();
     bool AllocConstantBuffer(uint32_t size,void **pData,VkDescriptorBufferInfo *pOut);
     VkDescriptorBufferInfo AllocConstantBuffer(uint32_t size, void *pData);

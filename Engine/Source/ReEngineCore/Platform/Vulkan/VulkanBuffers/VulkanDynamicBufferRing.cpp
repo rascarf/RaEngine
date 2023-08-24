@@ -21,6 +21,27 @@ VkResult VulkanDynamicBufferRing::OnCreate(Ref<VulkanDevice> Device, uint32_t NU
     return VK_SUCCESS;
 }
 
+VkResult VulkanDynamicBufferRing::OnCreate(Ref<VulkanDevice> Device, uint32_t NUmberOfBackBuffers,uint32_t MemTotalSize, VkBufferUsageFlagBits UsageFlagBit, VkMemoryPropertyFlagBits PropertyFlagBits, char* name)
+{
+    m_Device = Device;
+
+    m_MemTotalSize = AlignUp(MemTotalSize,256u);
+
+    m_Mem.OnCreate(NUmberOfBackBuffers,m_MemTotalSize);
+
+    m_Buffer = VulkanBuffer::CreateBuffer(
+        Device,
+        UsageFlagBit,
+        PropertyFlagBits,
+        m_MemTotalSize
+    );
+    
+    m_Buffer->Map();
+    m_pData = (char*)m_Buffer->Mapped;
+
+    return VK_SUCCESS;
+}
+
 void VulkanDynamicBufferRing::OnDestroy()
 {
     BufferInfos.clear();

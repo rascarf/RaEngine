@@ -51,8 +51,7 @@ public:
     VulkanMaterialInfo Material;
 
     VulkanMesh():LinkNode(),VertexCount(0),TriangleCount(0){}
-
-    //TODO 可以优化一下这个接口
+    
     void BindDraw(VkCommandBuffer cmdBuffer)
     {
         for(auto& Primitive : m_Primitives)
