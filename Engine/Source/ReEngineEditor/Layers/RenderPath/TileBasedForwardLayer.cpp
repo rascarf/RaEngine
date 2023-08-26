@@ -62,15 +62,13 @@ void TileBasedForwardLayer::OnUpdate(Timestep ts)
     
     m_Camera->OnUpdate(ts);
 
-    //TODO Write your logic
-
     UpdateLights(ts);
 
-    CullingParam.invViewProj = glm::inverse(m_Camera->GetViewMatrix());
     CullingParam.Pos = glm::vec4(m_Camera->GetPosition(),1.0f);
 
     m_MVPData.view = m_Camera->GetViewMatrix();
     m_MVPData.projection = m_Camera->GetProjection();
+    CullingParam.invViewProj = glm::inverse(m_MVPData.projection * m_MVPData.view);
 }
 
 void TileBasedForwardLayer::OnRender()
@@ -429,6 +427,7 @@ void TileBasedForwardLayer::InitLightParams()
 
 void TileBasedForwardLayer::UpdateLights(Timestep ts)
 {
+    ElapsedTimer += ts.GetSeconds();
     BoundingBox Bound = Model->RootNode->GetBounds();
     glm::vec3 Extend = Bound.Max - Bound.Min;
     float size = Math::Min(Extend.x,Math::Min(Extend.y,Extend.z));
@@ -437,6 +436,6 @@ void TileBasedForwardLayer::UpdateLights(Timestep ts)
     {
         PointLight& light = LightParam.Lights[i];
 
-        light.Position = mLightInfo.Position[i] + mLightInfo.Direction[i] * Math::Cos(ts.GetSeconds()) * size;
+        light.Position = mLightInfo.Position[i] + mLightInfo.Direction[i] * Math::Cos(ElapsedTimer) * size;
     }
 }

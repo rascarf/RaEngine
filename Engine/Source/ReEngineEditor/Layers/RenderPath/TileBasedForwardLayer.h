@@ -93,6 +93,8 @@ private:
     CullingParamBlock            CullingParam;
     ModelBlock                   mMVPParam;
 
+    float                        ElapsedTimer = 0;
+
     int32                        TileCountPerRow = 0;
     int32                        TileCountPerColumn = 0;
 };
