@@ -23,6 +23,13 @@ Ref<VulkanBuffer> VulkanBuffer::CreateBuffer(std::shared_ptr<VulkanDevice> devic
     device->GetMemoryManager().GetMemoryTypeFromProperties(memReqs.memoryTypeBits, memoryPropertyFlags, &memoryTypeIndex);
     memAlloc.allocationSize  = memReqs.size;
     memAlloc.memoryTypeIndex = memoryTypeIndex;
+
+    VkMemoryAllocateFlagsInfo flags_info{VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO};
+    if(usageFlags & VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT)
+    {
+        flags_info.flags |= VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT;
+        memAlloc.pNext = &flags_info;
+    }
 		
     vkAllocateMemory(vkDevice, &memAlloc, nullptr, &dvkBuffer->Memory);
 

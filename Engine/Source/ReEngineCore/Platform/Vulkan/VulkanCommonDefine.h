@@ -3,7 +3,7 @@
 #include "Renderer/RHI/PixelFormat.h"
 
 #define VK_USE_PLATFORM_WIN32_KHR
-#include "vulkan/vulkan.h"
+#include "volk.h"
 
 #define VULKAN_CPU_ALLOCATOR nullptr
 
@@ -23,6 +23,11 @@ template< class T >
 static FORCE_INLINE T Clamp(const T x, const T inMin, const T inMax)
 {
     return x < inMin ? inMin : x < inMax ? x : inMax;
+}
+
+template <class T>
+constexpr T align_up(T x, size_t a) noexcept {
+    return T((x + (T(a) - 1)) & ~T(a - 1));
 }
 
 template<typename T> FORCE_INLINE T AlignUp(T val, T alignment)

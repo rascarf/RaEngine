@@ -13,7 +13,7 @@
 struct LightsParamBlock
 {
     glm::vec4 Count = glm::vec4(0.0,0.0,0.0,0.0);
-    PointLight Lights[LIGHT_SIZE];
+    GraphicalPointLight Lights[LIGHT_SIZE];
 };
 
 struct LightsInfo

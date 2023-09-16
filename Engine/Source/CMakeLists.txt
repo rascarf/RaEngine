@@ -7,7 +7,8 @@ add_subdirectory(ReEngineCore)
 add_subdirectory(ReEngineEditor)
 
 set(vulkan_include ${ThirdPartyDir}/Vulkan/include)
-set(vulkan_lib ${ThirdPartyDir}/Vulkan/lib/vulkan-1.lib)
+# set(vulkan_lib ${ThirdPartyDir}/Vulkan/lib/vulkan-1.lib)
+# target_link_libraries(ReEngineCore PRIVATE volk_headers)
 
 
 if(MSVC)

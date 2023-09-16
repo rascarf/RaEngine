@@ -11,7 +11,7 @@ VulkanDevice::VulkanDevice(VkPhysicalDevice physicalDevice)
     , m_PresentQueue()
     , m_FenceManager(nullptr)
     , m_MemoryManager(nullptr)
-	, m_PhysicalDeviceFeatures2(nullptr)
+
 {
 }
 
@@ -31,6 +31,16 @@ void VulkanDevice::CreateDevice()
 	std::vector<const char*> validationLayers;
 	GetDeviceExtensionsAndLayers(deviceExtensions, validationLayers, debugMarkersFound);
 
+	// use raytracing!
+	// todo change to open/close with samples
+	if(true)
+	{
+		RE_INFO("Using Hardware-RayTracing");
+		m_AppDeviceExtensions.push_back(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME);
+		m_AppDeviceExtensions.push_back(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME);
+		m_AppDeviceExtensions.push_back(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME);
+	}
+	
 	if (m_AppDeviceExtensions.size() > 0)
 	{
 		RE_INFO("Using app device extensions");
@@ -40,31 +50,50 @@ void VulkanDevice::CreateDevice()
 			RE_INFO("* {0}", m_AppDeviceExtensions[i]);
 		}
 	}
-
+	
 	//Bindless
 	VkPhysicalDeviceDescriptorIndexingFeaturesEXT indexingFeatures{};
 	indexingFeatures.sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT;
 	indexingFeatures.pNext = nullptr;
 
-	VkPhysicalDeviceFeatures2 deviceFeatures{};
-	deviceFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-	deviceFeatures.pNext = &indexingFeatures;
-	vkGetPhysicalDeviceFeatures2(m_PhysicalDevice, &deviceFeatures);
-
+	// 查询能不能使用bindless的device特性
+	VkPhysicalDeviceFeatures2 deviceFeatures2{};
+	deviceFeatures2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+	deviceFeatures2.pNext = &indexingFeatures;
+	vkGetPhysicalDeviceFeatures2(m_PhysicalDevice, &deviceFeatures2);
+	
 	// 需要 Features 中这三个字段同时满足，才是启用真 Bindless 特性
 	if(indexingFeatures.runtimeDescriptorArray&& indexingFeatures.descriptorBindingVariableDescriptorCount&& indexingFeatures.shaderSampledImageArrayNonUniformIndexing)
 	{
 		RE_CORE_INFO("Try to Use Bindless Feature");
 	 }
 
-	VkPhysicalDeviceDescriptorIndexingFeaturesEXT indexingFeaturesCreateInfo{};
-	indexingFeaturesCreateInfo.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT;
-	indexingFeaturesCreateInfo.pNext = nullptr;
-	indexingFeaturesCreateInfo.runtimeDescriptorArray = VK_TRUE;
-	indexingFeaturesCreateInfo.descriptorBindingVariableDescriptorCount = VK_TRUE;
-	indexingFeaturesCreateInfo.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
-	indexingFeaturesCreateInfo.descriptorBindingSampledImageUpdateAfterBind = VK_TRUE;
-	indexingFeaturesCreateInfo.descriptorBindingPartiallyBound = VK_TRUE;
+	// VkPhysicalDeviceDescriptorIndexingFeaturesEXT indexingFeaturesCreateInfo{};
+	// indexingFeaturesCreateInfo.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT;
+	// indexingFeaturesCreateInfo.pNext = nullptr;
+	// indexingFeaturesCreateInfo.runtimeDescriptorArray = VK_TRUE;
+	// indexingFeaturesCreateInfo.descriptorBindingVariableDescriptorCount = VK_TRUE;
+	// indexingFeaturesCreateInfo.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
+	// indexingFeaturesCreateInfo.descriptorBindingSampledImageUpdateAfterBind = VK_TRUE;
+	// indexingFeaturesCreateInfo.descriptorBindingPartiallyBound = VK_TRUE;
+
+	VkPhysicalDeviceAccelerationStructureFeaturesKHR accelFeature{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR};
+	VkPhysicalDeviceRayTracingPipelineFeaturesKHR rtPipelineFeature{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR};
+
+	accelFeature.accelerationStructure = VK_TRUE;
+	rtPipelineFeature.rayTracingPipeline = VK_TRUE;
+	
+	VkPhysicalDeviceVulkan12Features deviceVulkan12Features  = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES };
+	deviceVulkan12Features.descriptorIndexing = VK_TRUE;
+	deviceVulkan12Features.bufferDeviceAddress = VK_TRUE;
+	deviceVulkan12Features.runtimeDescriptorArray = VK_TRUE;
+	deviceVulkan12Features.descriptorBindingVariableDescriptorCount = VK_TRUE;
+	deviceVulkan12Features.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
+	deviceVulkan12Features.descriptorBindingSampledImageUpdateAfterBind = VK_TRUE;
+	deviceVulkan12Features.descriptorBindingPartiallyBound = VK_TRUE;
+	
+	accelFeature.pNext = &rtPipelineFeature;
+	deviceVulkan12Features.pNext = &accelFeature;
 	
     VkDeviceCreateInfo deviceInfo;
     ZeroVulkanStruct(deviceInfo, VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO);
@@ -72,19 +101,9 @@ void VulkanDevice::CreateDevice()
 	deviceInfo.ppEnabledExtensionNames = deviceExtensions.data();
 	deviceInfo.enabledLayerCount       = uint32_t(validationLayers.size());
 	deviceInfo.ppEnabledLayerNames     = validationLayers.data();
-	deviceInfo.pNext = &indexingFeaturesCreateInfo;
+	deviceInfo.pNext = &deviceVulkan12Features;
+	deviceInfo.pEnabledFeatures = &m_PhysicalDeviceFeatures;
 	
-	if (m_PhysicalDeviceFeatures2)
-	{
-		deviceInfo.pNext            = m_PhysicalDeviceFeatures2;
-		deviceInfo.pEnabledFeatures = nullptr;
-		m_PhysicalDeviceFeatures2->features = m_PhysicalDeviceFeatures;
-	}
-	else
-	{
-		deviceInfo.pEnabledFeatures = &m_PhysicalDeviceFeatures;
-	}
-
     RE_CORE_INFO("Found {0} Queue Families", (int32)m_QueueFamilyProps.size());
     
 	std::vector<VkDeviceQueueCreateInfo> queueFamilyInfos;
@@ -176,6 +195,16 @@ void VulkanDevice::CreateDevice()
 	deviceInfo.pQueueCreateInfos    = queueFamilyInfos.data();
 	
 	VkResult result = vkCreateDevice(m_PhysicalDevice, &deviceInfo, VULKAN_CPU_ALLOCATOR, &m_Device);
+	if(result == VK_ERROR_EXTENSION_NOT_PRESENT)
+	{
+		RE_CORE_ERROR("{0}", "Cannot create a Vulkan device. VK_ERROR_EXTENSION_NOT_PRESENT \n");
+	}
+
+	if(result == VK_ERROR_FEATURE_NOT_PRESENT)
+	{
+		RE_CORE_ERROR("{0}", "Cannot create a Vulkan device. VK_ERROR_FEATURE_NOT_PRESENT.\n");
+	}
+
 	if (result == VK_ERROR_INITIALIZATION_FAILED)
 	{
 		RE_CORE_ERROR("{0}", "Cannot create a Vulkan device. Try updating your video driver to a more recent version.\n");
@@ -393,12 +422,16 @@ void VulkanDevice::MapFormatSupport(PixelFormat format, VkFormat vkFormat, int32
 bool VulkanDevice::QueryGPU(int32 deviceIndex)
 {
 	bool discrete = false;
-	vkGetPhysicalDeviceProperties(m_PhysicalDevice, &m_PhysicalDeviceProperties);
 
+	VkPhysicalDeviceRayTracingPipelinePropertiesKHR m_rtProperties{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR};
+	m_PhysicalDeviceProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+	m_PhysicalDeviceProperties.pNext = &m_rtProperties;
+	vkGetPhysicalDeviceProperties2(m_PhysicalDevice, &m_PhysicalDeviceProperties);
+	
 	auto GetDeviceTypeString = [&]() -> std::string
 	{
 		std::string info;
-		switch (m_PhysicalDeviceProperties.deviceType)
+		switch (m_PhysicalDeviceProperties.properties.deviceType)
 		{
 		case  VK_PHYSICAL_DEVICE_TYPE_OTHER:
 			info = ("Other");
@@ -423,10 +456,10 @@ bool VulkanDevice::QueryGPU(int32 deviceIndex)
 		return info;
 	};
 
-	RE_CORE_INFO("Device {0}: {1}", deviceIndex, m_PhysicalDeviceProperties.deviceName);
-	RE_CORE_INFO("- API {0}.{1}.{2}(0x{3}) Driver 0x{4} VendorId 0x{5}", VK_VERSION_MAJOR(m_PhysicalDeviceProperties.apiVersion), VK_VERSION_MINOR(m_PhysicalDeviceProperties.apiVersion), VK_VERSION_PATCH(m_PhysicalDeviceProperties.apiVersion), m_PhysicalDeviceProperties.apiVersion, m_PhysicalDeviceProperties.driverVersion, m_PhysicalDeviceProperties.vendorID);
-	RE_CORE_INFO("- DeviceID 0x{0} Type {1}", m_PhysicalDeviceProperties.deviceID, GetDeviceTypeString().c_str());
-	RE_CORE_INFO("- Max Descriptor Sets Bound {0} Timestamps {1}", m_PhysicalDeviceProperties.limits.maxBoundDescriptorSets, m_PhysicalDeviceProperties.limits.timestampComputeAndGraphics);
+	RE_CORE_INFO("Device {0}: {1}", deviceIndex, m_PhysicalDeviceProperties.properties.deviceName);
+	RE_CORE_INFO("- API {0}.{1}.{2}(0x{3}) Driver 0x{4} VendorId 0x{5}", VK_VERSION_MAJOR(m_PhysicalDeviceProperties.properties.apiVersion), VK_VERSION_MINOR(m_PhysicalDeviceProperties.properties.apiVersion), VK_VERSION_PATCH(m_PhysicalDeviceProperties.properties.apiVersion), m_PhysicalDeviceProperties.properties.apiVersion, m_PhysicalDeviceProperties.properties.driverVersion, m_PhysicalDeviceProperties.properties.vendorID);
+	RE_CORE_INFO("- DeviceID 0x{0} Type {1}", m_PhysicalDeviceProperties.properties.deviceID, GetDeviceTypeString().c_str());
+	RE_CORE_INFO("- Max Descriptor Sets Bound {0} Timestamps {1}", m_PhysicalDeviceProperties.properties.limits.maxBoundDescriptorSets, m_PhysicalDeviceProperties.properties.limits.timestampComputeAndGraphics);
 
 	uint32 queueCount = 0;
 	vkGetPhysicalDeviceQueueFamilyProperties(m_PhysicalDevice, &queueCount, nullptr);

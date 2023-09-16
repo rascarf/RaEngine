@@ -59,6 +59,14 @@ public:
     
     VkResult Flush(VkDeviceSize size = VK_WHOLE_SIZE, VkDeviceSize offset = 0);
     VkResult Invalidate(VkDeviceSize size = VK_WHOLE_SIZE, VkDeviceSize offset = 0);
+
+    VkDeviceAddress GetDeviceAddress() const 
+    {
+        VkBufferDeviceAddressInfo info = {VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO};
+        info.buffer = Buffer;
+        return vkGetBufferDeviceAddress(Device, &info);
+    }
+
 private:
     static void TransferBufferImpl(VkDevice Device,VkCommandPool CommandPool,VkQueue TransferQueue,VkBuffer SrcBuffer, VkBuffer DstBuffer, VkDeviceSize size);
 };

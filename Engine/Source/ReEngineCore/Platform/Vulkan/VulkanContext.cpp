@@ -1,13 +1,10 @@
 ﻿#include "VulkanContext.h"
 
 #include <array>
-#include <set>
-#include <limits>
-#include <fstream>
 #include <memory>
 
 #include "Shader_vert.h"
-#include "Shader_frag.h"
+
 #include "spirv_cross.hpp"
 #include "imgui/imgui.h"
 #include "VulkanCommandPool.h"
@@ -15,7 +12,7 @@
 #include "Core/Timestep.h"
 #include "Resource/AssetManager/AssetManager.h"
 #include "VulkanShader/VulkanShader.h"
-#include "VulkanShader/VulkanShaderModule.h"
+
 
 namespace ReEngine
 {

@@ -406,7 +406,7 @@ void TileBasedForwardLayer::InitLightParams()
         color.y = Math::FRandRange(0.0f, 2.5f);
         color.z = Math::FRandRange(0.0f, 2.5f);
 
-        PointLight light(position, radius, color);
+        GraphicalPointLight light(position, radius, color);
 
         LightParam.Lights[i] = light;
 
@@ -434,7 +434,7 @@ void TileBasedForwardLayer::UpdateLights(Timestep ts)
 
     for(int32 i = 0 ; i < LightParam.Count.x;++i)
     {
-        PointLight& light = LightParam.Lights[i];
+        GraphicalPointLight& light = LightParam.Lights[i];
 
         light.Position = mLightInfo.Position[i] + mLightInfo.Direction[i] * Math::Cos(ElapsedTimer) * size;
     }

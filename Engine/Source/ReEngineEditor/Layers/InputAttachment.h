@@ -17,7 +17,7 @@ struct LightSpawnBlock
 
 struct LightDataBlock
 {
-    PointLight Lights[NUM_LIGHTS];
+    GraphicalPointLight Lights[NUM_LIGHTS];
 };
 
 class InputAttachmentBackBuffer : public VulkanBackBuffer

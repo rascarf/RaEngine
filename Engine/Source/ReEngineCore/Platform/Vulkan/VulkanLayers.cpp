@@ -20,7 +20,7 @@ struct VulkanLayerExtension
 static const char* G_InstanceValidationLayers[] =
 {
 	"VK_LAYER_KHRONOS_validation",
-	"VK_LAYER_RENDERDOC_Capture",
+	// "VK_LAYER_RENDERDOC_Capture",
 	nullptr
 };
 
@@ -44,9 +44,13 @@ static const char* G_DeviceExtensions[] =
 	VK_KHR_MAINTENANCE1_EXTENSION_NAME,
 	VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME,
 	VK_KHR_MAINTENANCE_3_EXTENSION_NAME,
+
+	// VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
+	// VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
+	// VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME,
+	
 	nullptr
 	// VK_KHR_SAMPLER_MIRROR_CLAMP_TO_EDGE_EXTENSION_NAME,
-	
 };
 
 static FORCE_INLINE void EnumerateInstanceExtensionProperties(const char* layerName, VulkanLayerExtension& outLayer)
@@ -296,7 +300,7 @@ void VulkanDevice::GetDeviceExtensionsAndLayers(std::vector<const char*>& outDev
 	// {
 	// 	RE_CORE_INFO("- Found device layer {0}", name.c_str());
 	// }
- //    
+     
 	// for (const std::string& name : foundUniqueExtensions)
 	// {
 	// 	RE_CORE_INFO("- Found device extension {0}", name.c_str());

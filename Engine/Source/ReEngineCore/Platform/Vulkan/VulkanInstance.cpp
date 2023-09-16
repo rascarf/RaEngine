@@ -72,7 +72,7 @@ void VulkanInstance::SelectAndInitDevice()
 
     std::vector<VkPhysicalDevice> physicalDevices(gpuCount);
     vkEnumeratePhysicalDevices(m_Instance, &gpuCount, physicalDevices.data());
-
+    
     struct DeviceInfo
     {
         std::shared_ptr<VulkanDevice> device;
@@ -109,7 +109,7 @@ void VulkanInstance::SelectAndInitDevice()
         {
             for (int32 index = 0; index < discreteDevices.size(); ++index)
             {
-                if (discreteDevices[index].device->GetDeviceProperties().vendorID == preferredVendor)
+                if (discreteDevices[index].device->GetDeviceProperties().properties.vendorID == preferredVendor)
                 {
                     m_Device = discreteDevices[index].device;
                     deviceIndex = discreteDevices[index].deviceIndex;
@@ -136,13 +136,14 @@ void VulkanInstance::SelectAndInitDevice()
         m_Device->AddAppDeviceExtensions(m_AppDeviceExtensions[i]);
     }
 
-    m_Device->SetPhysicalDeviceFeatures(m_PhysicalDeviceFeatures2);
-
     m_Device->InitGPU(deviceIndex);
 }
 
 void VulkanInstance::InitInstance()
 {
+    // 使用volk，就不用很麻烦地自己Load函数了
+    volkInitialize();
+    
     //创建扩展
     GetInstanceLayersAndExtensions(m_InstanceExtensions, m_InstanceLayers);
 
@@ -161,9 +162,9 @@ void VulkanInstance::InitInstance()
     AppInfo.pNext = nullptr;
     AppInfo.pApplicationName = "Vulkan Application";
     AppInfo.pEngineName = "No Engine";
-    AppInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-    AppInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-    AppInfo.apiVersion = VK_API_VERSION_1_0;
+    AppInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 1);
+    AppInfo.engineVersion = VK_MAKE_VERSION(1, 0, 1);
+    AppInfo.apiVersion = VK_API_VERSION_1_3;
 
     VkInstanceCreateInfo instanceCreateInfo;
     ZeroVulkanStruct(instanceCreateInfo, VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO);
@@ -212,6 +213,8 @@ void VulkanInstance::InitInstance()
     else {
         RE_CORE_ERROR("Vulkan successed to create instance.");
     }
+
+    volkLoadInstance(m_Instance);
 }
 
 void VulkanInstance::RecreateSwapChain()

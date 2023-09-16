@@ -1,9 +1,9 @@
 #pragma once
+#include "Core/Core.h"
 #include "ReEngineEditor/Layers/GraphicalLayer.h"
 #include "Camera/EditorCamera.h"
 #include "Platform/Vulkan/VulkanMaterial.h"
 #include "Platform/Vulkan/Mesh/VulkanMesh.h"
-
 
 class AnimationLayer : public GraphicalLayer
 {

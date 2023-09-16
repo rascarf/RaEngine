@@ -1,12 +1,9 @@
 #include "AnimationLayer.h"
 
 #include <obj_frag.h>
-#include <obj_vert.h>
 #include <quad_vert.h>
-#include <AnimObj_vert.h>
 #include <AnimObjPack_vert.h>
 #include <AnimObj_frag.h>
-#include <FilterPixelation_frag.h>
 #include <ColorFilter_frag.h>
 
 #include "Mesh/Quad.h"

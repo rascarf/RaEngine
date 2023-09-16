@@ -53,19 +53,19 @@ struct AttachmentParamBlock
     float padding;
 };
 
-struct PointLight
+struct GraphicalPointLight
 {
     glm::vec3 Position;
     float Radius;
     glm::vec3 Color;
     float Padding;
 
-    PointLight()
+    GraphicalPointLight()
     {
 
     }
 
-    PointLight(const glm::vec3& inPosition, float inRadius, const glm::vec3& inColor)
+    GraphicalPointLight(const glm::vec3& inPosition, float inRadius, const glm::vec3& inColor)
         : Position(inPosition)
         , Radius(inRadius)
         , Color(inColor)

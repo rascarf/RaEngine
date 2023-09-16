@@ -3,22 +3,9 @@
 #include "Renderer/RHI/GraphicsContext.h"
 #include "Renderer/RHI/PixelFormat.h"
 
-#define VK_USE_PLATFORM_WIN32_KHR
 #include "VulkanCommandPool.h"
 #include "VulkanInstance.h"
-#include "VulkanPipelineInfo.h"
-#include "Platform/Vulkan/VulkanBuffers/VulkanTexture.h"
-#include "Camera/EditorCamera.h"
-#include "vulkan/vulkan.h"
 #include "GLFW/glfw3.h"
-#include "glm/gtx/transform.hpp"
-#include "Mesh/VulkanMesh.h"
-#include "VulkanBuffers/VulkanBuffer.h"
-#include "VulkanBuffers/VulkanDynamicBufferRing.h"
-#include "VulkanBuffers/VulkanFrameBuffer.h"
-#include "VulkanBuffers/VulkanIndexBuffer.h"
-#include "VulkanBuffers/VulkanVertexBuffer.h"
-#include "VulkanShader/VulkanShader.h"
 #include "VulkanUI/VulkanImGui.h"
 
 namespace ReEngine

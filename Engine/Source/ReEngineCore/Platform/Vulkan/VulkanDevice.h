@@ -59,14 +59,14 @@ public:
         return m_PhysicalDevice;
     }
     
-    FORCE_INLINE const VkPhysicalDeviceProperties& GetDeviceProperties() const
+    FORCE_INLINE const VkPhysicalDeviceProperties2& GetDeviceProperties() const
     {
         return m_PhysicalDeviceProperties;
     }
     
     FORCE_INLINE const VkPhysicalDeviceLimits& GetLimits() const
     {
-        return m_PhysicalDeviceProperties.limits;
+        return m_PhysicalDeviceProperties.properties.limits;
     }
     
     FORCE_INLINE const VkPhysicalDeviceFeatures& GetPhysicalFeatures() const
@@ -99,11 +99,6 @@ public:
 		m_AppDeviceExtensions.push_back(name);
 	}
 
-	FORCE_INLINE void SetPhysicalDeviceFeatures(VkPhysicalDeviceFeatures2* deviceFeatures)
-	{
-		m_PhysicalDeviceFeatures2 = deviceFeatures;
-	}
-
 private:
     
     void MapFormatSupport(ReEngine::PixelFormat format, VkFormat vkFormat);
@@ -123,8 +118,8 @@ private:
 private:
     VkDevice                                m_Device;
     VkPhysicalDevice                        m_PhysicalDevice;
-    VkPhysicalDeviceProperties              m_PhysicalDeviceProperties;
-    VkPhysicalDeviceFeatures                m_PhysicalDeviceFeatures;
+    VkPhysicalDeviceProperties2             m_PhysicalDeviceProperties;
+    VkPhysicalDeviceFeatures               m_PhysicalDeviceFeatures;
     std::vector<VkQueueFamilyProperties>    m_QueueFamilyProps;
     
     VkFormatProperties                      m_FormatProperties[PixelFormat_MAX];
@@ -140,5 +135,4 @@ private:
     VulkanDeviceMemoryManager*              m_MemoryManager;
 
 	std::vector<const char*>				m_AppDeviceExtensions;
-	VkPhysicalDeviceFeatures2*				m_PhysicalDeviceFeatures2;
 };

@@ -7,8 +7,9 @@ add_executable(ReEngineEditor ${EditorHeaderFiles} ${EditorSourceFiles})
 add_compile_definitions("ENGINE_ROOT_DIR=${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
 
 target_link_libraries(ReEngineEditor PRIVATE ReEngineCore)
-target_link_libraries(ReEngineEditor PUBLIC ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/Lib/vulkan-1.lib)
+# target_link_libraries(ReEngineEditor PUBLIC ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/Lib/vulkan-1.lib)
 
+target_link_libraries(ReEngineEditor PRIVATE volk)
 target_link_libraries(ReEngineCore PUBLIC spirv-cross-glsl)
 target_link_libraries(ReEngineCore PUBLIC spirv-cross-hlsl)
 target_link_libraries(ReEngineCore PUBLIC spirv-cross-cpp)

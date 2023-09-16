@@ -161,4 +161,7 @@ if(NOT TARGET headers)
     target_include_directories(headers INTERFACE "${ThirdPartyDir}/Vulkan/include")
     target_include_directories(headers INTERFACE "${ThirdPartyDir}/SPIRV-Cross/include")
     
+    set(VOLK_STATIC_DEFINES VK_USE_PLATFORM_WIN32_KHR)
+    add_subdirectory(volk)
+    set_target_properties(volk PROPERTIES FOLDER ${ThirdPartyFolder}/volk)
 endif()
