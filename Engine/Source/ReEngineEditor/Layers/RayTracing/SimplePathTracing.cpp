@@ -150,15 +150,17 @@ void SimplePathTracing::LoadAsset()
     m_RingBuffer = CreateRef<VulkanDynamicBufferRing>();
     m_RingBuffer->OnCreate(VkContext->Instance->GetDevice(),3,200 * 1024 * 1024);
 
-    auto cmdBuffer = VulkanCommandBuffer::Create(device, VkContext->CommandPool->m_CommandPool);
     
     /*
      * TODO Write your logic
      * Remember to bind RT's Renderpass for your material not FrameBuffer's renderpass!
      */
     
-    Scene.LoadglTFModel(device,cmdBuffer,"Assets/Mesh/WaterBottle.glb");
+    Scene.LoadglTFModel(device,VkContext->CommandPool,"Assets/Mesh/WaterBottle.glb");
     Scene.CreateBlas();
+    Scene.CreateTlas();
+    
+    auto cmdBuffer = VulkanCommandBuffer::Create(device, VkContext->CommandPool->m_CommandPool);
     
     {
         mFilterShader = VulkanShader::Create(device,true,&QUAD_VERT,&COLORFILTER_FRAG,nullptr,nullptr,nullptr,nullptr);

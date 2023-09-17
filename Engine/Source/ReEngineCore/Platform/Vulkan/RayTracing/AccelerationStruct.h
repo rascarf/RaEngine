@@ -1,5 +1,7 @@
 #pragma once
 #include "Core/Core.h"
+#include "glm/fwd.hpp"
+#include "glm/matrix.hpp"
 #include "Platform/Vulkan/VulkanCommonDefine.h"
 #include "Platform/Vulkan/VulkanBuffers/VulkanBuffer.h"
 
@@ -40,6 +42,22 @@ namespace ReEngine
     
             vkCreateAccelerationStructureKHR(Device->GetInstanceHandle(),&accel,nullptr,&ResultAccel.accel);
             return ResultAccel;
+        }
+
+        static VkTransformMatrixKHR ToVkMatrix(const glm::mat4 mat)
+        {
+            // TODO 得验证一下行列顺序
+            glm::mat4 Temp = glm::transpose(mat);
+            VkTransformMatrixKHR out_matrix;
+            memcpy(&out_matrix, &Temp, sizeof(VkTransformMatrixKHR));
+            return out_matrix;
+        }
+
+        VkDeviceAddress GetDeviceAddress(VkDevice device)
+        {
+            VkAccelerationStructureDeviceAddressInfoKHR AddrInfo{VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DEVICE_ADDRESS_INFO_KHR};
+            AddrInfo.accelerationStructure = accel;
+            return vkGetAccelerationStructureDeviceAddressKHR(device,&AddrInfo);
         }
     };
     

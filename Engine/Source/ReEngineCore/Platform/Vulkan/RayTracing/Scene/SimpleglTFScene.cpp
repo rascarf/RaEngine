@@ -10,9 +10,9 @@
 #include "Math/Math.h"
 #include "Resource/AssetManager/AssetManager.h"
 
-    void glTFScene::LoadglTFModel(Ref<VulkanDevice> device,Ref<VulkanCommandBuffer> cmdBuffer, std::string FilePath, bool bIsBinary)
+    void glTFScene::LoadglTFModel(Ref<VulkanDevice> device,Ref<VulkanCommandPool> commandPool, std::string FilePath, bool bIsBinary)
 {
-    CmdBuffer = cmdBuffer;
+    CmdBufferPool = commandPool;
     Device = device;
     
     tinygltf::Model gltfModel;
@@ -31,6 +31,8 @@
     {
         gltfContext.LoadASCIIFromFile(&gltfModel, &error, &warning,FilePath);
     }
+
+    auto cmdBuffer = VulkanCommandBuffer::Create(device, CmdBufferPool->m_CommandPool);
     
     LoadTextures(cmdBuffer, gltfModel);
     LoadMaterials(cmdBuffer, gltfModel);
@@ -486,15 +488,19 @@ void glTFScene::BuildBlas(const std::vector<BlasInput>& input, VkBuildAccelerati
 
         if(BatchSize >= BatchLimit || Index == NumberBlas - 1)
         {
+            const auto CmdBuffer = VulkanCommandBuffer::Create(Device, CmdBufferPool->m_CommandPool);
             CmdBuffer->Begin();
-            CmdCreateBlas(Indices,BuildAs,ScratchBuffer->GetDeviceAddress(),QueryPool);
+            CmdCreateBlas(CmdBuffer->CmdBuffer,Indices,BuildAs,ScratchBuffer->GetDeviceAddress(),QueryPool);
             CmdBuffer->End();
             CmdBuffer->Submit();
             
             if(QueryPool)
             {
-                CmdCreateCompact(Indices,BuildAs,QueryPool);
-                CmdBuffer->Submit();
+                const auto CompactCmdBuffer = VulkanCommandBuffer::Create(Device, CmdBufferPool->m_CommandPool);
+                CompactCmdBuffer->Begin();
+                CmdCreateCompact(CompactCmdBuffer->CmdBuffer,Indices,BuildAs,QueryPool);
+                CompactCmdBuffer->End();
+                CompactCmdBuffer->Submit();
 
                 //destory non-compacted version
                 for(auto i : Indices)
@@ -526,7 +532,7 @@ void glTFScene::BuildBlas(const std::vector<BlasInput>& input, VkBuildAccelerati
     ScratchBuffer.reset();
 }
 
-void glTFScene::CmdCreateBlas(std::vector<uint32_t> indices, std::vector<BuildAccelerationStructure>& buildAs,VkDeviceAddress scratchAddress, VkQueryPool queryPool)
+void glTFScene::CmdCreateBlas(VkCommandBuffer cmdBuffer,std::vector<uint32_t> indices, std::vector<BuildAccelerationStructure>& buildAs,VkDeviceAddress scratchAddress, VkQueryPool queryPool)
 {
     if(queryPool)
     {
@@ -544,12 +550,12 @@ void glTFScene::CmdCreateBlas(std::vector<uint32_t> indices, std::vector<BuildAc
         //#2
         buildAs[Index].build_info.dstAccelerationStructure = buildAs[Index].As.accel;
         buildAs[Index].build_info.scratchData.deviceAddress = scratchAddress;
-        vkCmdBuildAccelerationStructuresKHR(CmdBuffer->CmdBuffer,1,&buildAs[Index].build_info,&buildAs[Index].range_info);
+        vkCmdBuildAccelerationStructuresKHR(cmdBuffer,1,&buildAs[Index].build_info,&buildAs[Index].range_info);
 
         VkMemoryBarrier barrier{VK_STRUCTURE_TYPE_MEMORY_BARRIER};
         barrier.srcAccessMask = VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR;
         barrier.dstAccessMask = VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR;
-        vkCmdPipelineBarrier(CmdBuffer->CmdBuffer,
+        vkCmdPipelineBarrier(cmdBuffer,
             VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR,
                              VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR,
                              0,
@@ -563,7 +569,7 @@ void glTFScene::CmdCreateBlas(std::vector<uint32_t> indices, std::vector<BuildAc
         if(queryPool)
         {
             vkCmdWriteAccelerationStructuresPropertiesKHR(
-                CmdBuffer->CmdBuffer,
+                cmdBuffer,
                 1,
                 &buildAs[Index].build_info.dstAccelerationStructure,
                 VK_QUERY_TYPE_ACCELERATION_STRUCTURE_COMPACTED_SIZE_KHR,
@@ -574,7 +580,7 @@ void glTFScene::CmdCreateBlas(std::vector<uint32_t> indices, std::vector<BuildAc
     }
 }
 
-void glTFScene::CmdCreateCompact(std::vector<uint32_t> indices, std::vector<BuildAccelerationStructure>& buildAs,VkQueryPool queryPool)
+void glTFScene::CmdCreateCompact(VkCommandBuffer cmdBuffer,std::vector<uint32_t> indices, std::vector<BuildAccelerationStructure>& buildAs,VkQueryPool queryPool)
 {
     uint32_t query_cnt{0};
     std::vector<AccelKHR> cleanupAS;  // previous AS to destroy
@@ -598,8 +604,132 @@ void glTFScene::CmdCreateCompact(std::vector<uint32_t> indices, std::vector<Buil
         copyInfo.src = buildAs[Index].build_info.dstAccelerationStructure;
         copyInfo.dst = buildAs[Index].As.accel;
         copyInfo.mode = VK_COPY_ACCELERATION_STRUCTURE_MODE_COMPACT_KHR;
-        vkCmdCopyAccelerationStructureKHR(CmdBuffer->CmdBuffer, &copyInfo);
+        vkCmdCopyAccelerationStructureKHR(cmdBuffer, &copyInfo);
     }
+}
+
+void glTFScene::CreateTlas()
+{
+    std::vector<VkAccelerationStructureInstanceKHR> Tlas;
+
+    float TotalLightTriangleArea = 0.0f;
+
+    for(const auto& Entities: Entities)
+    {
+        const auto& Mesh = Meshes[Entities->MeshIndex];
+        if(Mesh)
+        {
+            VkAccelerationStructureInstanceKHR RayInst{};
+            RayInst.transform = AccelKHR::ToVkMatrix(Entities->Transform);
+            RayInst.instanceCustomIndex = Entities->MeshIndex;
+            RayInst.accelerationStructureReference = Blases[Entities->MeshIndex].GetDeviceAddress(Device->GetInstanceHandle());
+            RayInst.flags = VK_GEOMETRY_INSTANCE_TRIANGLE_CULL_DISABLE_BIT_NV;
+            RayInst.mask = 0xFF;
+            RayInst.instanceShaderBindingTableRecordOffset = 0;//same Hit Group for all mesh
+
+            Tlas.emplace_back(RayInst);
+        }
+    }
+
+        BuildTlas(Tlas,VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR,false);
+}
+
+// Build TLAS from an array of VkAccelerationStructureInstanceKHR
+// - Use motion=true with VkAccelerationStructureMotionInstanceNV
+// - The resulting TLAS will be stored in tlas
+// - update is to rebuild the Tlas with updated matrices, flag must have the
+// 'allow_update'
+void glTFScene::BuildTlas(std::vector<VkAccelerationStructureInstanceKHR>& instances,VkBuildAccelerationStructureFlagsKHR flags, bool update)
+{
+        uint32_t Count_Instance = static_cast<uint32_t>(instances.size());
+
+        Ref<VulkanBuffer> InstancesBuffer = VulkanBuffer::CreateBuffer(
+            Device,
+            VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR,
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, // todo 这里要不staging一下？
+            sizeof(VkAccelerationStructureInstanceKHR) * Count_Instance,
+            instances.data()
+        );
+        
+        VkDeviceAddress InstanceBufferAddr = InstancesBuffer->GetDeviceAddress();
+
+        auto cmdBuffer = VulkanCommandBuffer::Create(Device, CmdBufferPool->m_CommandPool);
+        cmdBuffer->Begin();
+        VkMemoryBarrier barrier{VK_STRUCTURE_TYPE_MEMORY_BARRIER};
+        barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+        barrier.dstAccessMask = VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR;
+        vkCmdPipelineBarrier(cmdBuffer->CmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                             VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR, 0, 1, &barrier, 0, nullptr, 0,
+                             nullptr);
+
+        Ref<VulkanBuffer> ScratchBuffer;
+
+        CmdBuildTlas(cmdBuffer->CmdBuffer,Count_Instance,ScratchBuffer,InstanceBufferAddr,flags,update);
+        cmdBuffer->End();
+        cmdBuffer->Submit();
+}
+
+void glTFScene::CmdBuildTlas(VkCommandBuffer cmdBuffer, uint32_t CountInstance, Ref<VulkanBuffer>& ScratchBuffer,VkDeviceAddress InstBufferAddr, VkBuildAccelerationStructureFlagsKHR Flags,bool update)
+{
+        VkAccelerationStructureGeometryInstancesDataKHR InstanceVK{VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_INSTANCES_DATA_KHR};
+        InstanceVK.data.deviceAddress = InstBufferAddr;
+
+        // Put the above into a VkAccelerationStructureGeometryKHR. We need to put
+        // the instances struct in a union and label it as instance data.
+        VkAccelerationStructureGeometryKHR TopASGeometry{VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR};
+        TopASGeometry.geometryType = VK_GEOMETRY_TYPE_INSTANCES_KHR;
+        TopASGeometry.geometry.instances = InstanceVK;
+
+        // Build Info
+        VkAccelerationStructureBuildGeometryInfoKHR BuildInfo{VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR};
+        BuildInfo.flags = Flags;
+        BuildInfo.geometryCount = 1; // 这里好像只能为1
+        BuildInfo.pGeometries = &TopASGeometry;
+        BuildInfo.mode =
+            update? VK_BUILD_ACCELERATION_STRUCTURE_MODE_UPDATE_KHR : VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR;
+        BuildInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR;
+        BuildInfo.srcAccelerationStructure = VK_NULL_HANDLE;
+
+        VkAccelerationStructureBuildSizesInfoKHR size_info{VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR};
+        vkGetAccelerationStructureBuildSizesKHR(
+            Device->GetInstanceHandle(),
+            VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,
+            &BuildInfo,
+            &CountInstance,
+            &size_info
+        );
+
+#ifdef VK_NV_ray_tracing_motion_blur
+        VkAccelerationStructureMotionInfoNV motionInfo{VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_MOTION_INFO_NV};
+        motionInfo.maxInstances = CountInstance;
+#endif 
+
+        if(update == false)
+        {
+            VkAccelerationStructureCreateInfoKHR CreateInfo{VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR};
+            CreateInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR;
+            CreateInfo.size = size_info.accelerationStructureSize;
+            Tla = AccelKHR::CreateAcceleration(Device,CreateInfo);
+        }
+
+        ScratchBuffer = VulkanBuffer::CreateBuffer(
+            Device,
+            VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, size_info.buildScratchSize
+        );
+        VkDeviceAddress scratchAddress = ScratchBuffer->GetDeviceAddress();
+
+        // Update build information
+        BuildInfo.srcAccelerationStructure = update ? Tla.accel : VK_NULL_HANDLE;
+        BuildInfo.dstAccelerationStructure = Tla.accel;
+        BuildInfo.scratchData.deviceAddress = scratchAddress;
+        
+        // Build Offsets info: n instances
+        VkAccelerationStructureBuildRangeInfoKHR buildOffsetInfo{CountInstance, 0, 0, 0};
+        const VkAccelerationStructureBuildRangeInfoKHR* pBuildOffsetInfo = &buildOffsetInfo;
+
+        // Build the TLAS
+        vkCmdBuildAccelerationStructuresKHR(cmdBuffer, 1, &BuildInfo, &pBuildOffsetInfo);
 }
 
 

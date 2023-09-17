@@ -77,10 +77,11 @@ namespace  ReEngine
         std::vector<LightData> LightDatas;
 
         Ref<VulkanDevice> Device;
-        Ref<VulkanCommandBuffer> CmdBuffer;
+        Ref<VulkanCommandPool> CmdBufferPool;
 
     public:
         std::vector<AccelKHR> Blases;
+        AccelKHR Tla;
         
         // Mesh -> Blas
         void CreateBlas();
@@ -89,11 +90,19 @@ namespace  ReEngine
         void BuildBlas(const std::vector<BlasInput>& input, VkBuildAccelerationStructureFlagsKHR flags);
         
         // Actual allocation of buffer and acceleration structure.
-        void CmdCreateBlas(std::vector<uint32_t> indices,std::vector<BuildAccelerationStructure>& buildAs, VkDeviceAddress scratchAddress,VkQueryPool queryPool);
-        void CmdCreateCompact(std::vector<uint32_t> indices,std::vector<BuildAccelerationStructure>& buildAs,VkQueryPool queryPool);
+        void CmdCreateBlas(VkCommandBuffer cmdBuffer,std::vector<uint32_t> indices,std::vector<BuildAccelerationStructure>& buildAs, VkDeviceAddress scratchAddress,VkQueryPool queryPool);
+        void CmdCreateCompact(VkCommandBuffer cmdBuffer,std::vector<uint32_t> indices,std::vector<BuildAccelerationStructure>& buildAs,VkQueryPool queryPool);
 
+
+        // Entities -> Tlas
+        void CreateTlas();
+
+        // Create all the Tlas from the vector of RayInstance
+        void BuildTlas(std::vector<VkAccelerationStructureInstanceKHR>& instances,VkBuildAccelerationStructureFlagsKHR flags, bool update);
+        void CmdBuildTlas(VkCommandBuffer cmdBuffer, uint32_t CountInstance,Ref<VulkanBuffer>& ScratchBuffer,VkDeviceAddress InstBufferAddr,VkBuildAccelerationStructureFlagsKHR Flags,bool update);
+        
     public:
-        void LoadglTFModel(Ref<VulkanDevice> device,Ref<VulkanCommandBuffer> cmdBuffer,std::string FilePath, bool bIsBinary = true);
+        void LoadglTFModel(Ref<VulkanDevice> device,Ref<VulkanCommandPool> CommandPool,std::string FilePath, bool bIsBinary = true);
 
         void LoadTextures(Ref<VulkanCommandBuffer> cmdBuffer,tinygltf::Model &gltfModel);
         void LoadMaterials(Ref<VulkanCommandBuffer> cmdBuffer,tinygltf::Model &gltfModel);
