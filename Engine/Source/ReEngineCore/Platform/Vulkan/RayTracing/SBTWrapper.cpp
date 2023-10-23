@@ -10,13 +10,14 @@ void SBTWrapper::Setup(VulkanContext* ctx, uint32 FamilyIndex,const VkPhysicalDe
 
 void SBTWrapper::Destroy()
 {
-    for(auto& buffer : mBuffer)
+    for(auto& buffer : mBuffer) 
     {
         buffer.reset();
     }
 
     for(auto& i : mIndex)
         i = {};
+
     
 }
 
@@ -114,8 +115,8 @@ void SBTWrapper::Create(VkPipeline RtPipeline, VkRayTracingPipelineCreateInfoKHR
     CopyHandles(Stage[Hit],mIndex[Hit],mStride[Hit],mData[Hit]);
     CopyHandles(Stage[Callable],mIndex[Callable],mStride[Callable],mData[Callable]);
 
-    auto Usage_Flags = VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT || VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR;
-    auto mem_flag = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+    auto Usage_Flags = VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR ;
+    auto mem_flag = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
     for(uint32_t i = 0 ; i < 4 ; i++)
     {
         if(!Stage[i].empty())
@@ -175,6 +176,11 @@ void SBTWrapper::AddIndices(VkRayTracingPipelineCreateInfoKHR pipeline_info,cons
 
 VkDeviceAddress SBTWrapper::get_address(GroupType t)
 {
+    if(!mBuffer[t])
+    {
+        return 0;
+    }
+    
     if(!mBuffer[t]->Size)
     {
         return 0;

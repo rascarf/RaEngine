@@ -17,6 +17,17 @@ namespace  ReEngine
         glm::vec4 TextureID = glm::vec4(1.0,1.0,1.0,1.0);
     };
 
+    // Structure used for retrieving the primitive in the closest hit
+    // closest hit 会给gl_InstanceID和gl_PrimitiveID
+    // 
+    struct PrimMeshInfo // gl_InstanceID
+    {
+        int32  MaterialIndex;
+        int32  MeshIndex; // 一个Mesh对应一个VertexBuffer和一个IndicesBuffer
+        int32  Padding;
+        int32  Padding1;
+    };
+
     struct glTFMesh
     {
         uint32 VertexCount = 0;
@@ -72,6 +83,7 @@ namespace  ReEngine
         std::vector<glTFMesh*> Meshes;
     
         std::vector<Node*> Entities; // Meshes + Node = Entities , so Entities >= Meshes , for TLAS 
+        std::vector<PrimMeshInfo> PrimMeshInfos; //size == Entities.size
 
         std::vector<Light*> Lights;
         std::vector<LightData> LightDatas;
@@ -82,6 +94,7 @@ namespace  ReEngine
     public:
         std::vector<AccelKHR> Blases;
         AccelKHR Tla;
+        
         
         // Mesh -> Blas
         void CreateBlas();
@@ -174,7 +187,17 @@ namespace  ReEngine
                 delete Lights[i];
             }
             Lights.clear();
+
+            for(auto& accel: Blases)
+            {
+                vkDestroyAccelerationStructureKHR(Device->GetInstanceHandle(),accel.accel,NULL);
+                accel.buffer.reset();
+            }
+
+            vkDestroyAccelerationStructureKHR(Device->GetInstanceHandle(),Tla.accel,NULL);
+            Tla.buffer.reset();
         }
+        
     };
 }
 

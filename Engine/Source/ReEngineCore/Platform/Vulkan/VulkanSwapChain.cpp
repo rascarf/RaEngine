@@ -303,7 +303,7 @@ VulkanSwapChain::SwapStatus VulkanSwapChain::Present(VulkanQueue& gfxQueue, Vulk
 	createInfo.pSwapchains        = &m_SwapChain;
 	createInfo.pImageIndices      = (uint32*)&m_CurrentImageIndex;
     
-	VkResult presentResult = vkQueuePresentKHR(presentQueue.GetHandle(), &createInfo);
+	VkResult presentResult = vkQueuePresentKHR(presentQueue.GetHandle(), &createInfo); 
 
 	if (presentResult == VK_ERROR_OUT_OF_DATE_KHR)
 	{

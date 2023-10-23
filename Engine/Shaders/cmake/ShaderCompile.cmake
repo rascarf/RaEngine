@@ -16,10 +16,11 @@ function(compile_shader SHADERS TARGET_NAME SHADER_INCLUDE_FOLDER GENERATED_DIR 
 
         set(SPV_FILE "${CMAKE_CURRENT_SOURCE_DIR}/${GENERATED_DIR}/spv/${SHADER_NAME}.spv")
         set(CPP_FILE "${CMAKE_CURRENT_SOURCE_DIR}/${GENERATED_DIR}/cpp/${HEADER_NAME}.h")
-
+        
+        # 
         add_custom_command(
             OUTPUT ${SPV_FILE}
-            COMMAND ${GLSLANG_BIN} -I${SHADER_INCLUDE_FOLDER} -gVS -V100 -o ${SPV_FILE} ${SHADER}
+            COMMAND ${GLSLANG_BIN} -I${SHADER_INCLUDE_FOLDER} -gVS -V -o ${SPV_FILE} ${SHADER} --target-env vulkan1.2
             DEPENDS ${SHADER}
             WORKING_DIRECTORY "${working_dir}"
             COMMENT "Generate Shaders."

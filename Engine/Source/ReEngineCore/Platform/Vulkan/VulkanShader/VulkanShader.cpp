@@ -39,6 +39,24 @@ VulkanShader::~VulkanShader()
         teseShaderModule.reset();
         teseShaderModule = nullptr;
     }
+
+    if(RayGenerationShaderModule)
+    {
+        RayGenerationShaderModule.reset();
+        RayGenerationShaderModule = nullptr;
+    }
+
+    if(MissShaderModule)
+    {
+        MissShaderModule.reset();
+        MissShaderModule = nullptr;
+    }
+
+    if(ClosethitShaderModule)
+    {
+        ClosethitShaderModule.reset();
+        ClosethitShaderModule = nullptr;
+    }
     
     for (int32 i = 0; i < descriptorSetLayouts.size(); ++i)
     {
@@ -104,15 +122,112 @@ Ref<VulkanShader> VulkanShader::CreateCompute(Ref<VulkanDevice> vulkanDevice, bo
     return Shader;
 }
 
+Ref<VulkanShader> VulkanShader::CreateRayTracingShader(Ref<VulkanDevice> vulkanDevice,const std::vector<unsigned char>* ClosethitShaderModule,const std::vector<unsigned char>* RayGenerationShaderModule,const std::vector<unsigned char>* MissShaderModule)
+{
+    using ShaderModuleRef = Ref<VulkanShaderModule>;
+    
+    Ref<VulkanShader> Shader = CreateRef<VulkanShader>();
+    Shader->device = vulkanDevice->GetInstanceHandle();
+    Shader->bIsRayTracingShader = true;
+
+    if(ClosethitShaderModule)
+    {
+        ShaderModuleRef ClosetShaderModule = VulkanShaderModule::Create(vulkanDevice, *ClosethitShaderModule, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
+        Shader->ClosethitShaderModule = ClosetShaderModule;
+    }
+    else if(RayGenerationShaderModule)
+    {
+        ShaderModuleRef RayGenerationShaderModule = VulkanShaderModule::Create(vulkanDevice, *ClosethitShaderModule, VK_SHADER_STAGE_RAYGEN_BIT_KHR);
+        Shader->RayGenerationShaderModule = RayGenerationShaderModule;
+    }
+    else if(MissShaderModule)
+    {
+        ShaderModuleRef missShaderModule = VulkanShaderModule::Create(vulkanDevice, *MissShaderModule, VK_SHADER_STAGE_MISS_BIT_KHR);
+        Shader->MissShaderModule = missShaderModule;
+    }
+
+    Shader->Compile();
+    return Shader;
+}
+
+Ref<VulkanShader> VulkanShader::CreateRayTracingShader(Ref<VulkanDevice> vulkanDevice,
+    const std::vector<unsigned char>* ClosethitShaderModule,
+    const std::vector<unsigned char>* RayGenerationShaderModule,
+    const std::vector<unsigned char>* MissShaderModule,
+    const std::unordered_map<std::string, int>& ArrayParams)
+{
+    using ShaderModuleRef = Ref<VulkanShaderModule>;
+    
+    Ref<VulkanShader> Shader = CreateRef<VulkanShader>();
+    Shader->device = vulkanDevice->GetInstanceHandle();
+    Shader->bIsRayTracingShader = true;
+    Shader->dynamicUBO = true;
+    Shader->ArrayParams = ArrayParams;
+
+    if(ClosethitShaderModule)
+    {
+        ShaderModuleRef ClosetShaderModule = VulkanShaderModule::Create(vulkanDevice, *ClosethitShaderModule, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
+        Shader->ClosethitShaderModule = ClosetShaderModule;
+    }
+
+    if(RayGenerationShaderModule)
+    {
+        ShaderModuleRef rayGenerationShaderModule = VulkanShaderModule::Create(vulkanDevice, *RayGenerationShaderModule, VK_SHADER_STAGE_RAYGEN_BIT_KHR);
+        Shader->RayGenerationShaderModule = rayGenerationShaderModule; 
+    } 
+
+    if(MissShaderModule)
+    {
+        ShaderModuleRef missShaderModule = VulkanShaderModule::Create(vulkanDevice, *MissShaderModule, VK_SHADER_STAGE_MISS_BIT_KHR);
+        Shader->MissShaderModule = missShaderModule;
+    }
+
+    Shader->Compile();
+    return Shader;
+}
+
+void VulkanShader::ProcessRayTracingShaderModule(Ref<VulkanShaderModule> ShaderModule)
+{
+    if(!ShaderModule)
+    {
+        return;
+    }
+
+    VkPipelineShaderStageCreateInfo ShaderCreateInfo;
+    ZeroVulkanStruct(ShaderCreateInfo, VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO);
+    ShaderCreateInfo.stage = ShaderModule->mShaderStage;
+    ShaderCreateInfo.module = ShaderModule->Handle;
+    ShaderCreateInfo.pName = "main"; //TODO 这里思考下如何拓展
+    ShaderStageInfos.push_back(ShaderCreateInfo);
+
+    spirv_cross::Compiler Compiler((uint32*)ShaderModule->Code->data(), ShaderModule->Code->size() / sizeof(uint32_t));
+    spirv_cross::ShaderResources Resources = Compiler.get_shader_resources();
+    
+    ProcessUniformBuffers(Compiler, Resources, ShaderModule->mShaderStage);
+    ProcessTextures(Compiler, Resources, ShaderModule->mShaderStage);
+    ProcessStorageImages(Compiler, Resources, ShaderModule->mShaderStage);
+    ProcessStorageBuffers(Compiler, Resources, ShaderModule->mShaderStage);
+    ProcessAccelerationSructure(Compiler,Resources,ShaderModule->mShaderStage);
+}
+
 void VulkanShader::Compile()
 {
-    ProcessShaderModule(vertShaderModule);
-    ProcessShaderModule(fragShaderModule);
-    ProcessShaderModule(geomShaderModule);
-    ProcessShaderModule(compShaderModule);
-    ProcessShaderModule(tescShaderModule);
-    ProcessShaderModule(teseShaderModule);
-
+    if(!bIsRayTracingShader)
+    {
+        ProcessShaderModule(vertShaderModule);
+        ProcessShaderModule(fragShaderModule);
+        ProcessShaderModule(geomShaderModule);
+        ProcessShaderModule(compShaderModule);
+        ProcessShaderModule(tescShaderModule);
+        ProcessShaderModule(teseShaderModule);
+    }
+    else
+    {
+        ProcessRayTracingShaderModule(RayGenerationShaderModule);
+        ProcessRayTracingShaderModule(ClosethitShaderModule);
+        ProcessRayTracingShaderModule(MissShaderModule);
+    }
+    
     GenerateInputInfo();
     GenerateLayout();
 }
@@ -236,10 +351,17 @@ void VulkanShader::ProcessTextures(spirv_cross::Compiler& compiler, spirv_cross:
         int32 set     = compiler.get_decoration(res.id, spv::DecorationDescriptorSet);
         int32 binding = compiler.get_decoration(res.id, spv::DecorationBinding);
 
+        int descriptorCount = 1;
+        const auto CountPair = ArrayParams.find(varName);
+        if(CountPair != ArrayParams.end())
+        {
+            descriptorCount = CountPair->second;
+        }
+        
         VkDescriptorSetLayoutBinding setLayoutBinding = {};
         setLayoutBinding.binding             = binding;
         setLayoutBinding.descriptorType     = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        setLayoutBinding.descriptorCount    = 1;
+        setLayoutBinding.descriptorCount    = descriptorCount;
         setLayoutBinding.stageFlags         = stageFlags;
         setLayoutBinding.pImmutableSamplers = nullptr;
 
@@ -319,11 +441,17 @@ void VulkanShader::ProcessStorageBuffers(spirv_cross::Compiler& compiler, spirv_
 
         int32 set     = compiler.get_decoration(res.id, spv::DecorationDescriptorSet);
         int32 binding = compiler.get_decoration(res.id, spv::DecorationBinding);
-
+        int32 descriptorCount = 1;
+        const auto CountPair = ArrayParams.find(varName);
+        if(CountPair != ArrayParams.end())
+        {
+            descriptorCount = CountPair->second;
+        }
+        
         VkDescriptorSetLayoutBinding setLayoutBinding = {};
         setLayoutBinding.binding            = binding;
         setLayoutBinding.descriptorType     = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        setLayoutBinding.descriptorCount    = 1;
+        setLayoutBinding.descriptorCount    = descriptorCount;
         setLayoutBinding.stageFlags         = stageFlags;
         setLayoutBinding.pImmutableSamplers = nullptr;
 
@@ -384,6 +512,44 @@ void VulkanShader::ProcessStorageImages(spirv_cross::Compiler& compiler, spirv_c
             it->second.StageFlags |= stageFlags;
         }
 
+    }
+}
+
+void VulkanShader::ProcessAccelerationSructure(spirv_cross::Compiler& compiler, spirv_cross::ShaderResources& resources,VkShaderStageFlags stageFlags)
+{
+    for (int32 i = 0; i < resources.acceleration_structures.size(); ++i)
+    {
+        spirv_cross::Resource& res      = resources.acceleration_structures[i];
+        spirv_cross::SPIRType type      = compiler.get_type(res.type_id);
+        spirv_cross::SPIRType base_type = compiler.get_type(res.base_type_id);
+        const std::string&      varName = compiler.get_name(res.id);
+
+        int32 set     = compiler.get_decoration(res.id, spv::DecorationDescriptorSet);
+        int32 binding = compiler.get_decoration(res.id, spv::DecorationBinding);
+
+        VkDescriptorSetLayoutBinding setLayoutBinding = {};
+        setLayoutBinding.binding             = binding;
+        setLayoutBinding.descriptorType     = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
+        setLayoutBinding.descriptorCount    = 1;
+        setLayoutBinding.stageFlags         = stageFlags;
+        setLayoutBinding.pImmutableSamplers = nullptr;
+
+        SetLayoutsInfo.AddDescriptorSetLayoutBinding(varName, set, setLayoutBinding);
+
+        auto it = asParams.find(varName);
+        if (it == asParams.end())
+        {
+            ASInfo imageInfo = {};
+            imageInfo.Set            = set;
+            imageInfo.Binding        = binding;
+            imageInfo.StageFlags     = stageFlags;
+            imageInfo.DescriptorType = setLayoutBinding.descriptorType;
+            asParams.insert(std::make_pair(varName, imageInfo));
+        }
+        else
+        {
+            it->second.StageFlags |= stageFlags;
+        }
     }
 }
 

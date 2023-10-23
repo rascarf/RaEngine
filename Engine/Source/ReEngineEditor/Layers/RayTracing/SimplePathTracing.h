@@ -4,20 +4,8 @@
 #include "Platform/Vulkan/VulkanMaterial.h"
 #include "Platform/Vulkan/Mesh/VulkanMesh.h"
 #include "Camera/EditorCamera.h"
+#include "Platform/Vulkan/RayTracing/RTPipelineInfo.h"
 #include "Platform/Vulkan/RayTracing/Scene/SimpleglTFScene.h"
-
-struct VkGeometryInstance
-{
-    float Transform[12];
-
-    uint32_t IntanceID : 24;
-    uint32_t mask :8;
-
-    uint32_t InstanceOffset : 24; // HitGroupIndex R_I
-
-    uint32_t Flags : 8;
-    uint64_t AccelerationStructreHandle;
-};
 
 struct GlobalParamBlock
 {
@@ -32,18 +20,6 @@ struct GlobalParamBlock
     glm::vec4 moving;
 };
 
-struct AccelerationStructureInstance
-{
-    VkDeviceMemory memory = VK_NULL_HANDLE;
-
-    VkAccelerationStructureKHR AccelerationStruct = VK_NULL_HANDLE;
-    uint64 Handle = 0;
-};
-
-struct ObjectInstance
-{
-    glm::ivec4 Params = glm::ivec4(-1,-1,-1,-1);
-};
 
 class SimplePathTracing : public GraphicalLayer
 {
@@ -60,6 +36,8 @@ public:
 private:
     void CreateRenderTarget();
     void LoadAsset();
+    void PrepreUniformBuffers();
+    void CreateMaterials();
     
 private:
     Ref<VulkanTexture>                              ColorRT;
@@ -74,6 +52,14 @@ private:
     Ref<EditorCamera>                               m_Camera = nullptr;        
     Ref<VulkanDynamicBufferRing>                    m_RingBuffer = nullptr;
 
+    RTPipelineInfo                                  RaytracingPipeline;
+
+    Ref<VulkanShader>                               m_CloseHitShader = nullptr;
+    Ref<VulkanBuffer>                               mLightBuffer = nullptr;
+    Ref<VulkanBuffer>                               mMaterialBuffer = nullptr;
+    Ref<VulkanBuffer>                               mObjectBuffer = nullptr;
+    Ref<VulkanTexture>                              mStorageImage = nullptr;
+    GlobalParamBlock                                m_GlobalParam;
 
 public:
 

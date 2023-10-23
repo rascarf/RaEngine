@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include "Platform/Vulkan/VulkanCommonDefine.h"
+#include "Platform/Vulkan/RayTracing/AccelerationStruct.h"
 #include "Platform/Vulkan/VulkanBuffers/VulkanBuffer.h"
 #include "Platform/Vulkan/VulkanBuffers/VulkanTexture.h"
 
@@ -180,6 +181,92 @@ public:
         vkUpdateDescriptorSets(device, 1, &writeDescriptorSet, 0, nullptr);
     }
 
+    void WriteStorageBufferArray(const std::string& name,std::vector<Ref<VulkanBuffer>> BufferArray)
+    {
+        auto it = SetLayoutsInfo.ParamsMap.find(name);
+        if (it == SetLayoutsInfo.ParamsMap.end())
+        {
+            RE_CORE_ERROR("Failed write buffer, {0} not found!", name.c_str());
+            return;
+        }
+        
+        const auto bindInfo = it->second;
+
+        std::vector<VkDescriptorBufferInfo> BufferInfos(BufferArray.size());
+        for (int32 i = 0; i < BufferArray.size(); ++i)
+        {
+            BufferInfos[i].buffer = BufferArray[i]->Buffer;
+            BufferInfos[i].offset = 0;
+            BufferInfos[i].range = VK_WHOLE_SIZE;
+        }
+
+        VkWriteDescriptorSet WriteDescriptorSet;
+        ZeroVulkanStruct(WriteDescriptorSet, VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
+        WriteDescriptorSet.dstSet = DescriptorSets[bindInfo.Set];
+        WriteDescriptorSet.dstBinding = bindInfo.Binding;
+        WriteDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        WriteDescriptorSet.descriptorCount = BufferInfos.size();
+        WriteDescriptorSet.pBufferInfo = BufferInfos.data();
+        
+        vkUpdateDescriptorSets(device, 1, &WriteDescriptorSet, 0, nullptr);
+    }
+
+    void WriteTextureArray(const std::string& name,std::vector<Ref<VulkanTexture>> TextureArray)
+    {
+        auto it = SetLayoutsInfo.ParamsMap.find(name);
+        if (it == SetLayoutsInfo.ParamsMap.end())
+        {
+            RE_CORE_ERROR("Failed write buffer, {0} not found!", name.c_str());
+            return;
+        }
+
+        const auto bindInfo = it->second;
+        
+        std::vector<VkDescriptorImageInfo> textureImageInfos(TextureArray.size());
+        for (int32 i = 0; i < TextureArray.size(); ++i)
+        {
+            textureImageInfos[i] = TextureArray[i]->DescriptorInfo;
+        }
+
+        VkWriteDescriptorSet textureWriteDescriptorSet;
+        ZeroVulkanStruct(textureWriteDescriptorSet, VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
+        textureWriteDescriptorSet.dstSet = DescriptorSets[bindInfo.Set];
+        textureWriteDescriptorSet.dstBinding = bindInfo.Binding;
+        textureWriteDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        textureWriteDescriptorSet.descriptorCount = textureImageInfos.size();
+        textureWriteDescriptorSet.pImageInfo = textureImageInfos.data();
+        
+        vkUpdateDescriptorSets(device, 1, &textureWriteDescriptorSet, 0, nullptr);
+    }
+
+    void WriteAccelerationStruct(const std::string& name,const VkAccelerationStructureKHR& accel)
+    {
+        auto it = SetLayoutsInfo.ParamsMap.find(name);
+        if (it == SetLayoutsInfo.ParamsMap.end())
+        {
+            RE_CORE_ERROR("Failed write buffer, {0} not found!", name.c_str());
+            return;
+        }
+
+        auto bindInfo = it->second;
+        
+        VkWriteDescriptorSetAccelerationStructureKHR tlas_info = {};
+        tlas_info.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR;
+        tlas_info.accelerationStructureCount = 1;
+        tlas_info.pAccelerationStructures = &accel;
+
+        VkWriteDescriptorSet writeDescriptorSet{};
+        writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        writeDescriptorSet.dstSet = DescriptorSets[bindInfo.Set];
+        writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
+        writeDescriptorSet.dstBinding = bindInfo.Binding;
+        writeDescriptorSet.descriptorCount = 1;
+        writeDescriptorSet.dstArrayElement = 0;
+        writeDescriptorSet.pNext = &tlas_info;
+
+        vkUpdateDescriptorSets(device, 1, &writeDescriptorSet, 0, nullptr);
+    }
+
     void WriteBindOffset(const std::string& name,uint32_t Offset)
     {
         auto it = SetLayoutsInfo.ParamsMap.find(name);
@@ -227,5 +314,5 @@ public:
 
     //这两者一个是描述，一个是真实的GPU上的Sets
     VulkanDescriptorSetLayoutsInfo     SetLayoutsInfo;
-    std::vector<VkDescriptorSet>    DescriptorSets; 
+    std::vector<VkDescriptorSet>    DescriptorSets;
 };
