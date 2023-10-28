@@ -3,6 +3,7 @@
 
 #extension GL_EXT_control_flow_attributes : require
 #extension GL_EXT_ray_tracing : require
+#extension GL_GOOGLE_cpp_style_line_directive :require
 
 #define PI        3.14159265358979323
 #define TWO_PI    6.28318530717958648

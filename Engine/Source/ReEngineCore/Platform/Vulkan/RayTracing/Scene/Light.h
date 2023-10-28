@@ -161,14 +161,14 @@ namespace ReEngine
         using Vector4 = glm::vec4;
         using Vector3 = glm::vec3;
         
-        Vector4 type;
-        Vector4 position;
-        Vector4 normal;
-        Vector4 dPdu;
-        Vector4 dPdv;
-        Vector4 color;
-        Vector4 dimensions;
-        Vector4 attenuation;
+        Vector4 type = Vector4(0.0,0.0,0.0,1.0);
+        Vector4 position = Vector4(0.0,0.0,0.0,1.0);;
+        Vector4 normal = Vector4(0.0,0.0,0.0,1.0);;
+        Vector4 dPdu = Vector4(0.0,0.0,0.0,1.0);;
+        Vector4 dPdv = Vector4(0.0,0.0,0.0,1.0);;
+        Vector4 color = Vector4(0.0,0.0,0.0,1.0);;
+        Vector4 dimensions = Vector4(0.0,0.0,0.0,1.0);;
+        Vector4 attenuation = Vector4(0.0,0.0,0.0,1.0);;
 
         void SetLight(const DirectionalLight* light)
         {

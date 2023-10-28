@@ -8,6 +8,8 @@
 
 #include "FrameWork/Scene.h"
 #include "glm/gtx/io.hpp"
+#include "Input/Input.h"
+#include "Input/InputCode.h"
 #include "Math/Math.h"
 #include "Mesh/Quad.h"
 #include "Platform/Vulkan/VulkanContext.h"
@@ -65,6 +67,20 @@ void SimplePathTracing::OnUpdate(Timestep ts)
 
     m_GlobalParam.InvProj = glm::inverse(m_MVPData.projection);
     m_GlobalParam.InvView = glm::inverse(m_MVPData.view);
+
+    if (Input::IsMouseButtonPressed(static_cast<uint16_t>(Mouse::ButtonMiddle)) ||
+        Input::IsMouseButtonPressed(static_cast<uint16_t>(Mouse::ButtonLeft))   ||
+        Input::IsMouseButtonPressed(static_cast<uint16_t>(Mouse::ButtonRight)))
+    {
+        m_GlobalParam.moving.y = 0;
+        m_GlobalParam.moving.x = 1;
+    }
+    else
+    {
+        m_GlobalParam.moving.x = 0; 
+    }
+
+    m_GlobalParam.moving.y += 1; 
 }
 
 void SimplePathTracing::OnRender()
@@ -173,7 +189,7 @@ void SimplePathTracing::CreateRenderTarget()
         PixelFormatToVkFormat(VkContext->Instance->GetPixelFormat(), false),
         VK_IMAGE_ASPECT_COLOR_BIT,
         FrameBuffer->m_Width,  
-        FrameBuffer->m_Height,
+        FrameBuffer->m_Height, 
         VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
     );
 
@@ -205,14 +221,14 @@ void SimplePathTracing::LoadAsset()
     m_RingBuffer = CreateRef<VulkanDynamicBufferRing>();
     m_RingBuffer->OnCreate(VkContext->Instance->GetDevice(),3,200 * 1024 * 1024);
     
-    /*
-     * TODO Write your logic
+    /* 
+     * TODO Write your logic  
      * Remember to bind RT's Renderpass for your material not FrameBuffer's renderpass!
      */
     
-    Scene.LoadglTFModel(device,VkContext->CommandPool,"Assets/Mesh/WaterBottle.glb");
-    Scene.CreateBlas();
-    Scene.CreateTlas();
+    Scene.LoadglTFModel(device,VkContext->CommandPool,"Assets/Mesh/diorama/Diorama.glb");
+    Scene.CreateBlas();     
+    Scene.CreateTlas();               
 
     auto cmdBuffer = VulkanCommandBuffer::Create(device, VkContext->CommandPool->m_CommandPool);
 
@@ -270,8 +286,8 @@ void SimplePathTracing::LoadAsset()
             device,
             FrameBuffer->m_RenderPass,
             VkContext->CommandPool->m_PipelineCache,
-            mFilterShader,
-            m_RingBuffer
+            mFilterShader, 
+            m_RingBuffer 
         );
         mFilterMaterial->PreparePipeline();
 
@@ -293,7 +309,7 @@ void SimplePathTracing::LoadAsset()
     //
     
     m_Camera = CreateRef<EditorCamera>();
-    m_Camera->SetSpeed(0.1f);
+    m_Camera->SetSpeed(0.5f);
     // m_Camera->SetCenter(glm::vec3(BoundsCenter.x,BoundsCenter.y,BoundsCenter.z - BoundsSize.length() * 2.0));
     
     m_MVPData.model = glm::identity<glm::mat4>();
@@ -316,7 +332,7 @@ void SimplePathTracing::PrepreUniformBuffers()
     m_GlobalParam.LightInfo.x = Scene.Lights.size();
 }
 
-void SimplePathTracing::CreateMaterials()
+void SimplePathTracing::CreateMaterials()  
 {
     auto device = VkContext->Instance->GetDevice();
     std::unordered_map<std::string,int32> ParamArray;
@@ -326,7 +342,7 @@ void SimplePathTracing::CreateMaterials()
     
     m_CloseHitShader = VulkanShader::CreateRayTracingShader(device,&CLOSETHIT_RCHIT,&RAYGEN_RGEN,&MISS_RMISS,ParamArray);
     RaytracingPipeline.mDevice = device;
-    RaytracingPipeline.CreatePipeline(m_CloseHitShader,1,std::vector<uint32_t>{},dim3{1,1,0},Scene.Tla.accel);
+    RaytracingPipeline.CreatePipeline(m_CloseHitShader,16,std::vector<uint32_t>{},dim3{1,1,0},Scene.Tla.accel);
     RaytracingPipeline.RayTracingSet->WriteTextureArray("textures",Scene.Textures);
 
     std::vector<Ref<VulkanBuffer>> IndicesArray;

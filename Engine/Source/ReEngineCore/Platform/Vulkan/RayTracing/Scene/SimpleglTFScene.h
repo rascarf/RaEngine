@@ -13,8 +13,8 @@ namespace  ReEngine
     struct Material
     {
         glm::vec4 Albedo = glm::vec4(1.0,1.0,1.0,1.0);
-        glm::vec4 Params = glm::vec4(1.0,1.0,1.0,1.0);
-        glm::vec4 TextureID = glm::vec4(1.0,1.0,1.0,1.0);
+        glm::vec4 Params = glm::vec4(1.0f, 0.0f, 1.0f, 0.0f);
+        glm::i32vec4 TextureID = glm::vec4(-1, -1, -1, -1);
     };
 
     // Structure used for retrieving the primitive in the closest hit

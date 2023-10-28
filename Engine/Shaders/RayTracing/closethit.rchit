@@ -145,11 +145,12 @@ void main()
     rayInfo.worldNormal = normal;
     rayInfo.radiance = vec3(0.0, 0.0, 0.0);
     rayInfo.baseColor = albedo;
-    rayInfo.roughness = roughness;
-    rayInfo.metallic = metallic;
     rayInfo.ior = 1.5;
     rayInfo.opacity = 1.0;
     rayInfo.shadingMode = 0.0;
+
+    rayInfo.roughness = roughness;
+    rayInfo.metallic = metallic;
     rayInfo.diffuseColor = albedo - albedo * metallic;
     rayInfo.specularColor = ComputeF0(specular, albedo, metallic);
 }
