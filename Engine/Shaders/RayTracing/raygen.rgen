@@ -160,8 +160,8 @@ void main()
             ray.direction = direction;
             const float minBias = 0.01f;
             const float maxBias = max(minBias,globalParam.samplingData.w);
-            const float normalBias = mix(maxBias,minBias,clamp(dot(rayInfo.worldNormal,ray.direction),0.0,1.0));
-            ray.origin += rayInfo.worldNormal * normalBias;
+            const float normalBias = mix(maxBias,minBias,clamp(dot(signedPositionBias * rayInfo.worldNormal,ray.direction),0.0,1.0));
+            ray.origin += signedPositionBias * rayInfo.worldNormal * normalBias;
 
             // russian roulette
             float pathEnergy = max(max(rayThroughput.x, rayThroughput.y), rayThroughput.z);
@@ -186,14 +186,11 @@ void main()
 
     pixelColor = pixelColor / sampleCount;
 
-	// gamma
-	pixelColor = pow(pixelColor, vec3(1.0 / 2.2));
-
-    // vec3 prevColor = imageLoad(image, ivec2(gl_LaunchIDEXT.xy)).rgb;
-	// if (globalParam.moving.x < 1) 
-    // {
-	// 	pixelColor = prevColor * 0.5 + pixelColor * 0.5;
-	// }
+    vec3 prevColor = imageLoad(image, ivec2(gl_LaunchIDEXT.xy)).rgb;
+	if (globalParam.moving.x < 1) 
+    {
+		pixelColor = prevColor + pixelColor;
+	}
 
     imageStore(image, ivec2(gl_LaunchIDEXT.xy), vec4(pixelColor, 0.0));
 }
