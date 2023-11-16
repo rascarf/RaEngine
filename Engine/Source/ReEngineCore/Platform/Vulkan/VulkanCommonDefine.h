@@ -5,6 +5,8 @@
 #define VK_USE_PLATFORM_WIN32_KHR
 #include "volk.h"
 
+#define HWRAYTRACING false
+
 #define VULKAN_CPU_ALLOCATOR nullptr
 
 using namespace ReEngine;

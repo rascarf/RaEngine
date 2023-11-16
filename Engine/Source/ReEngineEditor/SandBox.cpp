@@ -16,8 +16,8 @@ namespace ReEngine
     {
         app.Init();
 
-        app.PushLayer(CreateRef<SimplePathTracing>());
-        // app.PushLayer(CreateRef<TileBasedForwardLayer>());
+        // app.PushLayer(CreateRef<SimplePathTracing>());
+        app.PushLayer(CreateRef<TileBasedForwardLayer>());
         // app.PushLayer(CreateRef<MSAALayer>());
         // app.PushLayer(CreateRef<AnimationTextureLayer>());
         // app.PushLayer(CreateRef<AnimationLayer>());

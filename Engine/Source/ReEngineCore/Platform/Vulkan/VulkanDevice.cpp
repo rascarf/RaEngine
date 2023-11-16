@@ -33,7 +33,7 @@ void VulkanDevice::CreateDevice()
 
 	// use raytracing!
 	// todo change to open/close with samples
-	if(true)
+	if(HWRAYTRACING)
 	{
 		RE_INFO("Using Hardware-RayTracing");
 		m_AppDeviceExtensions.push_back(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME);

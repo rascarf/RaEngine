@@ -20,7 +20,7 @@ struct VulkanLayerExtension
 static const char* G_InstanceValidationLayers[] =
 {
 	"VK_LAYER_KHRONOS_validation",
-	// "VK_LAYER_RENDERDOC_Capture",
+	"VK_LAYER_RENDERDOC_Capture",
 	nullptr
 };
 
