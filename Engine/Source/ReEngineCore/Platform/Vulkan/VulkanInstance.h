@@ -106,6 +106,8 @@ protected:
 	
 	void CreateSurface();
 
+	void InitVma();
+
 	GLFWwindow*							m_WindowHandle;
 	const WindowProperty*				m_WindowInfo;
 	

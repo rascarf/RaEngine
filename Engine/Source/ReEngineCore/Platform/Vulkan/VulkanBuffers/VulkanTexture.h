@@ -35,36 +35,17 @@ FORCE_INLINE void ImagePipelineBarrier(VkCommandBuffer CommandBuffer,VkImage Ima
     vkCmdPipelineBarrier(CommandBuffer, sourceStages, destStages, 0, 0, nullptr, 0, nullptr, 1, &ImageBarrier); 
 }
 
+VK_DEFINE_HANDLE( VmaAllocator )
+VK_DEFINE_HANDLE( VmaAllocation )
+
 class VulkanTexture
 {
 public:
     VulkanTexture(){}
 
 
-    ~VulkanTexture()
-    {
-        if (ImageView != VK_NULL_HANDLE)
-        {
-            vkDestroyImageView(Device, ImageView, VULKAN_CPU_ALLOCATOR);
-            ImageView = VK_NULL_HANDLE;
-        }
-        
-        if (Image != VK_NULL_HANDLE)
-        {
-            vkDestroyImage(Device, Image, VULKAN_CPU_ALLOCATOR);
-            Image = VK_NULL_HANDLE;
-        }
-        
-        if (ImageSampler != VK_NULL_HANDLE) {
-            vkDestroySampler(Device, ImageSampler, VULKAN_CPU_ALLOCATOR);
-            ImageSampler = VK_NULL_HANDLE;
-        }
-        
-        if (ImageMemory != VK_NULL_HANDLE) {
-            vkFreeMemory(Device, ImageMemory, VULKAN_CPU_ALLOCATOR);
-            ImageMemory = VK_NULL_HANDLE;
-        }
-    }
+    ~VulkanTexture();
+
 
     void UpdateSampler(
         VkFilter magFilter = VK_FILTER_LINEAR, 
@@ -81,6 +62,7 @@ public:
     /*------------------ 2D ---------------------------*/
 
     /*读取一张贴图*/
+    //创建的时候带有数据的
     static Ref<VulkanTexture> Create2D(
     const uint8* rgbaData,
     uint32 size,
@@ -94,6 +76,7 @@ public:
 );
 
     /*读取一张贴图*/
+    //创建的时候带有数据的
     static  Ref<VulkanTexture> Create2D(
         const std::string& filename,
         std::shared_ptr<VulkanDevice> vulkanDevice,
@@ -102,7 +85,8 @@ public:
         ImageLayoutBarrier imageLayout = ImageLayoutBarrier::PixelShaderRead
     );
     
-    /*创建一块内存*/
+    /*创建StorageBuffer*/
+    //创建的时候没有数据
     static  Ref<VulkanTexture> Create2D(
     std::shared_ptr<VulkanDevice> vulkanDevice,
     Ref<VulkanCommandBuffer> cmdBuffer,
@@ -116,9 +100,9 @@ public:
     );
 
     /*----------------------------------------------*/
-
     
     /*创建DepthStencil*/
+    //没有初始数据的
     static Ref<VulkanTexture> CreateDepthStencil(
         int32 width,
         int32 height,
@@ -130,6 +114,7 @@ public:
     );
     
     /*创建RT*/
+    //没有初始数据的
     static Ref<VulkanTexture> CreateRenderTarget(
         Ref<VulkanDevice> vulkanDevice,
         VkFormat format,
@@ -140,6 +125,8 @@ public:
         VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT
     );
 
+    //创建Attachment
+    //没有初始数据的
     static Ref<VulkanTexture> CreateAttachment(
         Ref<VulkanDevice> vulkanDevice,
         VkFormat Format,
@@ -148,12 +135,25 @@ public:
         int32 Height,
         VkImageUsageFlags Usage
     );
+
+    //------------Aliasing----------------//
+    // 如果返回的指针是空的，那么说明不兼容
+    static Ref<VulkanTexture> CreateAliasingTexture(
+        Ref<VulkanDevice> vulkanDevice,
+        Ref<VulkanTexture> AliasingTexture,
+        VkFormat format,
+        VkImageAspectFlags aspect,
+        int32 width,
+        int32 height,
+        VkImageUsageFlags usage,
+        VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT);
     
 public:
-
-    VkDevice Device = nullptr;
+    Ref<VulkanDevice> Device = nullptr;
+    
     VkImage Image = VK_NULL_HANDLE;
-    VkDeviceMemory ImageMemory = VK_NULL_HANDLE;
+    VmaAllocation   mVmaAllocation;
+    
     VkImageView ImageView = VK_NULL_HANDLE;
     VkImageLayout ImageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     VkSampler ImageSampler = VK_NULL_HANDLE;
@@ -168,4 +168,7 @@ public:
     int32 LayerCount = 1;
     VkFormat Format = VK_FORMAT_R8G8B8A8_UNORM;
     VkSampleCountFlagBits NumSamples = VK_SAMPLE_COUNT_1_BIT;
+
+    // 标识此Texture在全局Texture中的序号
+    int32 BindlessIndex;
 };

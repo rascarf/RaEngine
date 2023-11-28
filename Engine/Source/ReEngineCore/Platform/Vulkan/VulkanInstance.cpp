@@ -1,6 +1,8 @@
 ﻿#include "VulkanInstance.h"
 #include "GLFW/glfw3.h"
 
+#define VMA_IMPLEMENTATION
+#include "vk_mem_alloc.h"
 
 VulkanInstance::VulkanInstance(GLFWwindow* InWindowHandle, const WindowProperty*	WindowInfo):
   m_WindowHandle(InWindowHandle)
@@ -137,6 +139,8 @@ void VulkanInstance::SelectAndInitDevice()
     }
 
     m_Device->InitGPU(deviceIndex);
+
+   InitVma();
 }
 
 void VulkanInstance::InitInstance()
@@ -253,6 +257,38 @@ void VulkanInstance::CreateSurface()
             RE_CORE_ERROR("failed to create window surface!");
         }
     }
+}
+
+void VulkanInstance::InitVma()
+{
+    VmaVulkanFunctions vma_vulkan_func{};
+    vma_vulkan_func.vkAllocateMemory                    = vkAllocateMemory;
+    vma_vulkan_func.vkBindBufferMemory                  = vkBindBufferMemory;
+    vma_vulkan_func.vkBindImageMemory                   = vkBindImageMemory;
+    vma_vulkan_func.vkCreateBuffer                      = vkCreateBuffer;
+    vma_vulkan_func.vkCreateImage                       = vkCreateImage;
+    vma_vulkan_func.vkDestroyBuffer                     = vkDestroyBuffer;
+    vma_vulkan_func.vkDestroyImage                      = vkDestroyImage;
+    vma_vulkan_func.vkFlushMappedMemoryRanges           = vkFlushMappedMemoryRanges;
+    vma_vulkan_func.vkFreeMemory                        = vkFreeMemory;
+    vma_vulkan_func.vkGetBufferMemoryRequirements       = vkGetBufferMemoryRequirements;
+    vma_vulkan_func.vkGetImageMemoryRequirements        = vkGetImageMemoryRequirements;
+    vma_vulkan_func.vkGetPhysicalDeviceMemoryProperties = vkGetPhysicalDeviceMemoryProperties;
+    vma_vulkan_func.vkGetPhysicalDeviceProperties       = vkGetPhysicalDeviceProperties;
+    vma_vulkan_func.vkInvalidateMappedMemoryRanges      = vkInvalidateMappedMemoryRanges;
+    vma_vulkan_func.vkMapMemory                         = vkMapMemory;
+    vma_vulkan_func.vkUnmapMemory                       = vkUnmapMemory;
+    vma_vulkan_func.vkCmdCopyBuffer                     = vkCmdCopyBuffer;
+    vma_vulkan_func.vkGetInstanceProcAddr               = vkGetInstanceProcAddr;
+    vma_vulkan_func.vkGetDeviceProcAddr                 = vkGetDeviceProcAddr;
+    
+    VmaAllocatorCreateInfo allocatorInfo = {};
+    allocatorInfo.physicalDevice = m_Device->m_PhysicalDevice;
+    allocatorInfo.device = m_Device->m_Device;
+    allocatorInfo.instance = m_Instance;
+    allocatorInfo.pVulkanFunctions = &vma_vulkan_func;
+    allocatorInfo.flags |= VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
+    vmaCreateAllocator( &allocatorInfo, &m_Device->vma_allocator );
 }
 
 void VulkanInstance::DestorySwapChain()

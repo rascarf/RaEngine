@@ -2,34 +2,23 @@
 #include "VulkanCommandBuffer.h"
 #include "Platform/Vulkan/VulkanCommandPool.h"
 
+VK_DEFINE_HANDLE( VmaAllocator )
+VK_DEFINE_HANDLE( VmaAllocation )
+
 class VulkanBuffer
 {
 public:
-    ~VulkanBuffer()
-    {
-        if (Buffer != VK_NULL_HANDLE)
-        {
-            vkDestroyBuffer(Device,Buffer,nullptr);
-            Buffer = VK_NULL_HANDLE;
-        }
-
-        if(Memory != VK_NULL_HANDLE)
-        {
-            vkFreeMemory(Device,Memory,nullptr);
-            Memory = VK_NULL_HANDLE;
-        }
-        
-    }
+    ~VulkanBuffer();
 public:
-    VkDevice				Device = VK_NULL_HANDLE;
+    std::shared_ptr<VulkanDevice>	Device = VK_NULL_HANDLE;
     
     VkBuffer				Buffer = VK_NULL_HANDLE;
-    VkDeviceMemory			Memory = VK_NULL_HANDLE;
+    VmaAllocation           VmaAllocation;
+    VkDeviceMemory          DeviceMemory;
 
     VkDescriptorBufferInfo	Descriptor;
 
     VkDeviceSize			Size = 0;
-    VkDeviceSize			Alignment = 0;
 
     void*					Mapped = nullptr;
 
@@ -48,23 +37,17 @@ public:
     //结束数据映射
     void UnMap();
 
-    //绑定当前Buffer
-    VkResult Bind(VkDeviceSize offset = 0);
-
     //设置描述符
     void SetupDescriptor(VkDeviceSize size = VK_WHOLE_SIZE, VkDeviceSize offset = 0);
 
     //拷贝数据到映射的区间
     void CopyFrom(void* data, VkDeviceSize size);
-    
-    VkResult Flush(VkDeviceSize size = VK_WHOLE_SIZE, VkDeviceSize offset = 0);
-    VkResult Invalidate(VkDeviceSize size = VK_WHOLE_SIZE, VkDeviceSize offset = 0);
 
     VkDeviceAddress GetDeviceAddress() const 
     {
         VkBufferDeviceAddressInfo info = {VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO};
         info.buffer = Buffer;
-        return vkGetBufferDeviceAddress(Device, &info);
+        return vkGetBufferDeviceAddress(Device->GetInstanceHandle(), &info);
     }
 
 private:

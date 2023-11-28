@@ -1,6 +1,7 @@
 ﻿#include "VulkanDevice.h"
 #include "VulkanCommonDefine.h"
 #include "VulkanFence.h"
+#include "vk_mem_alloc.h"
 
 VulkanDevice::VulkanDevice(VkPhysicalDevice physicalDevice)
     : m_Device(VK_NULL_HANDLE)
@@ -17,6 +18,7 @@ VulkanDevice::VulkanDevice(VkPhysicalDevice physicalDevice)
 
 VulkanDevice::~VulkanDevice()
 {
+	
     if (m_Device != VK_NULL_HANDLE)
     {
         Destroy();
@@ -492,6 +494,7 @@ void VulkanDevice::Destroy()
 	m_MemoryManager->Destory();
 	delete m_MemoryManager;
 
+	vmaDestroyAllocator( vma_allocator );
 	vkDestroyDevice(m_Device, VULKAN_CPU_ALLOCATOR);
 	m_Device = VK_NULL_HANDLE;
 }

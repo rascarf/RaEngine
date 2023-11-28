@@ -10,6 +10,7 @@
 #include <memory>
 #include <map>
 
+VK_DEFINE_HANDLE( VmaAllocator )
 class VulkanFenceManager;
 class VulkanDeviceMemoryManager;
 
@@ -135,4 +136,7 @@ private:
     VulkanDeviceMemoryManager*              m_MemoryManager;
 
 	std::vector<const char*>				m_AppDeviceExtensions;
+
+public:
+    VmaAllocator                    vma_allocator;
 };

@@ -5,6 +5,30 @@
 #include "Resource/AssetManager/AssetManager.h"
 #include "Platform/Vulkan/VulkanBuffers/VulkanBuffer.h"
 
+#include "vk_mem_alloc.h"
+
+VulkanTexture::~VulkanTexture()
+{
+    if (ImageView != VK_NULL_HANDLE)
+    {
+        vkDestroyImageView(Device->GetInstanceHandle(), ImageView, VULKAN_CPU_ALLOCATOR);
+        ImageView = VK_NULL_HANDLE;
+    }
+    
+    if (ImageSampler != VK_NULL_HANDLE) {
+        vkDestroySampler(Device->GetInstanceHandle(), ImageSampler, VULKAN_CPU_ALLOCATOR);
+        ImageSampler = VK_NULL_HANDLE;
+    }
+    
+    if (Image != VK_NULL_HANDLE)
+    {
+        vmaDestroyImage(Device->vma_allocator,Image,mVmaAllocation);
+    }
+
+    Device.reset();
+}
+
+
 void VulkanTexture::UpdateSampler(VkFilter magFilter, VkFilter minFilter, VkSamplerMipmapMode mipmapMode,VkSamplerAddressMode addressModeU, VkSamplerAddressMode addressModeV, VkSamplerAddressMode addressModeW)
 {
     VkSamplerCreateInfo samplerInfo;
@@ -20,11 +44,11 @@ void VulkanTexture::UpdateSampler(VkFilter magFilter, VkFilter minFilter, VkSamp
     samplerInfo.maxAnisotropy    = 1.0;
     samplerInfo.anisotropyEnable = VK_FALSE;
     samplerInfo.maxLod           = 1.0f;
-    VERIFYVULKANRESULT(vkCreateSampler(Device, &samplerInfo, VULKAN_CPU_ALLOCATOR, &ImageSampler));
+    VERIFYVULKANRESULT(vkCreateSampler(Device->GetInstanceHandle(), &samplerInfo, VULKAN_CPU_ALLOCATOR, &ImageSampler));
 
     if (DescriptorInfo.sampler)
     {
-        vkDestroySampler(Device, DescriptorInfo.sampler, VULKAN_CPU_ALLOCATOR);
+        vkDestroySampler(Device->GetInstanceHandle(), DescriptorInfo.sampler, VULKAN_CPU_ALLOCATOR);
     }
     
     DescriptorInfo.sampler = ImageSampler;
@@ -68,7 +92,7 @@ Ref<VulkanTexture> VulkanTexture::CreateDepthStencil(int32 width, int32 height,s
     VkDevice device = vulkanDevice->GetInstanceHandle();
 
     Ref<VulkanTexture> texture   = CreateRef<VulkanTexture>();
-    texture->Device = device;
+    texture->Device = vulkanDevice;
     texture->Height = height;
     texture->Width = width;
     texture->Format = PixelFormatToVkFormat(DepthFormat, false);
@@ -86,20 +110,11 @@ Ref<VulkanTexture> VulkanTexture::CreateDepthStencil(int32 width, int32 height,s
     imageCreateInfo.usage       = imageUsageFlags;
     imageCreateInfo.flags       = 0;
     imageCreateInfo.initialLayout   = VK_IMAGE_LAYOUT_UNDEFINED;
-    VERIFYVULKANRESULT(vkCreateImage(device, &imageCreateInfo, VULKAN_CPU_ALLOCATOR, &texture->Image))
 
-    VkMemoryRequirements memRequire;
-    vkGetImageMemoryRequirements(device, texture->Image, &memRequire);
-    uint32 memoryTypeIndex = 0;
-    VERIFYVULKANRESULT(vulkanDevice->GetMemoryManager().GetMemoryTypeFromProperties(memRequire.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &memoryTypeIndex))
-
-    VkMemoryAllocateInfo memAllocateInfo;
-    ZeroVulkanStruct(memAllocateInfo, VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO);
-    memAllocateInfo.allocationSize  = memRequire.size;
-    memAllocateInfo.memoryTypeIndex = memoryTypeIndex;
-    vkAllocateMemory(device, &memAllocateInfo, VULKAN_CPU_ALLOCATOR, &texture->ImageMemory);
-    vkBindImageMemory(device, texture->Image, texture->ImageMemory, 0);
-
+    VmaAllocationCreateInfo MemoryInfo{};
+    MemoryInfo.usage = VMA_MEMORY_USAGE_AUTO;
+    VERIFYVULKANRESULT(vmaCreateImage(vulkanDevice->vma_allocator,&imageCreateInfo,&MemoryInfo,&texture->Image,&texture->mVmaAllocation,nullptr));
+    
     VkImageViewCreateInfo imageViewCreateInfo;
     ZeroVulkanStruct(imageViewCreateInfo, VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO);
     imageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
@@ -111,6 +126,7 @@ Ref<VulkanTexture> VulkanTexture::CreateDepthStencil(int32 width, int32 height,s
     imageViewCreateInfo.subresourceRange.levelCount     = 1;
     imageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
     imageViewCreateInfo.subresourceRange.layerCount     = 1;
+    
     VERIFYVULKANRESULT(vkCreateImageView(device, &imageViewCreateInfo, VULKAN_CPU_ALLOCATOR, &texture->ImageView))
 
     return texture;
@@ -129,7 +145,7 @@ Ref<VulkanTexture> VulkanTexture::Create2D(Ref<VulkanDevice> vulkanDevice,Ref<Vu
 
     // image info
     VkImage                         image = VK_NULL_HANDLE;
-    VkDeviceMemory                  imageMemory = VK_NULL_HANDLE;
+    VmaAllocation                   imageAllocation;
     VkImageView                     imageView = VK_NULL_HANDLE;
     VkSampler                       imageSampler = VK_NULL_HANDLE;
     VkDescriptorImageInfo           descriptorInfo = {};
@@ -147,15 +163,11 @@ Ref<VulkanTexture> VulkanTexture::Create2D(Ref<VulkanDevice> vulkanDevice,Ref<Vu
     imageCreateInfo.initialLayout   = VK_IMAGE_LAYOUT_UNDEFINED;
     imageCreateInfo.extent          = { (uint32_t)width, (uint32_t)height, (uint32_t)1 };
     imageCreateInfo.usage           = usage;
-    VERIFYVULKANRESULT(vkCreateImage(device, &imageCreateInfo, VULKAN_CPU_ALLOCATOR, &image));
 
     // bind image buffer
-    vkGetImageMemoryRequirements(device, image, &memReqs);
-    vulkanDevice->GetMemoryManager().GetMemoryTypeFromProperties(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &memoryTypeIndex);
-    memAllocInfo.allocationSize  = memReqs.size;
-    memAllocInfo.memoryTypeIndex = memoryTypeIndex;
-    VERIFYVULKANRESULT(vkAllocateMemory(device, &memAllocInfo, VULKAN_CPU_ALLOCATOR, &imageMemory));
-    VERIFYVULKANRESULT(vkBindImageMemory(device, image, imageMemory, 0));
+    VmaAllocationCreateInfo MemoryInfo{};
+    MemoryInfo.usage = VMA_MEMORY_USAGE_AUTO;
+    VERIFYVULKANRESULT(vmaCreateImage(vulkanDevice->vma_allocator,&imageCreateInfo,&MemoryInfo,&image,&imageAllocation,nullptr));
 
     VkSamplerCreateInfo samplerInfo;
     ZeroVulkanStruct(samplerInfo, VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO);
@@ -216,10 +228,10 @@ Ref<VulkanTexture> VulkanTexture::Create2D(Ref<VulkanDevice> vulkanDevice,Ref<Vu
     Texture->Depth          = 1;
     Texture->Image          = image;
     Texture->ImageLayout    = GetImageLayout(imageLayout);
-    Texture->ImageMemory    = imageMemory;
+    Texture->mVmaAllocation = imageAllocation;
     Texture->ImageSampler   = imageSampler;
     Texture->ImageView      = imageView;
-    Texture->Device         = device;
+    Texture->Device         = vulkanDevice;
     Texture->MipLevels      = mipLevels;
     Texture->LayerCount     = 1;
     Texture->NumSamples     = sampleCount;
@@ -269,8 +281,8 @@ Ref<VulkanTexture> VulkanTexture::Create2D(const uint8* rgbaData,uint32 size,VkF
 
     // image info
     VkImage                         image = VK_NULL_HANDLE;
-    VkDeviceMemory                  imageMemory = VK_NULL_HANDLE;
     VkImageView                     imageView = VK_NULL_HANDLE;
+    VmaAllocation                   imageVmaAllocation;
     VkSampler                       imageSampler = VK_NULL_HANDLE;
     VkDescriptorImageInfo           descriptorInfo = {};
 
@@ -292,20 +304,15 @@ Ref<VulkanTexture> VulkanTexture::Create2D(const uint8* rgbaData,uint32 size,VkF
     ImageCreateInfo.arrayLayers     = 1;
     ImageCreateInfo.samples         = VK_SAMPLE_COUNT_1_BIT;
     ImageCreateInfo.tiling          = VK_IMAGE_TILING_OPTIMAL;
+    ImageCreateInfo.extent          = { (uint32_t)width, (uint32_t)height, 1 };
     ImageCreateInfo.sharingMode     = VK_SHARING_MODE_EXCLUSIVE;
     ImageCreateInfo.initialLayout   = VK_IMAGE_LAYOUT_UNDEFINED;
-    ImageCreateInfo.extent          = { (uint32_t)width, (uint32_t)height, 1 };
     ImageCreateInfo.usage           = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | imageUsageFlags;
-    VERIFYVULKANRESULT(vkCreateImage(device, &ImageCreateInfo, VULKAN_CPU_ALLOCATOR, &image));
     
-    // bind image Memory
-    vkGetImageMemoryRequirements(device, image, &MemReqs);
-    vulkanDevice->GetMemoryManager().GetMemoryTypeFromProperties(MemReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &MemoryTypeIndex);
-    memAllocInfo.allocationSize  = MemReqs.size;
-    memAllocInfo.memoryTypeIndex = MemoryTypeIndex;
-    VERIFYVULKANRESULT(vkAllocateMemory(device, &memAllocInfo, VULKAN_CPU_ALLOCATOR, &imageMemory));
-    VERIFYVULKANRESULT(vkBindImageMemory(device, image, imageMemory, 0));
-
+    VmaAllocationCreateInfo MemoryInfo{};
+    MemoryInfo.usage = VMA_MEMORY_USAGE_AUTO;
+    VERIFYVULKANRESULT(vmaCreateImage(vulkanDevice->vma_allocator,&ImageCreateInfo,&MemoryInfo,&image,&imageVmaAllocation,nullptr));
+    
     // start record
     cmdBuffer->Begin();
 
@@ -408,19 +415,27 @@ Ref<VulkanTexture> VulkanTexture::Create2D(const uint8* rgbaData,uint32 size,VkF
     descriptorInfo.imageLayout = GetImageLayout(imageLayout);
 
     Ref<VulkanTexture> texture   = CreateRef<VulkanTexture>();
+    texture->Device         = vulkanDevice;
     texture->DescriptorInfo = descriptorInfo;
     texture->Format         = format;
     texture->Height         = height;
     texture->Image          = image;
     texture->ImageLayout    = GetImageLayout(imageLayout);
-    texture->ImageMemory    = imageMemory;
     texture->ImageSampler   = imageSampler;
+    texture->mVmaAllocation = imageVmaAllocation;
     texture->ImageView      = imageView;
-    texture->Device         = device;
     texture->Width          = width;
     texture->MipLevels      = MipLevels;
     texture->LayerCount     = 1;
 
+    return texture;
+}
+
+Ref<VulkanTexture> VulkanTexture::CreateAliasingTexture(Ref<VulkanDevice> vulkanDevice,Ref<VulkanTexture> AliasingTexture, VkFormat format, VkImageAspectFlags aspect, int32 width, int32 height,VkImageUsageFlags usage, VkSampleCountFlagBits sampleCount)
+{
+    Ref<VulkanTexture> texture   = CreateRef<VulkanTexture>();
+
+    //TODO Aliasing Texture
     return texture;
 }
 

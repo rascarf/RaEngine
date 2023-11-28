@@ -1,40 +1,39 @@
 ﻿#include "VulkanBuffer.h"
 #include "VulkanCommandBuffer.h"
+#include "vk_mem_alloc.h"
+
+VulkanBuffer::~VulkanBuffer()
+{
+    UnMap();
+    
+    if(Buffer != VK_NULL_HANDLE)
+    {
+        vmaDestroyBuffer(Device->vma_allocator,Buffer,VmaAllocation);
+    }
+
+    Device.reset();
+}
 
 Ref<VulkanBuffer> VulkanBuffer::CreateBuffer(std::shared_ptr<VulkanDevice> device, VkBufferUsageFlags usageFlags,
-                                         VkMemoryPropertyFlags memoryPropertyFlags, VkDeviceSize size, void* data)
+                                             VkMemoryPropertyFlags memoryPropertyFlags, VkDeviceSize size, void* data)
 {
     Ref<VulkanBuffer> dvkBuffer = CreateRef<VulkanBuffer>();
-    VkDevice vkDevice = device->GetInstanceHandle();
-    dvkBuffer->Device = vkDevice;
-		
-    uint32 memoryTypeIndex = 0;
-    VkMemoryRequirements memReqs = {};
-    VkMemoryAllocateInfo memAlloc;
-    ZeroVulkanStruct(memAlloc, VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO);
+    dvkBuffer->Device = device;
 		
     VkBufferCreateInfo bufferCreateInfo;
     ZeroVulkanStruct(bufferCreateInfo, VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO);
     bufferCreateInfo.usage = usageFlags;
     bufferCreateInfo.size  = size;
-    vkCreateBuffer(vkDevice, &bufferCreateInfo, nullptr, &(dvkBuffer->Buffer));
 
-    vkGetBufferMemoryRequirements(vkDevice, dvkBuffer->Buffer, &memReqs);
-    device->GetMemoryManager().GetMemoryTypeFromProperties(memReqs.memoryTypeBits, memoryPropertyFlags, &memoryTypeIndex);
-    memAlloc.allocationSize  = memReqs.size;
-    memAlloc.memoryTypeIndex = memoryTypeIndex;
+    VmaAllocationCreateInfo MemoryInfo{};
+    MemoryInfo.flags = VMA_ALLOCATION_CREATE_STRATEGY_BEST_FIT_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
+    MemoryInfo.usage = VMA_MEMORY_USAGE_AUTO;
 
-    VkMemoryAllocateFlagsInfo flags_info{VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO};
-    if(usageFlags & VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT)
-    {
-        flags_info.flags |= VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT;
-        memAlloc.pNext = &flags_info;
-    }
-		
-    vkAllocateMemory(vkDevice, &memAlloc, nullptr, &dvkBuffer->Memory);
-
-    dvkBuffer->Size       = memAlloc.allocationSize;
-    dvkBuffer->Alignment  = memReqs.alignment;
+    VmaAllocationInfo AllocationInfo;
+    vmaCreateBuffer(device->vma_allocator,&bufferCreateInfo,&MemoryInfo,
+        &dvkBuffer->Buffer,&dvkBuffer->VmaAllocation,&AllocationInfo);
+    
+    dvkBuffer->Size       = AllocationInfo.size;
     dvkBuffer->UsageFlags = usageFlags;
     dvkBuffer->MemoryPropertyFlags = memoryPropertyFlags;
 
@@ -42,16 +41,10 @@ Ref<VulkanBuffer> VulkanBuffer::CreateBuffer(std::shared_ptr<VulkanDevice> devic
     {
         dvkBuffer->Map();
         memcpy(dvkBuffer->Mapped, data, size);
-        if ((memoryPropertyFlags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) == 0)
-        {
-            dvkBuffer->Flush();
-        }
-        
         dvkBuffer->UnMap();
     }
 
     dvkBuffer->SetupDescriptor();
-    dvkBuffer->Bind();
 
     return dvkBuffer;
 }
@@ -63,7 +56,7 @@ VkResult VulkanBuffer::Map(VkDeviceSize size, VkDeviceSize offset)
         return VK_SUCCESS;
     }
 
-    return vkMapMemory(Device,Memory,offset,Size,0,&Mapped);
+    return vmaMapMemory(Device->vma_allocator,VmaAllocation,&Mapped);
 }
 
 void VulkanBuffer::UnMap()
@@ -73,13 +66,8 @@ void VulkanBuffer::UnMap()
         return;
     }
 
-    vkUnmapMemory(Device, Memory);
+    vmaUnmapMemory(Device->vma_allocator, VmaAllocation);
     Mapped = nullptr;
-}
-
-VkResult VulkanBuffer::Bind(VkDeviceSize offset)
-{
-    return vkBindBufferMemory(Device, Buffer, Memory, offset);
 }
 
 void VulkanBuffer::SetupDescriptor(VkDeviceSize size, VkDeviceSize offset)
@@ -119,26 +107,6 @@ void VulkanBuffer::TransferBuffer(const Ref<VulkanDevice>& Device, Ref<VulkanCom
     vkCmdCopyBuffer(CommandBuffer->CmdBuffer, SrcBuffer->Buffer, DstBuffer->Buffer, 1, &copyRegion);
     CommandBuffer->End();
     CommandBuffer->Submit();
-}
-
-VkResult VulkanBuffer::Flush(VkDeviceSize size, VkDeviceSize offset)
-{
-    VkMappedMemoryRange mappedRange = {};
-    mappedRange.sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
-    mappedRange.memory = Memory;
-    mappedRange.offset = offset;
-    mappedRange.size   = size;
-    return vkFlushMappedMemoryRanges(Device, 1, &mappedRange);
-}
-
-VkResult VulkanBuffer::Invalidate(VkDeviceSize size, VkDeviceSize offset)
-{
-    VkMappedMemoryRange mappedRange = {};
-    mappedRange.sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
-    mappedRange.memory = Memory;
-    mappedRange.offset = offset;
-    mappedRange.size   = size;
-    return vkInvalidateMappedMemoryRanges(Device, 1, &mappedRange);
 }
 
 void VulkanBuffer::TransferBufferImpl(VkDevice Device,VkCommandPool CommandPool,VkQueue TransferQueue,VkBuffer SrcBuffer, VkBuffer DstBuffer, VkDeviceSize size)
