@@ -108,6 +108,29 @@ namespace ReEngine
                 memset(&ColorRenderTargets[NumColorRenderTargets], 0, sizeof(ColorEntry) * ((int)ResLimit::MaxSimultaneousRenderTargets - NumColorRenderTargets));
             }
         }
+        // MRTs, No Depth, And LoadOps
+        explicit VulkanRenderPassInfo(int32 numColorRTs, std::vector<Ref<VulkanTexture>> colorRT, std::vector<VkAttachmentLoadOp> colorLoadAction, VkAttachmentStoreOp colorStoreAction)
+        {
+            NumColorRenderTargets = numColorRTs;
+
+            for (int32 i = 0; i < numColorRTs; ++i)
+            {
+                ColorRenderTargets[i].RenderTarget  = colorRT[i];
+                ColorRenderTargets[i].ResolveTarget = nullptr;
+                ColorRenderTargets[i].LoadAction    = colorLoadAction[i];
+                ColorRenderTargets[i].StoreAction   = colorStoreAction;
+            }
+
+            DepthStencilRenderTarget.DepthStencilTarget = nullptr;
+            DepthStencilRenderTarget.ResolveTarget      = nullptr;
+            DepthStencilRenderTarget.LoadAction         = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+            DepthStencilRenderTarget.StoreAction        = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+
+            if (numColorRTs < (int)ResLimit::MaxSimultaneousRenderTargets)
+            {
+                memset(&ColorRenderTargets[NumColorRenderTargets], 0, sizeof(ColorEntry) * ((int)ResLimit::MaxSimultaneousRenderTargets - NumColorRenderTargets));
+            }
+        }
 
         // MRTs And Depth
         explicit VulkanRenderPassInfo(
@@ -127,6 +150,38 @@ namespace ReEngine
                 ColorRenderTargets[i].RenderTarget  = colorRT[i];
                 ColorRenderTargets[i].ResolveTarget = nullptr;
                 ColorRenderTargets[i].LoadAction    = colorLoadAction;
+                ColorRenderTargets[i].StoreAction   = colorStoreAction;
+            }
+            
+            DepthStencilRenderTarget.DepthStencilTarget = depthRT;
+            DepthStencilRenderTarget.ResolveTarget    = nullptr;
+            DepthStencilRenderTarget.LoadAction          = depthLoadAction;
+            DepthStencilRenderTarget.StoreAction       = depthStoreAction;
+
+            if (numColorRTs < (int)ResLimit::MaxSimultaneousRenderTargets)
+            {
+                memset(&ColorRenderTargets[NumColorRenderTargets], 0, sizeof(ColorEntry) * ((int)ResLimit::MaxSimultaneousRenderTargets - NumColorRenderTargets));
+            }
+        }
+
+        // MRTs And Depth And LoadActions
+        explicit VulkanRenderPassInfo(
+            int32 numColorRTs, 
+            std::vector<Ref<VulkanTexture>> colorRT, 
+            std::vector<VkAttachmentLoadOp> colorLoadAction, 
+            VkAttachmentStoreOp colorStoreAction,
+            Ref<VulkanTexture> depthRT,
+            VkAttachmentLoadOp depthLoadAction, 
+            VkAttachmentStoreOp depthStoreAction
+        )
+        {
+            NumColorRenderTargets = numColorRTs;
+
+            for (int32 i = 0; i < numColorRTs; ++i)
+            {
+                ColorRenderTargets[i].RenderTarget  = colorRT[i];
+                ColorRenderTargets[i].ResolveTarget = nullptr;
+                ColorRenderTargets[i].LoadAction    = colorLoadAction[i];
                 ColorRenderTargets[i].StoreAction   = colorStoreAction;
             }
             

@@ -136,11 +136,6 @@ Ref<VulkanTexture> VulkanTexture::Create2D(Ref<VulkanDevice> vulkanDevice,Ref<Vu
 {
     VkDevice device = vulkanDevice->GetInstanceHandle();
 
-    uint32 memoryTypeIndex = 0;
-    VkMemoryRequirements memReqs = {};
-    VkMemoryAllocateInfo memAllocInfo;
-    ZeroVulkanStruct(memAllocInfo, VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO);
-
     int32 mipLevels = 1;
 
     // image info
@@ -431,11 +426,174 @@ Ref<VulkanTexture> VulkanTexture::Create2D(const uint8* rgbaData,uint32 size,VkF
     return texture;
 }
 
-Ref<VulkanTexture> VulkanTexture::CreateAliasingTexture(Ref<VulkanDevice> vulkanDevice,Ref<VulkanTexture> AliasingTexture, VkFormat format, VkImageAspectFlags aspect, int32 width, int32 height,VkImageUsageFlags usage, VkSampleCountFlagBits sampleCount)
+Ref<VulkanTexture> VulkanTexture::CreateFrameGraphAliasingTexture(Ref<VulkanDevice> vulkanDevice,Ref<VulkanTexture> AliasingTexture, VkFormat format, int32 width, int32 height,VkImageUsageFlags usage,int32 Mipmap, VkSampleCountFlagBits sampleCount)
 {
-    Ref<VulkanTexture> texture   = CreateRef<VulkanTexture>();
+    VkDevice device = vulkanDevice->GetInstanceHandle();
 
-    //TODO Aliasing Texture
+    // image info
+    VkImage                         image = VK_NULL_HANDLE;
+    VkImageView                     imageView = VK_NULL_HANDLE;
+    VkSampler                       imageSampler = VK_NULL_HANDLE;
+    VkDescriptorImageInfo           descriptorInfo = {};
+    
+    VkImageCreateInfo ImageCreateInfo;
+    ZeroVulkanStruct(ImageCreateInfo, VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO);
+    ImageCreateInfo.imageType       = VK_IMAGE_TYPE_2D;
+    ImageCreateInfo.format          = format;
+    ImageCreateInfo.mipLevels       = Mipmap;
+    ImageCreateInfo.arrayLayers     = 1;
+    ImageCreateInfo.samples         = VK_SAMPLE_COUNT_1_BIT;
+    ImageCreateInfo.tiling          = VK_IMAGE_TILING_OPTIMAL;
+    ImageCreateInfo.extent          = { (uint32_t)width, (uint32_t)height, 1 };
+    ImageCreateInfo.sharingMode     = VK_SHARING_MODE_EXCLUSIVE;
+    ImageCreateInfo.initialLayout   = VK_IMAGE_LAYOUT_UNDEFINED;
+    ImageCreateInfo.usage           =  VK_IMAGE_USAGE_SAMPLED_BIT | usage;
+    
+    VkResult vkResult = vmaCreateAliasingImage(vulkanDevice->vma_allocator,AliasingTexture->mVmaAllocation,&ImageCreateInfo,&image);
+    if(vkResult != VK_SUCCESS)
+    {
+        return nullptr;
+    }
+    
+    VkImageViewCreateInfo viewInfo;
+    ZeroVulkanStruct(viewInfo, VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO);
+    viewInfo.image      = image;
+    viewInfo.viewType   = VK_IMAGE_VIEW_TYPE_2D;
+    viewInfo.format     = format;
+    viewInfo.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
+    
+    VkImageAspectFlags AspectFlag = format >= VK_FORMAT_D16_UNORM && format <= VK_FORMAT_D32_SFLOAT_S8_UINT ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
+    viewInfo.subresourceRange.aspectMask = AspectFlag;
+    viewInfo.subresourceRange.levelCount = Mipmap;
+    viewInfo.subresourceRange.layerCount = 1;
+    VERIFYVULKANRESULT(vkCreateImageView(device, &viewInfo, VULKAN_CPU_ALLOCATOR, &imageView));
+    
+    VkSamplerCreateInfo samplerInfo;
+    ZeroVulkanStruct(samplerInfo, VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO);
+    samplerInfo.magFilter        = VK_FILTER_LINEAR;
+    samplerInfo.minFilter        = VK_FILTER_LINEAR;
+    samplerInfo.mipmapMode       = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+    samplerInfo.addressModeU     = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerInfo.addressModeV     = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerInfo.addressModeW     = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerInfo.compareOp        = VK_COMPARE_OP_NEVER;
+    samplerInfo.borderColor      = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+    samplerInfo.maxAnisotropy    = 1.0;
+    samplerInfo.anisotropyEnable = VK_FALSE;
+    samplerInfo.maxLod           = (float)Mipmap;
+    samplerInfo.minLod           = 0.0f;
+    VERIFYVULKANRESULT(vkCreateSampler(device, &samplerInfo, VULKAN_CPU_ALLOCATOR, &imageSampler));
+
+    descriptorInfo.sampler     = imageSampler;
+    descriptorInfo.imageView   = imageView;
+    descriptorInfo.imageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+    Ref<VulkanTexture> texture   = CreateRef<VulkanTexture>();
+    texture->Device         = vulkanDevice;
+    texture->DescriptorInfo = descriptorInfo;
+    texture->Format         = format;
+    texture->Height         = height;
+    texture->Image          = image;
+    texture->ImageLayout    = VK_IMAGE_LAYOUT_UNDEFINED;
+    texture->ImageSampler   = imageSampler;
+    texture->ImageView      = imageView;
+    texture->Width          = width;
+    texture->MipLevels      = Mipmap;
+    texture->LayerCount     = 1;
+    texture->mVmaAllocation = 0;
+
+    return texture;
+}
+
+Ref<VulkanTexture> VulkanTexture::CreateFrameGraphTexture(Ref<VulkanDevice> vulkanDevice, VkFormat format, int32 width, int32 height, VkImageUsageFlags usage,int32 Mipmap, VkSampleCountFlagBits sampleCount)
+{
+    VkDevice device = vulkanDevice->GetInstanceHandle();
+
+    // image info
+    VkImage                         image = VK_NULL_HANDLE;
+    VkImageView                     imageView = VK_NULL_HANDLE;
+    VkSampler                       imageSampler = VK_NULL_HANDLE;
+    VmaAllocation                   imageAllocation;
+    VkDescriptorImageInfo           descriptorInfo = {};
+    
+    VkImageCreateInfo ImageCreateInfo;
+    ZeroVulkanStruct(ImageCreateInfo, VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO);
+    ImageCreateInfo.imageType       = VK_IMAGE_TYPE_2D;
+    ImageCreateInfo.format          = format;
+    ImageCreateInfo.mipLevels       = Mipmap;
+    ImageCreateInfo.arrayLayers     = 1;
+    ImageCreateInfo.samples         = VK_SAMPLE_COUNT_1_BIT;
+    ImageCreateInfo.tiling          = VK_IMAGE_TILING_OPTIMAL;
+    ImageCreateInfo.extent          = { (uint32_t)width, (uint32_t)height, 1 };
+    ImageCreateInfo.sharingMode     = VK_SHARING_MODE_EXCLUSIVE;
+    ImageCreateInfo.initialLayout   = VK_IMAGE_LAYOUT_UNDEFINED;
+    ImageCreateInfo.usage           =  VK_IMAGE_USAGE_SAMPLED_BIT | usage;
+
+    VmaAllocationCreateInfo memory_info{};
+    memory_info.usage = VMA_MEMORY_USAGE_AUTO;
+    
+    VkResult vkResult = vmaCreateImage(
+        vulkanDevice->vma_allocator,
+        &ImageCreateInfo,
+        &memory_info,
+        &image,
+        &imageAllocation,
+        nullptr
+    );
+    
+    if(vkResult != VK_SUCCESS)
+    {
+        return nullptr;
+    }
+    
+    VkImageViewCreateInfo viewInfo;
+    ZeroVulkanStruct(viewInfo, VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO);
+    viewInfo.image      = image;
+    viewInfo.viewType   = VK_IMAGE_VIEW_TYPE_2D;
+    viewInfo.format     = format;
+    viewInfo.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
+
+
+    VkImageAspectFlags AspectFlag = format >= VK_FORMAT_D16_UNORM && format <= VK_FORMAT_D32_SFLOAT_S8_UINT ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
+    viewInfo.subresourceRange.aspectMask = AspectFlag;
+    viewInfo.subresourceRange.levelCount = Mipmap;
+    viewInfo.subresourceRange.layerCount = 1;
+    VERIFYVULKANRESULT(vkCreateImageView(device, &viewInfo, VULKAN_CPU_ALLOCATOR, &imageView));
+    
+    VkSamplerCreateInfo samplerInfo;
+    ZeroVulkanStruct(samplerInfo, VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO);
+    samplerInfo.magFilter        = VK_FILTER_LINEAR;
+    samplerInfo.minFilter        = VK_FILTER_LINEAR;
+    samplerInfo.mipmapMode       = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+    samplerInfo.addressModeU     = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerInfo.addressModeV     = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerInfo.addressModeW     = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerInfo.compareOp        = VK_COMPARE_OP_NEVER;
+    samplerInfo.borderColor      = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+    samplerInfo.maxAnisotropy    = 1.0;
+    samplerInfo.anisotropyEnable = VK_FALSE;
+    samplerInfo.maxLod           = (float)Mipmap;
+    samplerInfo.minLod           = 0.0f;
+    VERIFYVULKANRESULT(vkCreateSampler(device, &samplerInfo, VULKAN_CPU_ALLOCATOR, &imageSampler));
+
+    descriptorInfo.sampler     = imageSampler;
+    descriptorInfo.imageView   = imageView;
+    descriptorInfo.imageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+    Ref<VulkanTexture> texture   = CreateRef<VulkanTexture>();
+    texture->Device         = vulkanDevice;
+    texture->DescriptorInfo = descriptorInfo;
+    texture->Format         = format;
+    texture->Height         = height;
+    texture->Image          = image;
+    texture->ImageLayout    = VK_IMAGE_LAYOUT_UNDEFINED;
+    texture->mVmaAllocation = imageAllocation;
+    texture->ImageSampler   = imageSampler;
+    texture->ImageView      = imageView;
+    texture->Width          = width;
+    texture->MipLevels      = Mipmap;
+    texture->LayerCount     = 1;
+
     return texture;
 }
 

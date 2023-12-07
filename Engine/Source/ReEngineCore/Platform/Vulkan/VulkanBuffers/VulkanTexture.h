@@ -35,6 +35,38 @@ FORCE_INLINE void ImagePipelineBarrier(VkCommandBuffer CommandBuffer,VkImage Ima
     vkCmdPipelineBarrier(CommandBuffer, sourceStages, destStages, 0, 0, nullptr, 0, nullptr, 1, &ImageBarrier); 
 }
 
+FORCE_INLINE void ImagePipelineBarrier(VkCommandBuffer CommandBuffer,VkImage Image,ImageLayoutBarrier Source,ImageLayoutBarrier Dest,uint32 BaseMiplevel,uint32 MipCount,bool IsDepth)
+{
+    VkImageMemoryBarrier ImageBarrier;
+    ZeroVulkanStruct(ImageBarrier, VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
+
+    ImageBarrier.image = Image;
+    ImageBarrier.subresourceRange.aspectMask = IsDepth ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
+    ImageBarrier.subresourceRange.baseArrayLayer    = 0;
+    ImageBarrier.subresourceRange.layerCount    = 1;
+    ImageBarrier.subresourceRange.levelCount    = MipCount;
+    ImageBarrier.subresourceRange.baseMipLevel = BaseMiplevel;
+    
+    ImageBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    ImageBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+
+    VkPipelineStageFlags sourceStages = (VkPipelineStageFlags)0;
+    VkPipelineStageFlags destStages   = (VkPipelineStageFlags)0;
+    
+    SetImageBarrierInfo(Source, Dest, ImageBarrier, sourceStages, destStages);
+
+    if (Source == ImageLayoutBarrier::Present)
+    {
+        sourceStages = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+    }
+    else if (Dest == ImageLayoutBarrier::Present)
+    {
+        destStages = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+    }
+
+    vkCmdPipelineBarrier(CommandBuffer, sourceStages, destStages, 0, 0, nullptr, 0, nullptr, 1, &ImageBarrier); 
+}
+
 VK_DEFINE_HANDLE( VmaAllocator )
 VK_DEFINE_HANDLE( VmaAllocation )
 
@@ -138,14 +170,23 @@ public:
 
     //------------Aliasing----------------//
     // 如果返回的指针是空的，那么说明不兼容
-    static Ref<VulkanTexture> CreateAliasingTexture(
+    static Ref<VulkanTexture> CreateFrameGraphAliasingTexture(
         Ref<VulkanDevice> vulkanDevice,
         Ref<VulkanTexture> AliasingTexture,
         VkFormat format,
-        VkImageAspectFlags aspect,
         int32 width,
         int32 height,
         VkImageUsageFlags usage,
+        int32 Mipmap,
+        VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT);
+
+    static Ref<VulkanTexture> CreateFrameGraphTexture(
+        Ref<VulkanDevice> vulkanDevice,
+        VkFormat format,
+        int32 width,
+        int32 height,
+        VkImageUsageFlags usage,
+        int32 Mipmap,
         VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT);
     
 public:
