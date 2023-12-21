@@ -67,6 +67,11 @@ VulkanRenderTargetLayout::VulkanRenderTargetLayout(const VulkanRenderPassInfo& R
         attchmentDescription.initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
         attchmentDescription.finalLayout    = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
+        if(RenderPassInfo.DepthStencilRenderTarget.LoadAction == VK_ATTACHMENT_LOAD_OP_LOAD)
+        {
+            attchmentDescription.initialLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+        }
+        
         DepthStencilReference.attachment = NumAttachmentDescriptions;
         DepthStencilReference.layout     = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 

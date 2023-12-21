@@ -21,8 +21,14 @@ bool ReEngine::AssetManager::ReadFile(const std::string& filepath, uint8*& dataP
         return false;
     }
 
-    dataPtr = new uint8[dataSize];
-    fread(dataPtr, 1, dataSize, file);
+    dataPtr = new uint8[dataSize + 1];
+
+    // 逆天windows会给文件结尾塞东西，塞进来的这部分东西不希望是拿到的
+    size_t BytesRead = fread(dataPtr, 1, dataSize, file);
+
+    dataPtr[BytesRead] = 0;
+    dataSize = BytesRead;
+    
     fclose(file);
     
     return true;

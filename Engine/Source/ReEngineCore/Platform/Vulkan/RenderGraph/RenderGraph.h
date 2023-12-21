@@ -136,34 +136,61 @@ namespace ReEngine
 
     struct FrameGraphRenderPassCache
     {
-        void Init();
-        void ShutDown();
+        void Init()
+        {
+            RenderPassMap.clear();
+        }
+        
+        void ShutDown()
+        {
+            RenderPassMap.clear();
+        }
 
-        std::unordered_map<cstring,Ref<FrameGraphRenderPass>> RenderPassMap;
+        std::unordered_map<std::string,Ref<FrameGraphRenderPass>> RenderPassMap;
     };
     
     struct FrameGraphResourceCache
     {
-        void init();
-        void ShutDown();
+        void init()
+        {
+            ResourceMap.clear();
+            Resources.clear();
+        };
+        
+        void ShutDown()
+        {
+            Context = nullptr;
+            ResourceMap.clear();
+            Resources.clear();
+        };
 
         VulkanContext* Context;
         
         // 名字到Resource的Index
-        std::unordered_map<cstring,uint32> ResourceMap;
+        std::unordered_map<std::string,uint32> ResourceMap;
 
         std::vector<Ref<FrameGraphResource>> Resources;
     };
 
     struct FrameGraphNodeCache
     {
-        void Init();
-        void ShutDown();
+        void Init()
+        {
+            NameNodeMap.clear();
+            Nodes.clear();
+        }
+        
+        void ShutDown()
+        {
+            VkContext = nullptr;
+            NameNodeMap.clear();
+            Nodes.clear();
+        }
 
         VulkanContext* VkContext;
 
         // 名字到FrameGraphNode
-        std::unordered_map<cstring,uint32> NameNodeMap;
+        std::unordered_map<std::string,uint32> NameNodeMap;
 
         std::vector<Ref<FrameGraphNode>> Nodes;
     };
@@ -174,16 +201,16 @@ namespace ReEngine
         void Init(VulkanContext* Context);
         void ShutDown();
 
-        void RegisterRenderPass(cstring Name,Ref<FrameGraphRenderPass> Renderpass);
+        void RegisterRenderPass(std::string Name,Ref<FrameGraphRenderPass> Renderpass);
 
         FrameGraphResourceHandle CreateNodeOutput(const FrameGraphResourceOutputCreation& Creation,FrameGraphNodeHandle Producer);
         FrameGraphResourceHandle CreateNodeInput(const FrameGraphResourceInputCreation& Creation);
         FrameGraphNodeHandle CreateNode(const FrameGraphNodeCreation& Creation);
 
-        Ref<FrameGraphNode> GetNode(cstring Name);
+        Ref<FrameGraphNode> GetNode(std::string Name);
         Ref<FrameGraphNode> AccessNode( FrameGraphNodeHandle Handle );
         
-        Ref<FrameGraphResource> GetResource(cstring Name);
+        Ref<FrameGraphResource> GetResource(std::string Name);
         Ref<FrameGraphResource> AccessResource(FrameGraphResourceHandle handle);
 
         FrameGraphResourceCache ResourceCache;

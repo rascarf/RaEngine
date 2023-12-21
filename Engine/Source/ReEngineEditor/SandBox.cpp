@@ -9,6 +9,7 @@
 #include "Layers/ComputeLayers/ComputeLayer.h"
 #include "Layers/RayTracing/SimplePathTracing.h"
 #include "Layers/RenderPath/TileBasedForwardLayer.h"
+#include "Layers/FrameGraphs/FrameGraphTest/TemplateLayer.h"
 
 namespace ReEngine
 {
@@ -17,7 +18,7 @@ namespace ReEngine
         app.Init();
 
         // app.PushLayer(CreateRef<SimplePathTracing>());
-        app.PushLayer(CreateRef<TileBasedForwardLayer>());
+        // app.PushLayer(CreateRef<TileBasedForwardLayer>());
         // app.PushLayer(CreateRef<MSAALayer>());
         // app.PushLayer(CreateRef<AnimationTextureLayer>());
         // app.PushLayer(CreateRef<AnimationLayer>());
@@ -25,5 +26,6 @@ namespace ReEngine
         // app.PushLayer(CreateRef<InputAttachment>());
         // app.PushLayer(CreateRef<SandBoxLayer>());
         // app.PushLayer(CreateRef<ComputeLayer>());
+        app.PushLayer(CreateRef<FrameGraphTemplateLayer>());
     }
 }

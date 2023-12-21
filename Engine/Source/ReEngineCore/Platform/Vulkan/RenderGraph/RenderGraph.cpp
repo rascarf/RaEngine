@@ -168,7 +168,7 @@ namespace ReEngine
             Resource->OutputHandle = OutputResource->OutputHandle;
 
             Ref<FrameGraphNode> ParentNode = FrameGraph->AccessNode(Resource->Producer);
-            RE_CORE_INFO( "Adding edge from {0} [{1}] to {2} [{3}]\n", ParentNode->Name, Resource->Producer.Index, Node->Name, NodeIndex);
+            RE_CORE_INFO( "{2} [{3}] is rely on {0} [{1}] \n", ParentNode->Name, Resource->Producer.Index, Node->Name, NodeIndex);
 
             ParentNode->Edges.push_back(FrameGraph->Nodes[NodeIndex]);
         }
@@ -193,7 +193,7 @@ namespace ReEngine
         RenderPassCache.ShutDown();
     }
 
-    void FrameGraphBuilder::RegisterRenderPass(cstring Name, Ref<FrameGraphRenderPass> Renderpass)
+    void FrameGraphBuilder::RegisterRenderPass(std::string Name, Ref<FrameGraphRenderPass> Renderpass)
     {
         if(RenderPassCache.RenderPassMap.contains(Name))
         {
@@ -296,7 +296,7 @@ namespace ReEngine
         return NodeHandle;
     }
 
-    Ref<FrameGraphNode> FrameGraphBuilder::GetNode(cstring Name)
+    Ref<FrameGraphNode> FrameGraphBuilder::GetNode(std::string Name)
     {
         const auto NodeHandle = NodeCache.NameNodeMap.find(Name);
 
@@ -308,7 +308,7 @@ namespace ReEngine
         return  NodeCache.Nodes[Handle.Index];
     }
 
-    Ref<FrameGraphResource> FrameGraphBuilder::GetResource(cstring Name)
+    Ref<FrameGraphResource> FrameGraphBuilder::GetResource(std::string Name)
     {
         const auto NodeHandle = ResourceCache.ResourceMap.find(Name);
 
@@ -325,7 +325,7 @@ namespace ReEngine
 
     void FrameGraph::Init(FrameGraphBuilder* Builder)
     {
-        Builder = Builder;
+        builder = Builder;
     }
 
     void FrameGraph::ShutDown()
@@ -337,12 +337,12 @@ namespace ReEngine
 
             Node->RenderTarget.reset();
             
-            Node->Inputs.empty();
-            Node->Outputs.empty();
-            Node->Edges.empty();
+            Node->Inputs.clear();
+            Node->Outputs.clear();
+            Node->Edges.clear();
         }
 
-        Nodes.empty();
+        Nodes.clear();
     }
 
     void FrameGraph::EnableRenderPass(cstring RenderPassName)
@@ -381,8 +381,8 @@ namespace ReEngine
             FrameGraphNodeCreation NodeCreation{};
             NodeCreation.Inputs.reserve(PassInputs.size());
             NodeCreation.Outputs.reserve(PassOutputs.size());
-
-            for(size_t PassInputIndex ; PassInputIndex < PassInputs.size();PassInputIndex++)
+            
+            for(size_t PassInputIndex = 0 ; PassInputIndex < PassInputs.size();PassInputIndex++)
             {
                 json PassInput = PassInputs[PassInputIndex];
 
@@ -396,10 +396,11 @@ namespace ReEngine
                 InputCreation.ResourceType = StringToResourceType(InputType.c_str());
                 InputCreation.ResourceInfo.External = false;
                 InputCreation.Name = InputName.c_str();
-                
+            
                 NodeCreation.Inputs.push_back(InputCreation);
             }
 
+            
             for(size_t PassOutputIndex = 0 ; PassOutputIndex < PassOutputs.size(); PassOutputIndex++)
             {
                 json PassOutput = PassOutputs[PassOutputIndex];
@@ -458,7 +459,7 @@ namespace ReEngine
         {
             Ref<FrameGraphNode> node = builder->AccessNode(Nodes[i]);
 
-            node->Edges.empty();
+            node->Edges.clear();
         }
 
         for(size_t i = 0 ; i < Nodes.size() ; i++)
@@ -546,13 +547,15 @@ namespace ReEngine
             Handle.Index = k_invalid_index;
         }
         
-        std::vector<FrameGraphNodeHandle> Deallocations;
+        std::vector<FrameGraphNodeHandle> Deallocations{ResourceCount};
         for(auto& Handle : Deallocations)
         {
             Handle.Index = k_invalid_index;
         }
         
         std::vector<Ref<VulkanTexture>> FreeList;
+
+        // ------ free_list
         for(uint32_t i = 0 ; i < Nodes.size();i++)
         {
             Ref<FrameGraphNode> Node =  builder->AccessNode(Nodes[i]);
@@ -581,7 +584,7 @@ namespace ReEngine
             for(uint32 OutputIndex = 0 ; OutputIndex < Node->Outputs.size() ; OutputIndex ++)
             {
                 uint32 ResourceIndex = Node->Outputs[OutputIndex].Index;
-                Ref<FrameGraphResource> Resource = builder->AccessResource(Node->Outputs[ResourceIndex]);
+                Ref<FrameGraphResource> Resource = builder->AccessResource(Node->Outputs[OutputIndex]);
 
                 if(!Resource->ResourceInfo.External && Allocations[ResourceIndex].Index == k_invalid_index)
                 {
@@ -590,6 +593,7 @@ namespace ReEngine
                     if(Resource->ResourceType == FrameGraphResourceType::FrameGraphResourceType_Attachment)
                     {
                         FrameGraphResourceInfo& info = Resource->ResourceInfo;
+                        bool bIsDepth = info.Texture.Format == VK_FORMAT_D32_SFLOAT;
 
                         Ref<VulkanTexture> NewTexture;
                         
@@ -605,7 +609,7 @@ namespace ReEngine
                                 info.Texture.Format,
                                 info.Texture.Width,
                                 info.Texture.Height,
-                                info.Texture.UsageFlags,
+                                bIsDepth? VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT : VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
                                 1
                             );
                         }
@@ -617,7 +621,7 @@ namespace ReEngine
                                 info.Texture.Format,
                                 info.Texture.Width,
                                 info.Texture.Height,
-                                info.Texture.UsageFlags,
+                                bIsDepth? VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT : VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
                                 1
                             );
                         }
@@ -647,9 +651,9 @@ namespace ReEngine
             }
         }
 
-        Allocations.empty();
-        Deallocations.empty();
-        FreeList.empty();
+        Allocations.clear();
+        Deallocations.clear();
+        FreeList.clear();
 
         for(uint32 NodeIndex = 0 ; NodeIndex < Nodes.size();NodeIndex++)
         {
