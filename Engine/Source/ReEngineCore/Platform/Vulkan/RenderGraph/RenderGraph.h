@@ -56,6 +56,8 @@ namespace ReEngine
         RenderPassOperation LoadOp = RenderPassOperation::Count;
 
         Ref<VulkanTexture> Texture = nullptr;
+
+        bool IsDepthFormat();
     };
 
     // Resource的描述信息
@@ -114,10 +116,10 @@ namespace ReEngine
     {
     public:
 
-        virtual void Init();
+        virtual void Init(){};
         
-        virtual void PreRender(Ref<VulkanCommandBuffer> Cmd,Ref<VulkanModel> Model){}
-        virtual void Render(Ref<VulkanCommandBuffer> Cmd,Ref<VulkanModel> Model){}
+        virtual void PreRender(VkCommandBuffer CmdBuffer,Ref<VulkanModel> Model){}
+        virtual void Render(VkCommandBuffer CmdBuffer,Ref<VulkanModel> Model){}
         virtual void OnResize(){}
 
         virtual void Register(Ref<FrameGraphNode> Node,Ref<VulkanDevice> Device){}
@@ -258,7 +260,7 @@ namespace ReEngine
         Ref<FrameGraphResource> GetResource(cstring name);
         Ref<FrameGraphResource> AccessResource(FrameGraphResourceHandle handle);
 
-        void Render(Ref<VulkanCommandBuffer> CmdBuffer,Ref<VulkanModel> RenderModel);
+        void Render(VkCommandBuffer CmdBuffer,Ref<VulkanModel> RenderModel);
 
         void AddNode(FrameGraphNodeCreation& node);
 

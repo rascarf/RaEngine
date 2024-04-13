@@ -98,6 +98,11 @@ Ref<VulkanTexture> VulkanTexture::CreateDepthStencil(int32 width, int32 height,s
     texture->Format = PixelFormatToVkFormat(DepthFormat, false);
     texture->NumSamples = NumSamples;
 
+    if(DepthFormat == PF_D24)
+    {
+        
+    }
+
     VkImageCreateInfo imageCreateInfo;
     ZeroVulkanStruct(imageCreateInfo, VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO);
     imageCreateInfo.imageType   = VK_IMAGE_TYPE_2D;
@@ -122,6 +127,12 @@ Ref<VulkanTexture> VulkanTexture::CreateDepthStencil(int32 width, int32 height,s
     imageViewCreateInfo.flags    = 0;
     imageViewCreateInfo.image    = texture->Image;
     imageViewCreateInfo.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
+
+    if(texture->bOnlyDepth)
+    {
+        imageViewCreateInfo.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_DEPTH_BIT;
+    }
+    
     imageViewCreateInfo.subresourceRange.baseMipLevel   = 0;
     imageViewCreateInfo.subresourceRange.levelCount     = 1;
     imageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
@@ -554,7 +565,7 @@ Ref<VulkanTexture> VulkanTexture::CreateFrameGraphTexture(Ref<VulkanDevice> vulk
     viewInfo.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
 
 
-    VkImageAspectFlags AspectFlag = format >= VK_FORMAT_D16_UNORM && format <= VK_FORMAT_D32_SFLOAT_S8_UINT ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
+    VkImageAspectFlags AspectFlag = format >= VK_FORMAT_D16_UNORM && format <= VK_FORMAT_D32_SFLOAT_S8_UINT ? VK_IMAGE_ASPECT_DEPTH_BIT |VK_IMAGE_ASPECT_STENCIL_BIT  : VK_IMAGE_ASPECT_COLOR_BIT;
     viewInfo.subresourceRange.aspectMask = AspectFlag;
     viewInfo.subresourceRange.levelCount = Mipmap;
     viewInfo.subresourceRange.layerCount = 1;
@@ -595,6 +606,11 @@ Ref<VulkanTexture> VulkanTexture::CreateFrameGraphTexture(Ref<VulkanDevice> vulk
     texture->LayerCount     = 1;
 
     return texture;
+}
+
+bool VulkanTexture::bIsDepth()
+{
+    return Format >= VK_FORMAT_D16_UNORM && Format <= VK_FORMAT_D32_SFLOAT_S8_UINT; 
 }
 
 // Ref<VulkanTexture> VulkanTexture::Create2DArray(const std::vector<std::string> filenames,std::shared_ptr<VulkanDevice> vulkanDevice, Ref<VulkanCommandBuffer> cmdBuffer)

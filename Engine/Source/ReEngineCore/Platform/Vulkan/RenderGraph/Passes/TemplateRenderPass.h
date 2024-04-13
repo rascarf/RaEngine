@@ -6,6 +6,7 @@
 #include "Platform/Vulkan/VulkanMaterial.h"
 #include "Platform/Vulkan/RenderGraph/RenderGraph.h"
 #include "Platform/Vulkan/VulkanShader/VulkanShader.h"
+#include "ReEngineEditor/Layers/GraphicalLayer.h"
 #include "Renderer/RHI/Renderer.h"
 
 
@@ -14,14 +15,22 @@ namespace ReEngine
     class TemplateRenderPass : public FrameGraphRenderPass
     {
     public:
+
+        static Ref<TemplateRenderPass> Create();
+        
+        virtual void Init(Ref<VulkanDynamicBufferRing> RingBuffer);
         virtual void Register(Ref<FrameGraphNode> Node,Ref<VulkanDevice> Device) override;
-        virtual void PreRender(Ref<VulkanCommandBuffer> Cmd, Ref<VulkanModel> Model) override;
-        virtual void Render(Ref<VulkanCommandBuffer> Cmd, Ref<VulkanModel> Model) override;
+        virtual const std::vector<VertexAttribute>& GetRenderPassAttribute();
+
+        virtual void Update(const MVPBlock& MVPBLock);
+        
+        virtual void PreRender(VkCommandBuffer Cmd, Ref<VulkanModel> Model) override;
+        virtual void Render(VkCommandBuffer Cmd, Ref<VulkanModel> Model) override;
 
         virtual ~TemplateRenderPass() override
         {
             SceneShader.reset();
-            SceneMaterial.reset();
+            RenderPSO.reset();
         }
 
         struct ModelViewProjectionBlock
@@ -31,9 +40,9 @@ namespace ReEngine
             glm::mat4 projection;
         }m_MVPData;
         
-        Ref<VulkanShader> SceneShader;
-        Ref<VulkanMaterial> SceneMaterial;
-        Ref<VulkanDynamicBufferRing> RingBuffer;
+        Ref<VulkanShader> SceneShader = nullptr;
+        Ref<VulkanMaterial> RenderPSO = nullptr;
+        Ref<VulkanDynamicBufferRing> RingBuffer = nullptr;
         
         ReEngine::VulkanContext* VkContext = nullptr;
     };

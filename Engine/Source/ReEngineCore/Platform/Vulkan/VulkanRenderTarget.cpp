@@ -73,7 +73,7 @@ VulkanRenderTargetLayout::VulkanRenderTargetLayout(const VulkanRenderPassInfo& R
         }
         
         DepthStencilReference.attachment = NumAttachmentDescriptions;
-        DepthStencilReference.layout     = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+        DepthStencilReference.layout    = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
         NumAttachmentDescriptions += 1;
         HasDepthStencil            = true;
@@ -201,6 +201,7 @@ void VulkanRenderTarget::BeginRenderPass(VkCommandBuffer CmdBuffer)
         VkImage image = texture->Image;
         VkImageSubresourceRange subResRange = { };
         subResRange.aspectMask     = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
+        
         subResRange.baseMipLevel   = 0;
         subResRange.levelCount     = 1;
         subResRange.layerCount     = RenderPassInfo.DepthStencilRenderTarget.DepthStencilTarget->Depth;
@@ -261,6 +262,12 @@ void VulkanRenderTarget::EndRenderPass(VkCommandBuffer CmdBuffer)
         VkImage image = texture->Image;
         VkImageSubresourceRange subResRange = { };
         subResRange.aspectMask     = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
+
+        if(RenderPassInfo.DepthStencilRenderTarget.DepthStencilTarget->bOnlyDepth)
+        {
+            subResRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+        }
+        
         subResRange.baseMipLevel   = 0;
         subResRange.levelCount     = 1;
         subResRange.layerCount     = RenderPassInfo.DepthStencilRenderTarget.DepthStencilTarget->Depth;

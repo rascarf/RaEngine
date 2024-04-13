@@ -41,7 +41,7 @@ FORCE_INLINE void ImagePipelineBarrier(VkCommandBuffer CommandBuffer,VkImage Ima
     ZeroVulkanStruct(ImageBarrier, VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
 
     ImageBarrier.image = Image;
-    ImageBarrier.subresourceRange.aspectMask = IsDepth ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
+    ImageBarrier.subresourceRange.aspectMask = IsDepth ? VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
     ImageBarrier.subresourceRange.baseArrayLayer    = 0;
     ImageBarrier.subresourceRange.layerCount    = 1;
     ImageBarrier.subresourceRange.levelCount    = MipCount;
@@ -209,7 +209,10 @@ public:
     int32 LayerCount = 1;
     VkFormat Format = VK_FORMAT_R8G8B8A8_UNORM;
     VkSampleCountFlagBits NumSamples = VK_SAMPLE_COUNT_1_BIT;
+    bool bOnlyDepth = false; // 是否是DepthOnly的，区分DepthStencil
 
     // 标识此Texture在全局Texture中的序号
     int32 BindlessIndex;
+
+    bool bIsDepth();
 };

@@ -12,16 +12,30 @@ void FrameGraphTemplateLayer::OnCreateBackBuffer()
 
 void FrameGraphTemplateLayer::OnInit()
 {
-
     enki::TaskSchedulerConfig config;
     config.numExternalTaskThreads += 1;
     enki::TaskScheduler Scheduler;
     Scheduler.Initialize(config);
+
+    m_RingBuffer = CreateRef<VulkanDynamicBufferRing>();
+    m_RingBuffer->OnCreate(VkContext->Instance->GetDevice(),3,20 * 1024 * 1024);
     
     mFrameGraphBuilder.Init(VkContext);
     mFrameGraph.Init(&mFrameGraphBuilder);
     mFrameGraph.Parse("Assets/Graphs/TestFrameGraph.json");
+    
+    DepthTemplateRenderPass = TemplateRenderPass::Create();
+    DepthTemplateRenderPass->Init(m_RingBuffer);
+    
+    GBufferRenderPass = TemplateRenderPass::Create();
+    GBufferRenderPass->Init(m_RingBuffer);
+    
+    mFrameGraph.GetNode("gbuffer_pass")->Enabled = false;
+
     mFrameGraph.Compile();
+    
+    mFrameGraph.builder->RegisterRenderPass("depth_pre_pass",DepthTemplateRenderPass);
+    mFrameGraph.builder->RegisterRenderPass("gbuffer_pass",GBufferRenderPass);
     
     LoadAsset();
 }
@@ -35,6 +49,9 @@ void FrameGraphTemplateLayer::OnDeInit()
     mFilterMaterial.reset();
 
     /*TODO Clear the Resources*/
+
+    DepthTemplateRenderPass.reset();
+    GBufferRenderPass.reset();
 
     mFrameGraph.ShutDown();
     mFrameGraphBuilder.ShutDown();
@@ -50,6 +67,9 @@ void FrameGraphTemplateLayer::OnUpdate(Timestep ts)
 
     m_MVPData.view = m_Camera->GetViewMatrix();
     m_MVPData.projection = m_Camera->GetProjection();
+
+    DepthTemplateRenderPass->Update(m_MVPData);
+    GBufferRenderPass->Update(m_MVPData);
 }
 
 void FrameGraphTemplateLayer::OnRender()
@@ -76,7 +96,7 @@ void FrameGraphTemplateLayer::OnRender()
     /*
      * TODO Write your Logic
      */
-    
+    mFrameGraph.Render(VkContext->GetCommandList(),mSceneModel);
 
     
     // FullScreen Pass
@@ -130,8 +150,11 @@ void FrameGraphTemplateLayer::LoadAsset()
      * Remember to bind RT's Renderpass for your material not FrameBuffer's renderpass!
      */
 
-
-
+    mSceneModel = VulkanModel::LoadFromFile(
+    "Assets/Mesh/Room/miniHouse_FBX.FBX",
+    device,
+    cmdBuffer,
+    DepthTemplateRenderPass->GetRenderPassAttribute());
     
     {
         mFilterShader = VulkanShader::Create(device,true,&QUAD_VERT,&COLORFILTER_FRAG,nullptr,nullptr,nullptr,nullptr);

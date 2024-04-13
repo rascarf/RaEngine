@@ -841,7 +841,7 @@ static VkFormat util_string_to_vk_format( cstring format ) {
         return VK_FORMAT_X8_D24_UNORM_PACK32;
     }
     if ( strcmp( format, "VK_FORMAT_D32_SFLOAT" ) == 0 ) {
-        return VK_FORMAT_D32_SFLOAT;
+        return VK_FORMAT_D32_SFLOAT_S8_UINT;
     }
     if ( strcmp( format, "VK_FORMAT_S8_UINT" ) == 0 ) {
         return VK_FORMAT_S8_UINT;

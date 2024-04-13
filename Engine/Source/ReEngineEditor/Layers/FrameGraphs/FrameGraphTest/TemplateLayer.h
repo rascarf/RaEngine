@@ -6,6 +6,7 @@
 #include "Platform/Vulkan/RenderGraph/RenderGraph.h"
 #include "ReEngineEditor/Layers/GraphicalLayer.h"
 #include "enkiTS/TaskScheduler.h"
+#include "Platform/Vulkan/RenderGraph/Passes/TemplateRenderPass.h"
 
 class FrameGraphTemplateLayer : public GraphicalLayer
 {
@@ -24,6 +25,8 @@ private:
     
 private:
 
+    Ref<VulkanModel>                                mSceneModel = nullptr;
+    
     Ref<VulkanModel>                                mQuad = nullptr;
     Ref<VulkanMaterial>                             mFilterMaterial;
     Ref<VulkanShader>                               mFilterShader;
@@ -34,5 +37,10 @@ private:
 
     FrameGraphBuilder                               mFrameGraphBuilder;
     FrameGraph                                      mFrameGraph;
+
+    Ref<TemplateRenderPass>                         DepthTemplateRenderPass;
+
+    
+    Ref<TemplateRenderPass>                         GBufferRenderPass;
     
 };
