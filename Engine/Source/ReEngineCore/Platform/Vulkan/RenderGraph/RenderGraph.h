@@ -108,12 +108,20 @@ namespace ReEngine
         string Name;
     };
 
-    struct FrameGraphRenderPass
+    class FrameGraphNode;
+    
+    class FrameGraphRenderPass
     {
+    public:
+
+        virtual void Init();
+        
         virtual void PreRender(Ref<VulkanCommandBuffer> Cmd,Ref<VulkanModel> Model){}
         virtual void Render(Ref<VulkanCommandBuffer> Cmd,Ref<VulkanModel> Model){}
         virtual void OnResize(){}
 
+        virtual void Register(Ref<FrameGraphNode> Node,Ref<VulkanDevice> Device){}
+        
         virtual ~FrameGraphRenderPass() = default;
     };
 

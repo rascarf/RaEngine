@@ -5,6 +5,7 @@
 #include "Camera/EditorCamera.h"
 #include "Platform/Vulkan/RenderGraph/RenderGraph.h"
 #include "ReEngineEditor/Layers/GraphicalLayer.h"
+#include "enkiTS/TaskScheduler.h"
 
 class FrameGraphTemplateLayer : public GraphicalLayer
 {

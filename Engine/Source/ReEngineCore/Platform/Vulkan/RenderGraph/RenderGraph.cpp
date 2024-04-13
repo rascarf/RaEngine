@@ -210,6 +210,8 @@ namespace ReEngine
         const auto it = NodeCache.NameNodeMap.find(Name);
         const Ref<FrameGraphNode> Node = NodeCache.Nodes[it->second];
         Node->GraphRenderPass = Renderpass;
+
+        Renderpass->Register(Node, mContext->GetVulkanInstance()->GetDevice());
     }
 
     FrameGraphResourceHandle FrameGraphBuilder::CreateNodeOutput(const FrameGraphResourceOutputCreation& Creation,FrameGraphNodeHandle Producer)

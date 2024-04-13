@@ -53,6 +53,12 @@ if(NOT TARGET yaml-cpp)
     NoWarning(yaml-cpp)
 endif()
 
+if(NOT TARGET enkiTS)
+    include(enkiTS.cmake)
+    set_target_properties(enkiTS PROPERTIES FOLDER ${ThirdPartyFolder}/enkiTS)
+    NoWarning(enkiTS)
+endif()
+
 if(NOT TARGET spirv-cross-glsl)
   add_subdirectory(SPIRV-Cross)
   set_target_properties(spirv-cross-c PROPERTIES FOLDER ${ThirdPartyFolder}/spirv-cross-c)

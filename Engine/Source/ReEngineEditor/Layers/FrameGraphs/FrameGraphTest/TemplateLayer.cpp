@@ -12,6 +12,12 @@ void FrameGraphTemplateLayer::OnCreateBackBuffer()
 
 void FrameGraphTemplateLayer::OnInit()
 {
+
+    enki::TaskSchedulerConfig config;
+    config.numExternalTaskThreads += 1;
+    enki::TaskScheduler Scheduler;
+    Scheduler.Initialize(config);
+    
     mFrameGraphBuilder.Init(VkContext);
     mFrameGraph.Init(&mFrameGraphBuilder);
     mFrameGraph.Parse("Assets/Graphs/TestFrameGraph.json");
