@@ -6,6 +6,7 @@
 #include "Platform/Vulkan/RenderGraph/RenderGraph.h"
 #include "ReEngineEditor/Layers/GraphicalLayer.h"
 #include "enkiTS/TaskScheduler.h"
+#include "MultiThread/PinnedThread.h"
 #include "Platform/Vulkan/RenderGraph/Passes/PreDepthPass.h"
 
 class FrameGraphTemplateLayer : public GraphicalLayer
@@ -39,7 +40,8 @@ private:
     FrameGraph                                      mFrameGraph;
 
     Ref<PreDepthRenderPass>                         DepthTemplateRenderPass;
-
+    enki::TaskScheduler*                            mTaskScheduler;
+    PinnedThread*                                   mIOThread;
     
     // Ref<TemplateRenderPass>                         GBufferRenderPass;
     

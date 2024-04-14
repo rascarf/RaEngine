@@ -15,9 +15,17 @@ void FrameGraphTemplateLayer::OnInit()
 {
     enki::TaskSchedulerConfig config;
     config.numExternalTaskThreads += 1;
-    enki::TaskScheduler Scheduler;
-    Scheduler.Initialize(config);
+    
+    mTaskScheduler = new enki::TaskScheduler();
+    mTaskScheduler->Initialize(config);
 
+    mIOThread = new PinnedThread(mTaskScheduler,mTaskScheduler->GetNumTaskThreads() - 1);
+    RunnableTask TestTask(mIOThread);
+    TestTask.Run();
+    
+    mTaskScheduler->WaitforTask(&TestTask);
+
+    
     m_RingBuffer = CreateRef<VulkanDynamicBufferRing>();
     m_RingBuffer->OnCreate(VkContext->Instance->GetDevice(),3,20 * 1024 * 1024);
     
@@ -57,6 +65,8 @@ void FrameGraphTemplateLayer::OnDeInit()
     mFrameGraph.ShutDown();
     mFrameGraphBuilder.ShutDown();
     m_RingBuffer.reset();
+
+    delete mTaskScheduler;
 }
 
 void FrameGraphTemplateLayer::OnUpdate(Timestep ts)

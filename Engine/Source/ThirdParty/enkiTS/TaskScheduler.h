@@ -145,8 +145,8 @@ namespace enki
         {}
 
         ITaskSet( uint32_t setSize_, uint32_t minRange_ )
-            : m_SetSize( setSize_ )
-            , m_MinRange( minRange_ )
+            : m_SetSize( setSize_ ) // 这个任务集 总的需要处理的块儿 比如1 ~ 10000，分给十个线程来做，SetSize就是10000，线程当前处理的就由range来决定，按理是要切分成每个加1000份，但是不一定完美分配，所以可以用MinRange：5000，那就指派俩线程
+            , m_MinRange( minRange_ ) // 每个线程要处理的块儿的大小
             , m_RangeToRun(minRange_)
         {}
 
