@@ -43,6 +43,7 @@ void VulkanDevice::CreateDevice()
 		m_AppDeviceExtensions.push_back(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME);
 	}
 	
+	
 	if (m_AppDeviceExtensions.size() > 0)
 	{
 		RE_INFO("Using app device extensions");
@@ -57,7 +58,7 @@ void VulkanDevice::CreateDevice()
 	VkPhysicalDeviceDescriptorIndexingFeaturesEXT indexingFeatures{};
 	indexingFeatures.sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT;
 	indexingFeatures.pNext = nullptr;
-
+	
 	// 查询能不能使用bindless的device特性
 	VkPhysicalDeviceFeatures2 deviceFeatures2{};
 	deviceFeatures2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
@@ -69,33 +70,29 @@ void VulkanDevice::CreateDevice()
 	{
 		RE_CORE_INFO("Try to Use Bindless Feature");
 	 }
-
-	// VkPhysicalDeviceDescriptorIndexingFeaturesEXT indexingFeaturesCreateInfo{};
-	// indexingFeaturesCreateInfo.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT;
-	// indexingFeaturesCreateInfo.pNext = nullptr;
-	// indexingFeaturesCreateInfo.runtimeDescriptorArray = VK_TRUE;
-	// indexingFeaturesCreateInfo.descriptorBindingVariableDescriptorCount = VK_TRUE;
-	// indexingFeaturesCreateInfo.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
-	// indexingFeaturesCreateInfo.descriptorBindingSampledImageUpdateAfterBind = VK_TRUE;
-	// indexingFeaturesCreateInfo.descriptorBindingPartiallyBound = VK_TRUE;
-
-	VkPhysicalDeviceAccelerationStructureFeaturesKHR accelFeature{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR};
-	VkPhysicalDeviceRayTracingPipelineFeaturesKHR rtPipelineFeature{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR};
-
-	accelFeature.accelerationStructure = VK_TRUE;
-	rtPipelineFeature.rayTracingPipeline = VK_TRUE;
 	
 	VkPhysicalDeviceVulkan12Features deviceVulkan12Features  = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES };
+	deviceVulkan12Features.pNext = &deviceFeatures2;
 	deviceVulkan12Features.descriptorIndexing = VK_TRUE;
-	deviceVulkan12Features.bufferDeviceAddress = VK_TRUE;
+	deviceVulkan12Features.bufferDeviceAddress = VK_TRUE;//
+	deviceVulkan12Features.bufferDeviceAddressCaptureReplay = VK_TRUE;
 	deviceVulkan12Features.runtimeDescriptorArray = VK_TRUE;
 	deviceVulkan12Features.descriptorBindingVariableDescriptorCount = VK_TRUE;
 	deviceVulkan12Features.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
 	deviceVulkan12Features.descriptorBindingSampledImageUpdateAfterBind = VK_TRUE;
 	deviceVulkan12Features.descriptorBindingPartiallyBound = VK_TRUE;
 	
-	accelFeature.pNext = &rtPipelineFeature;
-	deviceVulkan12Features.pNext = &accelFeature;
+	if(HWRAYTRACING)
+	{
+		VkPhysicalDeviceAccelerationStructureFeaturesKHR accelFeature{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR};
+		VkPhysicalDeviceRayTracingPipelineFeaturesKHR rtPipelineFeature{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR};
+
+		accelFeature.accelerationStructure = VK_TRUE;
+		rtPipelineFeature.rayTracingPipeline = VK_TRUE;
+		
+		accelFeature.pNext = &rtPipelineFeature;
+		deviceVulkan12Features.pNext = &accelFeature;
+	}
 	
     VkDeviceCreateInfo deviceInfo;
     ZeroVulkanStruct(deviceInfo, VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO);
@@ -104,7 +101,8 @@ void VulkanDevice::CreateDevice()
 	deviceInfo.enabledLayerCount       = uint32_t(validationLayers.size());
 	deviceInfo.ppEnabledLayerNames     = validationLayers.data();
 	deviceInfo.pNext = &deviceVulkan12Features;
-	deviceInfo.pEnabledFeatures = &m_PhysicalDeviceFeatures;
+	
+	deviceInfo.pEnabledFeatures = nullptr;
 	
     RE_CORE_INFO("Found {0} Queue Families", (int32)m_QueueFamilyProps.size());
     
@@ -199,18 +197,28 @@ void VulkanDevice::CreateDevice()
 	VkResult result = vkCreateDevice(m_PhysicalDevice, &deviceInfo, VULKAN_CPU_ALLOCATOR, &m_Device);
 	if(result == VK_ERROR_EXTENSION_NOT_PRESENT)
 	{
-		RE_CORE_ERROR("{0}", "Cannot create a Vulkan device. VK_ERROR_EXTENSION_NOT_PRESENT \n");
+		RE_ERROR("{0}", "Cannot create a Vulkan device. VK_ERROR_EXTENSION_NOT_PRESENT \n");
 	}
 
 	if(result == VK_ERROR_FEATURE_NOT_PRESENT)
 	{
-		RE_CORE_ERROR("{0}", "Cannot create a Vulkan device. VK_ERROR_FEATURE_NOT_PRESENT.\n");
+		RE_ERROR("{0}", "Cannot create a Vulkan device. VK_ERROR_FEATURE_NOT_PRESENT.\n");
 	}
 
 	if (result == VK_ERROR_INITIALIZATION_FAILED)
 	{
-		RE_CORE_ERROR("{0}", "Cannot create a Vulkan device. Try updating your video driver to a more recent version.\n");
+		RE_ERROR("{0}", "Cannot create a Vulkan device. Try updating your video driver to a more recent version.\n");
+		RE_CORE_ASSERT(true,"Failed to Create Device")
 		return;
+	}
+
+	if(result != VK_SUCCESS)
+	{
+		RE_ERROR("Failed to Create Device");
+	}
+	else
+	{
+		RE_INFO("Success Create Device");
 	}
 
 	m_GfxQueue = CreateRef<VulkanQueue>(this, gfxQueueFamilyIndex);
@@ -424,10 +432,15 @@ void VulkanDevice::MapFormatSupport(PixelFormat format, VkFormat vkFormat, int32
 bool VulkanDevice::QueryGPU(int32 deviceIndex)
 {
 	bool discrete = false;
-
-	VkPhysicalDeviceRayTracingPipelinePropertiesKHR m_rtProperties{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR};
+	
 	m_PhysicalDeviceProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
-	m_PhysicalDeviceProperties.pNext = &m_rtProperties;
+	m_PhysicalDeviceProperties.pNext = nullptr;
+	if(HWRAYTRACING)
+	{
+		VkPhysicalDeviceRayTracingPipelinePropertiesKHR m_rtProperties{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR};
+		m_PhysicalDeviceProperties.pNext = &m_rtProperties;
+	}
+
 	vkGetPhysicalDeviceProperties2(m_PhysicalDevice, &m_PhysicalDeviceProperties);
 	
 	auto GetDeviceTypeString = [&]() -> std::string
@@ -473,8 +486,12 @@ bool VulkanDevice::QueryGPU(int32 deviceIndex)
 
 void VulkanDevice::InitGPU(int32 deviceIndex)
 {
-	vkGetPhysicalDeviceFeatures(m_PhysicalDevice, &m_PhysicalDeviceFeatures);
-	RE_CORE_INFO("Using Device {0}: Geometry {1} Tessellation {2}", deviceIndex, m_PhysicalDeviceFeatures.geometryShader, m_PhysicalDeviceFeatures.tessellationShader);
+	RE_INFO("InitGPU");
+	
+	m_PhysicalDeviceFeatures = VkPhysicalDeviceFeatures2{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2};
+	m_PhysicalDeviceFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+	m_PhysicalDeviceFeatures.pNext = nullptr;
+	vkGetPhysicalDeviceFeatures2(m_PhysicalDevice, &m_PhysicalDeviceFeatures);
 
 	CreateDevice();
 	SetupFormats();

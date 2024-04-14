@@ -166,8 +166,8 @@ void VulkanInstance::InitInstance()
     AppInfo.pNext = nullptr;
     AppInfo.pApplicationName = "Vulkan Application";
     AppInfo.pEngineName = "No Engine";
-    AppInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 1);
-    AppInfo.engineVersion = VK_MAKE_VERSION(1, 0, 1);
+    AppInfo.applicationVersion = VK_API_VERSION_1_3;
+    AppInfo.engineVersion = VK_API_VERSION_1_3;
     AppInfo.apiVersion = VK_API_VERSION_1_3;
 
     VkInstanceCreateInfo instanceCreateInfo;
@@ -177,7 +177,7 @@ void VulkanInstance::InitInstance()
     instanceCreateInfo.ppEnabledExtensionNames = m_InstanceExtensions.size() > 0 ? m_InstanceExtensions.data() : nullptr;
     instanceCreateInfo.enabledLayerCount       = uint32_t(m_InstanceLayers.size());
     instanceCreateInfo.ppEnabledLayerNames     = m_InstanceLayers.size() > 0 ? m_InstanceLayers.data() : nullptr;
-
+    
     VkResult result = vkCreateInstance(&instanceCreateInfo, VULKAN_CPU_ALLOCATOR, &m_Instance);
     if (result == VK_ERROR_INCOMPATIBLE_DRIVER) 
     {
@@ -274,6 +274,7 @@ void VulkanInstance::InitVma()
     vma_vulkan_func.vkGetBufferMemoryRequirements       = vkGetBufferMemoryRequirements;
     vma_vulkan_func.vkGetImageMemoryRequirements        = vkGetImageMemoryRequirements;
     vma_vulkan_func.vkGetPhysicalDeviceMemoryProperties = vkGetPhysicalDeviceMemoryProperties;
+    vma_vulkan_func.vkGetPhysicalDeviceMemoryProperties2KHR  = vkGetPhysicalDeviceMemoryProperties2;
     vma_vulkan_func.vkGetPhysicalDeviceProperties       = vkGetPhysicalDeviceProperties;
     vma_vulkan_func.vkInvalidateMappedMemoryRanges      = vkInvalidateMappedMemoryRanges;
     vma_vulkan_func.vkMapMemory                         = vkMapMemory;
@@ -288,6 +289,21 @@ void VulkanInstance::InitVma()
     allocatorInfo.instance = m_Instance;
     allocatorInfo.pVulkanFunctions = &vma_vulkan_func;
     allocatorInfo.flags |= VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
+
+    if(!allocatorInfo.physicalDevice)
+    {
+        RE_ERROR("physicalDevice is null");
+    }
+
+    if(!allocatorInfo.device)
+    {
+        RE_ERROR("device is null");
+    }
+    
+    if( !allocatorInfo.instance)
+    {
+        RE_ERROR("instance is null");
+    }
     vmaCreateAllocator( &allocatorInfo, &m_Device->vma_allocator );
 }
 

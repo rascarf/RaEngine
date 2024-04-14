@@ -72,7 +72,7 @@ public:
     
     FORCE_INLINE const VkPhysicalDeviceFeatures& GetPhysicalFeatures() const
     {
-        return m_PhysicalDeviceFeatures;
+        return m_PhysicalDeviceFeatures.features;
     }
     
     FORCE_INLINE VkDevice GetInstanceHandle() const
@@ -120,7 +120,7 @@ private:
     VkDevice                                m_Device;
     VkPhysicalDevice                        m_PhysicalDevice;
     VkPhysicalDeviceProperties2             m_PhysicalDeviceProperties;
-    VkPhysicalDeviceFeatures               m_PhysicalDeviceFeatures;
+    VkPhysicalDeviceFeatures2               m_PhysicalDeviceFeatures;
     std::vector<VkQueueFamilyProperties>    m_QueueFamilyProps;
     
     VkFormatProperties                      m_FormatProperties[PixelFormat_MAX];

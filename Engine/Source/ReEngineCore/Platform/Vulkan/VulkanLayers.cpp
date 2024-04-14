@@ -20,7 +20,8 @@ struct VulkanLayerExtension
 static const char* G_InstanceValidationLayers[] =
 {
 	"VK_LAYER_KHRONOS_validation",
-	"VK_LAYER_RENDERDOC_Capture",
+	// "VK_LAYER_LUNARG_api_dump",
+	// "VK_LAYER_RENDERDOC_Capture",
 	nullptr
 };
 
@@ -175,16 +176,16 @@ void VulkanInstance::GetInstanceLayersAndExtensions(std::vector<const char*>& ou
 		globalLayerExtensions.push_back(layer);
 	}
 
-	//取消注释来展示当前Instance的Extension
-	// for (const std::string& name : foundUniqueLayers) 
-	// {
-	// 	RE_INFO("- Found instance layer {0}", name.c_str());
-	// }
-	//
-	// for (const std::string& name : foundUniqueExtensions)
-	// 	{
-	// 	RE_INFO("- Found instance extension {0}", name.c_str());
-	// }
+	// 取消注释来展示当前Instance的Extension
+	 for (const std::string& name : foundUniqueLayers) 
+	 {
+	 	RE_INFO("- Found instance layer {0}", name.c_str());
+	 }
+	
+	 // for (const std::string& name : foundUniqueExtensions)
+	 // 	{
+	 // 	RE_INFO("- Found instance extension {0}", name.c_str());
+	 // }
 	
 #ifdef NDEBUG
 	const bool EnableValidationLayers = false;

@@ -563,9 +563,8 @@ Ref<VulkanTexture> VulkanTexture::CreateFrameGraphTexture(Ref<VulkanDevice> vulk
     viewInfo.viewType   = VK_IMAGE_VIEW_TYPE_2D;
     viewInfo.format     = format;
     viewInfo.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
-
-
-    VkImageAspectFlags AspectFlag = format >= VK_FORMAT_D16_UNORM && format <= VK_FORMAT_D32_SFLOAT_S8_UINT ? VK_IMAGE_ASPECT_DEPTH_BIT |VK_IMAGE_ASPECT_STENCIL_BIT  : VK_IMAGE_ASPECT_COLOR_BIT;
+    
+    VkImageAspectFlags AspectFlag = format >= VK_FORMAT_D16_UNORM && format <= VK_FORMAT_D32_SFLOAT_S8_UINT ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
     viewInfo.subresourceRange.aspectMask = AspectFlag;
     viewInfo.subresourceRange.levelCount = Mipmap;
     viewInfo.subresourceRange.layerCount = 1;
@@ -589,7 +588,7 @@ Ref<VulkanTexture> VulkanTexture::CreateFrameGraphTexture(Ref<VulkanDevice> vulk
 
     descriptorInfo.sampler     = imageSampler;
     descriptorInfo.imageView   = imageView;
-    descriptorInfo.imageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    descriptorInfo.imageLayout =  format >= VK_FORMAT_D16_UNORM && format <= VK_FORMAT_D32_SFLOAT_S8_UINT ?VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL:VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
     Ref<VulkanTexture> texture   = CreateRef<VulkanTexture>();
     texture->Device         = vulkanDevice;

@@ -114,7 +114,10 @@ void FrameGraphTemplateLayer::OnRender()
 
         {
             vkCmdBindPipeline(VkContext->GetCommandList(), VK_PIPELINE_BIND_POINT_GRAPHICS, mFilterMaterial->mPipeline->Pipeline);
+
+            auto DepthRenderPassOutput = mFrameGraph.GetResource("depth");
             
+            mFilterMaterial->SetTexture("InputImageTexture",DepthRenderPassOutput->ResourceInfo.Texture.Texture);
             mFilterMaterial->BindDescriptorSets(VkContext->GetCommandList(), VK_PIPELINE_BIND_POINT_GRAPHICS);
             mQuad->Meshes[0]->BindDraw(VkContext->GetCommandList());
         }
@@ -138,10 +141,6 @@ void FrameGraphTemplateLayer::OnChangeWindowSize(std::shared_ptr<ReEngine::Event
 void FrameGraphTemplateLayer::LoadAsset()
 {
     auto device = VkContext->Instance->GetDevice();
-    
-    m_RingBuffer = CreateRef<VulkanDynamicBufferRing>();
-    m_RingBuffer->OnCreate(VkContext->Instance->GetDevice(),3,200 * 1024 * 1024);
-
     auto cmdBuffer = VulkanCommandBuffer::Create(device, VkContext->CommandPool->m_CommandPool);
 
 
