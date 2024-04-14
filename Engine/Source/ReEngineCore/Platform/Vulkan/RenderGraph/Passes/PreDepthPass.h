@@ -12,11 +12,11 @@
 
 namespace ReEngine
 {
-    class TemplateRenderPass : public FrameGraphRenderPass
+    class PreDepthRenderPass : public FrameGraphRenderPass
     {
     public:
 
-        static Ref<TemplateRenderPass> Create();
+        static Ref<PreDepthRenderPass> Create();
         
         virtual void Init(Ref<VulkanDynamicBufferRing> RingBuffer);
         virtual void Register(Ref<FrameGraphNode> Node,Ref<VulkanDevice> Device) override;
@@ -27,10 +27,11 @@ namespace ReEngine
         virtual void PreRender(VkCommandBuffer Cmd, Ref<VulkanModel> Model) override;
         virtual void Render(VkCommandBuffer Cmd, Ref<VulkanModel> Model) override;
 
-        virtual ~TemplateRenderPass() override
+        virtual ~PreDepthRenderPass() override
         {
             SceneShader.reset();
             RenderPSO.reset();
+            RingBuffer.reset();
         }
 
         struct ModelViewProjectionBlock

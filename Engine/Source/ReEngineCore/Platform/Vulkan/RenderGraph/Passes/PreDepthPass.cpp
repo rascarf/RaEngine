@@ -1,14 +1,14 @@
-#include "TemplateRenderPass.h"
+#include "PreDepthPass.h"
 #include "PreDepth_frag.h"
 
 namespace ReEngine
 {
-    inline void TemplateRenderPass::PreRender(VkCommandBuffer Cmd, Ref<VulkanModel> Model)
+    inline void PreDepthRenderPass::PreRender(VkCommandBuffer Cmd, Ref<VulkanModel> Model)
     {
        
     }
 
-    inline void TemplateRenderPass::Render(VkCommandBuffer Cmd, Ref<VulkanModel> Model)
+    inline void PreDepthRenderPass::Render(VkCommandBuffer Cmd, Ref<VulkanModel> Model)
     {
         vkCmdBindPipeline(VkContext->GetCommandList(),VK_PIPELINE_BIND_POINT_GRAPHICS,RenderPSO->mPipeline->Pipeline);
         for(const auto& Mesh : Model->Meshes)
@@ -21,29 +21,29 @@ namespace ReEngine
         }
     }
 
-    const std::vector<VertexAttribute>& TemplateRenderPass::GetRenderPassAttribute()
+    const std::vector<VertexAttribute>& PreDepthRenderPass::GetRenderPassAttribute()
     {
         return SceneShader->perVertexAttributes;
     }
 
-    void TemplateRenderPass::Update(const MVPBlock& MVPBLock)
+    void PreDepthRenderPass::Update(const MVPBlock& MVPBLock)
     {
         m_MVPData.view = MVPBLock.view;
         m_MVPData.projection = MVPBLock.projection;
     }
 
-    Ref<TemplateRenderPass> TemplateRenderPass::Create()
+    Ref<PreDepthRenderPass> PreDepthRenderPass::Create()
     {
-        Ref<TemplateRenderPass> Result = CreateRef<TemplateRenderPass>();
+        Ref<PreDepthRenderPass> Result = CreateRef<PreDepthRenderPass>();
         return Result;
     }
 
-    void TemplateRenderPass::Init(Ref<VulkanDynamicBufferRing> InRingBuffer)
+    void PreDepthRenderPass::Init(Ref<VulkanDynamicBufferRing> InRingBuffer)
     {
         RingBuffer = InRingBuffer;
     }
 
-    inline void TemplateRenderPass::Register(Ref<FrameGraphNode> Node,Ref<VulkanDevice> Device)
+    inline void PreDepthRenderPass::Register(Ref<FrameGraphNode> Node,Ref<VulkanDevice> Device)
     {
         if(!Node->Enabled)
             return;

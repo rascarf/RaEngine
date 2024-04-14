@@ -25,18 +25,18 @@ void FrameGraphTemplateLayer::OnInit()
     mFrameGraph.Init(&mFrameGraphBuilder);
     mFrameGraph.Parse("Assets/Graphs/TestFrameGraph.json");
     
-    DepthTemplateRenderPass = TemplateRenderPass::Create();
+    DepthTemplateRenderPass = PreDepthRenderPass::Create();
     DepthTemplateRenderPass->Init(m_RingBuffer);
     
-    GBufferRenderPass = TemplateRenderPass::Create();
-    GBufferRenderPass->Init(m_RingBuffer);
+    // GBufferRenderPass = TemplateRenderPass::Create();
+    // GBufferRenderPass->Init(m_RingBuffer);
     
     mFrameGraph.GetNode("gbuffer_pass")->Enabled = false;
 
     mFrameGraph.Compile();
     
     mFrameGraph.builder->RegisterRenderPass("depth_pre_pass",DepthTemplateRenderPass);
-    mFrameGraph.builder->RegisterRenderPass("gbuffer_pass",GBufferRenderPass);
+    // mFrameGraph.builder->RegisterRenderPass("gbuffer_pass",GBufferRenderPass);
     
     LoadAsset();
 }
@@ -52,7 +52,7 @@ void FrameGraphTemplateLayer::OnDeInit()
     /*TODO Clear the Resources*/
 
     DepthTemplateRenderPass.reset();
-    GBufferRenderPass.reset();
+    // GBufferRenderPass.reset();
 
     mFrameGraph.ShutDown();
     mFrameGraphBuilder.ShutDown();
@@ -70,7 +70,7 @@ void FrameGraphTemplateLayer::OnUpdate(Timestep ts)
     m_MVPData.projection = m_Camera->GetProjection();
 
     DepthTemplateRenderPass->Update(m_MVPData);
-    GBufferRenderPass->Update(m_MVPData);
+    // GBufferRenderPass->Update(m_MVPData);
 }
 
 void FrameGraphTemplateLayer::OnRender()
