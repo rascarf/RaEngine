@@ -1,6 +1,7 @@
 #include "TemplateLayer.h"
 
 #include <ColorFilter_frag.h>
+#include <DepthFilter_frag.h>
 #include <quad_vert.h>
 #include "Mesh/Quad.h"
 #include "Platform/Vulkan/VulkanContext.h"
@@ -135,7 +136,7 @@ void FrameGraphTemplateLayer::OnUIRender(Timestep ts)
 
 void FrameGraphTemplateLayer::OnChangeWindowSize(std::shared_ptr<ReEngine::Event> e)
 {
-    GraphicalLayer::OnChangeWindowSize(e);
+    GraphicalLayer::OnChangeWindowSize(e); 
 }
 
 void FrameGraphTemplateLayer::LoadAsset()
@@ -156,7 +157,7 @@ void FrameGraphTemplateLayer::LoadAsset()
     DepthTemplateRenderPass->GetRenderPassAttribute());
     
     {
-        mFilterShader = VulkanShader::Create(device,true,&QUAD_VERT,&COLORFILTER_FRAG,nullptr,nullptr,nullptr,nullptr);
+        mFilterShader = VulkanShader::Create(device,true,&QUAD_VERT,&DEPTHFILTER_FRAG,nullptr,nullptr,nullptr,nullptr);
         mFilterMaterial = VulkanMaterial::Create(
             device,
             FrameBuffer->m_RenderPass,
@@ -178,16 +179,15 @@ void FrameGraphTemplateLayer::LoadAsset()
         );
     }
 
-    // BoundingBox Bounds = PlaneModel->RootNode->GetBounds();
+    // BoundingBox Bounds = mSceneModel->RootNode->GetBounds();
     // glm::vec3 BoundsSize = Bounds.Max - Bounds.Min;
     // glm::vec3 BoundsCenter = Bounds.Min + BoundsSize * 0.5f;
-    //
     
     m_Camera = CreateRef<EditorCamera>();
-    m_Camera->SetSpeed(0.1f);
+    m_Camera->SetSpeed(1.0f);
     // m_Camera->SetCenter(glm::vec3(BoundsCenter.x,BoundsCenter.y,BoundsCenter.z - BoundsSize.length() * 2.0));
     
-    m_MVPData.model = glm::identity<glm::mat4>();
-    m_MVPData.projection = glm::identity<glm::mat4>();
+    // m_MVPData.model = glm::identity<glm::mat4>();
+    // m_MVPData.projection = glm::identity<glm::mat4>();
     m_MVPData.view = m_Camera->GetViewMatrix();
 }

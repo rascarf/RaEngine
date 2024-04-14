@@ -10,7 +10,7 @@ VulkanInstance::VulkanInstance(GLFWwindow* InWindowHandle, const WindowProperty*
 , m_Instance(VK_NULL_HANDLE)
 , m_Device(nullptr)
 , m_SwapChain(nullptr)
-, m_PixelFormat(PF_B8G8R8A8)
+, m_PixelFormat(PF_R8G8B8A8)
 {
     
 }

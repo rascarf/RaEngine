@@ -59,10 +59,10 @@ void RTLayer::OnUpdate(Timestep ts)
     m_RingBuffer->OnBeginFrame();
     m_Camera->OnUpdate(ts);
     
-    SceneModel->RootNode->LocalMatrix = glm::rotate(SceneModel->RootNode->LocalMatrix,ts.GetSeconds() *  glm::radians(45.0f),glm::vec3(0.0f, 1.0f, 0.0f));
+    // SceneModel->RootNode->LocalMatrix = glm::rotate(SceneModel->RootNode->LocalMatrix,ts.GetSeconds() *  glm::radians(45.0f),glm::vec3(0.0f, 1.0f, 0.0f));
 
     m_Camera->SetFarPlane(DebugParam.zFar);
-    m_Camera->SetNearPlane(DebugParam.zNear);
+    m_Camera->SetNearPlane(DebugParam.zNear);  
     
     m_MVPData.view = m_Camera->GetViewMatrix();
     m_MVPData.projection = m_Camera->GetProjection();
