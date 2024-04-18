@@ -120,7 +120,7 @@ namespace ReEngine
 
     void VulkanContext::CreateCommandBuffers()
     {
-        CommandPool->m_CommandBuffers.resize(CommandPool->m_SwapChain->GetBackBufferCount());
+        CommandPool->m_CommandBuffers.resize(RE_BUFFERCOUNT);
 
         VkCommandBufferAllocateInfo allocInfo = {};
         allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;

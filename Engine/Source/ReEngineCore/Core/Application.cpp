@@ -24,6 +24,12 @@ namespace ReEngine
         {
                 OnEvent(e);
         });
+
+        enki::TaskSchedulerConfig config;
+        config.numExternalTaskThreads += 1;
+        
+        TaskScheduler = new enki::TaskScheduler();
+        TaskScheduler->Initialize(config);
     }
     
     void Application::Run()
@@ -73,6 +79,9 @@ namespace ReEngine
 
     void Application::Shutdown()
     {
+        TaskScheduler->WaitforAllAndShutdown();
+        delete TaskScheduler;
+        
         m_Window->ShutDown();
     }
 
@@ -126,6 +135,14 @@ namespace ReEngine
         VulkanContext-> RecreateSwapChain();
         
         return false;
+    }
+
+    enki::TaskScheduler* Application::GetTaskSheduler()
+    {
+        if(TaskScheduler)
+        {
+            return TaskScheduler;
+        }
     }
 
     bool Application::OnWindowClose(std::shared_ptr<Event> e)

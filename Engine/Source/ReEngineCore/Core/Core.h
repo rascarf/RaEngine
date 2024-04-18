@@ -33,6 +33,8 @@ typedef const char*         cstring;
 #define FORCE_INLINE __inline
 #define CONSTEXPR constexpr
 
+#define RE_BUFFERCOUNT 3
+
 namespace ReEngine
 {
     template<typename T>

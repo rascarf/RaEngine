@@ -10,7 +10,7 @@ VulkanSwapChain::VulkanSwapChain(VkInstance instance,std::shared_ptr<VulkanDevic
 	, m_SwapChain(VK_NULL_HANDLE)
     , m_Surface(Surface)
 	, m_ColorFormat(VK_FORMAT_R8G8B8A8_UNORM)
-	, m_BackBufferCount(3)
+	, m_BackBufferCount(RE_BUFFERCOUNT)
 	, m_Device(device)
 	, m_CurrentImageIndex(-1)
 	, m_SemaphoreIndex(0)

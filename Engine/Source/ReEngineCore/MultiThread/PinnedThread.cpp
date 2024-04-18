@@ -1,27 +1,41 @@
 #include "PinnedThread.h"
 
-PinnedThread::PinnedThread(enki::TaskScheduler* InTaskScheduler,int InThreadID)
+namespace ReEngine
 {
-    ThreadID = InThreadID;
-    PinnedThreadLoopTask = new PinnedImpl(InThreadID,InTaskScheduler);
+    PinnedThread::PinnedThread(enki::TaskScheduler* InTaskScheduler,int InThreadID)
+    {
+        ThreadID = InThreadID;
+        PinnedThreadLoopTask = new PinnedImpl(InThreadID,InTaskScheduler);
     
-    InTaskScheduler->AddPinnedTask(PinnedThreadLoopTask);
-}
+        InTaskScheduler->AddPinnedTask(PinnedThreadLoopTask);
+    }
 
-PinnedThread::~PinnedThread()
-{
-    if(PinnedThreadLoopTask)
+    PinnedThread::~PinnedThread()
     {
-        PinnedThreadLoopTask->bExecute = false;
-        
-        delete PinnedThreadLoopTask;
+        if(PinnedThreadLoopTask)
+        {
+            PinnedThreadLoopTask->bExecute = false;
+            
+            SignalThread();
+            
+            delete PinnedThreadLoopTask;
+        }
+    }
+
+    void PinnedThread::AddTaskToThread(enki::IPinnedTask* Task)
+    {
+        if(PinnedThreadLoopTask->mTaskScheduler)
+        {
+            PinnedThreadLoopTask->mTaskScheduler->AddPinnedTask(Task);
+        }
+    }
+
+    void PinnedThread::SignalThread()
+    {
+        PinnedThreadTask EmptyTask(this);
+        AddTaskToThread(&EmptyTask);
+
+        PinnedThreadLoopTask->mTaskScheduler->WaitforTask(PinnedThreadLoopTask);
     }
 }
 
-void PinnedThread::AddTaskToThread(enki::IPinnedTask* Task)
-{
-    if(PinnedThreadLoopTask->mTaskScheduler)
-    {
-        PinnedThreadLoopTask->mTaskScheduler->AddPinnedTask(Task);
-    }
-}

@@ -1,6 +1,7 @@
 #pragma once
 #include "PCH.h"
 #include "Core.h"
+#include "TaskScheduler.h"
 #include "Event/Event.h"
 #include "Window/Window.h"
 #include "Layer/LayerStack.h"
@@ -23,6 +24,7 @@ namespace ReEngine
 
         bool OnWindowClose(Ref<Event> e);
         bool OnWindowResize(Ref<WindowResizeEvent> e);
+        enki::TaskScheduler* GetTaskSheduler(); // 保证在生命周期之内是非空的
 
         [[nodiscard]]Window& GetWindow() { return *m_Window; }
         [[nodiscard]]const WindowProperty GetWindowInfo(){return m_WindowProperty;}
@@ -37,6 +39,8 @@ namespace ReEngine
         WindowProperty m_WindowProperty;
         Scope<Window> m_Window;
         LayerStack mLayerStack;
+
+        enki::TaskScheduler* TaskScheduler;
         bool mRunning = true;
         float m_LastTime;
 

@@ -13,18 +13,10 @@ void FrameGraphTemplateLayer::OnCreateBackBuffer()
 
 void FrameGraphTemplateLayer::OnInit()
 {
-    enki::TaskSchedulerConfig config;
-    config.numExternalTaskThreads += 1;
-    
-    mTaskScheduler = new enki::TaskScheduler();
-    mTaskScheduler->Initialize(config);
-
-    mIOThread = new PinnedThread(mTaskScheduler,mTaskScheduler->GetNumTaskThreads() - 1);
-    RunnableTask TestTask(mIOThread);
-    TestTask.Run();
-    
-    mTaskScheduler->WaitforTask(&TestTask);
-
+    mTaskScheduler = Application::GetInstance().GetTaskSheduler();
+    mIOThread = new PinnedThread(Application::GetInstance().GetTaskSheduler(),mTaskScheduler->GetNumTaskThreads() - 1);
+    mLoadTask = new AsyncLoaderMainTask(mIOThread);
+    mIOThread->AddTaskToThread(mLoadTask);
     
     m_RingBuffer = CreateRef<VulkanDynamicBufferRing>();
     m_RingBuffer->OnCreate(VkContext->Instance->GetDevice(),3,20 * 1024 * 1024);
@@ -51,22 +43,24 @@ void FrameGraphTemplateLayer::OnInit()
 
 void FrameGraphTemplateLayer::OnDeInit()
 {
+    mLoadTask->ShutDown();
+    
+    delete mLoadTask;
+    delete mIOThread;
+    
     m_Camera.reset();
 
     mQuad.reset();
     mFilterShader.reset();
     mFilterMaterial.reset();
-
-    /*TODO Clear the Resources*/
-
+    
+    mSceneModel.reset();
     DepthTemplateRenderPass.reset();
     // GBufferRenderPass.reset();
 
     mFrameGraph.ShutDown();
     mFrameGraphBuilder.ShutDown();
     m_RingBuffer.reset();
-
-    delete mTaskScheduler;
 }
 
 void FrameGraphTemplateLayer::OnUpdate(Timestep ts)

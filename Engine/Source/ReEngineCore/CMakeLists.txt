@@ -1,14 +1,15 @@
 file(GLOB_RECURSE RuntimeHeaderFiles CONFIGUE_DEPENDS "*.h")
 file(GLOB_RECURSE RuntimeSourceFiles CONFIGUE_DEPENDS "*.cpp")
+file(GLOB_RECURSE RuntimeSourceHPPFiles CONFIGUE_DEPENDS "*.hpp")
 
 source_group(
 TREE "${EngineCoreDir}" 
-FILES ${RuntimeHeaderFiles} ${RuntimeSourceFiles}
+FILES ${RuntimeHeaderFiles} ${RuntimeSourceFiles} ${RuntimeSourceHPPFiles}
 )
 
 add_library(
     ReEngineCore 
-    STATIC ${RuntimeHeaderFiles} ${RuntimeSourceFiles}
+    STATIC ${RuntimeHeaderFiles} ${RuntimeSourceFiles} ${RuntimeSourceHPPFiles}
 )
 
 set(TARGET_NAME ReEngineCore)
