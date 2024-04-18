@@ -48,7 +48,7 @@ namespace ReEngine
         virtual void SignalThread();
 
         PinnedThread(enki::TaskScheduler* InTaskScheduler,int InThreadID);
-        ~PinnedThread();
+        virtual ~PinnedThread();
     };
 
     // 运行在绑定的线程上的任务
@@ -72,6 +72,14 @@ namespace ReEngine
         {
             RE_INFO("RunnableTask : Current Thread is {0}",mRunThread->ThreadID);
         }
+
+        virtual ~PinnedThreadTask(){}
+    };
+
+    struct EmptyThreadTask : public PinnedThreadTask
+    {
+        virtual void Execute() override{}
+        EmptyThreadTask(PinnedThread* InRunThread):PinnedThreadTask(InRunThread){}
     };
 }
 

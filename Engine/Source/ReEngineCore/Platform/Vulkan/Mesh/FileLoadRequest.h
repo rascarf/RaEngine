@@ -8,7 +8,7 @@ namespace ReEngine
     struct FileLoadRequest
     {
     public:
-        char                    Path[512];
+        std::string             Path;
         Ref<VulkanTexture>      TextureHanle = nullptr;
         Ref<VulkanBuffer>       BufferHandle = nullptr;
     };

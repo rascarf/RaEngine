@@ -4,6 +4,7 @@ set(cglTFSourceDir ${ThirdPartyDir}/cgltf)
 file(GLOB_RECURSE Box2DSrc 
     "${StbSourceDir}/*.h"
     "${StbSourceDir}/*.cpp"
+    "${StbSourceDir}/*.hpp"
     "${cglTFSourceDir}/*.h"
 )
 

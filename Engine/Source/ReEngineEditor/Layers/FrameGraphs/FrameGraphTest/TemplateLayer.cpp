@@ -16,7 +16,17 @@ void FrameGraphTemplateLayer::OnInit()
     mTaskScheduler = Application::GetInstance().GetTaskSheduler();
     mIOThread = new PinnedThread(Application::GetInstance().GetTaskSheduler(),mTaskScheduler->GetNumTaskThreads() - 1);
     mLoadTask = new AsyncLoaderMainTask(mIOThread);
-    mIOThread->AddTaskToThread(mLoadTask);
+    mLoadTask->mAsyncLoader->RequestTexture("Hello World");
+
+    Application::GetInstance().GetTimerManager()->timeout([this]()
+    {
+        mLoadTask->mAsyncLoader->RequestTexture("Hello World 3");
+    },std::chrono::seconds(3));
+
+    Application::GetInstance().GetTimerManager()->timeout([this]()
+    {
+        mLoadTask->mAsyncLoader->RequestTexture("Hello World 10");
+    },std::chrono::seconds(10));
     
     m_RingBuffer = CreateRef<VulkanDynamicBufferRing>();
     m_RingBuffer->OnCreate(VkContext->Instance->GetDevice(),3,20 * 1024 * 1024);

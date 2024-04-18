@@ -15,7 +15,7 @@ namespace ReEngine
         void Update();
         void ShutDown();
 
-        void RequestTexture();
+        void RequestTexture(std::string path);
         void RequestBufferUpload();
         void RequestBufferCopy();
 
@@ -44,8 +44,12 @@ namespace ReEngine
         AsyncLoaderMainTask(PinnedThread* InRunThread):
         PinnedThreadTask(InRunThread)
         {
+            mTaskScheduler = InRunThread->PinnedThreadLoopTask->mTaskScheduler;
+            
             mAsyncLoader = CreateRef<AsyncLoader>();
             mAsyncLoader->Init(this);
+            
+            InRunThread->AddTaskToThread(this);
         }
     
         virtual void Execute() override
@@ -59,20 +63,20 @@ namespace ReEngine
         virtual void ShutDown()
         {
             Run = false;
-            while(!GetIsComplete())
-            {
-                
-            }
+            
+            mTaskScheduler->WaitforTaskSet(this);
+            RE_INFO("AsyncLoaderMainTask ShutDown");
 
             mAsyncLoader.reset();
         }
 
-        ~AsyncLoaderMainTask()
+        virtual ~AsyncLoaderMainTask()
         {
             
         }
         
         Ref<AsyncLoader>                mAsyncLoader = nullptr;
+        enki::TaskScheduler*            mTaskScheduler = nullptr;
         std::atomic<bool>               Run = true;
     };
 }

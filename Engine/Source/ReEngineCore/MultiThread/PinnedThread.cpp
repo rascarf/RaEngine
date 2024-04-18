@@ -32,7 +32,7 @@ namespace ReEngine
 
     void PinnedThread::SignalThread()
     {
-        PinnedThreadTask EmptyTask(this);
+        EmptyThreadTask EmptyTask(this);
         AddTaskToThread(&EmptyTask);
 
         PinnedThreadLoopTask->mTaskScheduler->WaitforTask(PinnedThreadLoopTask);

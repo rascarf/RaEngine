@@ -30,6 +30,9 @@ namespace ReEngine
         
         TaskScheduler = new enki::TaskScheduler();
         TaskScheduler->Initialize(config);
+
+        TimerMgr = new timer::manager();
+        TimerMgr->start(std::chrono::milliseconds(200));
     }
     
     void Application::Run()
@@ -81,6 +84,9 @@ namespace ReEngine
     {
         TaskScheduler->WaitforAllAndShutdown();
         delete TaskScheduler;
+
+        TimerMgr->clear();
+        delete TimerMgr;
         
         m_Window->ShutDown();
     }
@@ -142,6 +148,14 @@ namespace ReEngine
         if(TaskScheduler)
         {
             return TaskScheduler;
+        }
+    }
+
+    timer::manager* Application::GetTimerManager()
+    {
+        if(TimerMgr)
+        {
+            return TimerMgr;
         }
     }
 

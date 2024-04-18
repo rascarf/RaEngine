@@ -2,6 +2,7 @@
 #include "PCH.h"
 #include "Core.h"
 #include "TaskScheduler.h"
+#include "timer.hpp"
 #include "Event/Event.h"
 #include "Window/Window.h"
 #include "Layer/LayerStack.h"
@@ -25,6 +26,7 @@ namespace ReEngine
         bool OnWindowClose(Ref<Event> e);
         bool OnWindowResize(Ref<WindowResizeEvent> e);
         enki::TaskScheduler* GetTaskSheduler(); // 保证在生命周期之内是非空的
+        timer::manager* GetTimerManager();
 
         [[nodiscard]]Window& GetWindow() { return *m_Window; }
         [[nodiscard]]const WindowProperty GetWindowInfo(){return m_WindowProperty;}
@@ -41,6 +43,7 @@ namespace ReEngine
         LayerStack mLayerStack;
 
         enki::TaskScheduler* TaskScheduler;
+        timer::manager* TimerMgr;
         bool mRunning = true;
         float m_LastTime;
 

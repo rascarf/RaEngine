@@ -7,8 +7,7 @@ namespace ReEngine
     template<typename ElementType>
     class SimpleMultThreadVector
     {
-    public:
-
+    private:
         SpinLock* mlock;
         std::vector<ElementType> Data;
         
@@ -17,6 +16,7 @@ namespace ReEngine
         SimpleMultThreadVector &operator= (const SimpleMultThreadVector &other) = delete;
         SimpleMultThreadVector &operator= (SimpleMultThreadVector &&other) = delete;
         
+    public:
         SimpleMultThreadVector()
         {
             mlock = new SpinLock();
@@ -27,22 +27,36 @@ namespace ReEngine
             delete mlock;
         }
 
+        uint32_t GetSize()
+        {
+            LockGuard(*mlock);
+            
+            return Data.size();
+        }
+
+        void Emplace_Back(ElementType& Element)
+        {
+            LockGuard(*mlock);
+            
+            Data.emplace_back(std::forward<ElementType>(Element));
+        }
+
         void Emplace_Back(ElementType&& Element)
         {
-            LockGuard(mlock);
+            LockGuard(*mlock);
             
             Data.emplace_back(std::forward<ElementType>(Element));
         }
 
         void Pop_Back()
         {
-            LockGuard(mlock);
+            LockGuard(*mlock);
             Data.pop_back();
         }
 
         ElementType& Back()
         {
-            LockGuard(mlock);
+            LockGuard(*mlock);
             return Data.back();
         }
     };
