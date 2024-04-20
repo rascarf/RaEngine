@@ -706,7 +706,7 @@ namespace ReEngine
                     ImageLayoutBarrier Src = bIsDepth ? ImageLayoutBarrier::DepthStencilAttachment : ImageLayoutBarrier::ColorAttachment;
                     ImageLayoutBarrier Dst = ImageLayoutBarrier::PixelShaderRead;
 
-                    ImagePipelineBarrier(CmdBuffer,Texture->Image,Src,Dst,0,1,bIsDepth);
+                    VulkanTexture::ImagePipelineBarrier(CmdBuffer,Texture,Src,Dst,0,1,bIsDepth);
                 }
             }
 
@@ -721,7 +721,7 @@ namespace ReEngine
                     ImageLayoutBarrier Src = ImageLayoutBarrier::Undefined;
                     ImageLayoutBarrier Dst = bIsDepth ? ImageLayoutBarrier::DepthStencilAttachment : ImageLayoutBarrier::ColorAttachment;
 
-                    ImagePipelineBarrier(CmdBuffer,Texture->Image,Src,Dst,0,1,bIsDepth);
+                    VulkanTexture::ImagePipelineBarrier(CmdBuffer,Texture,Src,Dst,0,1,bIsDepth);
                 }
             }
 

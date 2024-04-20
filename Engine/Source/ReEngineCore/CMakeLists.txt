@@ -44,6 +44,7 @@ target_link_libraries(ReEngineCore PUBLIC Glad)
 target_link_libraries(ReEngineCore PUBLIC yaml-cpp)
 target_link_libraries(ReEngineCore PUBLIC headers)
 target_link_libraries(ReEngineCore PUBLIC enkiTS)
+target_link_libraries(ReEngineCore PUBLIC marl)
 
 target_link_libraries(ReEngineCore PRIVATE volk)
 target_link_libraries(ReEngineCore PUBLIC spirv-cross-glsl)

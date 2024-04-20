@@ -22,11 +22,11 @@ namespace ReEngine
         // app.PushLayer(CreateRef<MSAALayer>());
         // app.PushLayer(CreateRef<AnimationTextureLayer>());
         // app.PushLayer(CreateRef<AnimationLayer>());
-        // app.PushLayer(CreateRef<RTLayer>());
+        app.PushLayer(CreateRef<RTLayer>());
         // app.PushLayer(CreateRef<InputAttachment>());
         // app.PushLayer(CreateRef<SandBoxLayer>());
         // app.PushLayer(CreateRef<ComputeLayer>());
         
-        app.PushLayer(CreateRef<FrameGraphTemplateLayer>());
+        // app.PushLayer(CreateRef<FrameGraphTemplateLayer>());
     }
 }

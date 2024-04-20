@@ -97,6 +97,7 @@ Ref<VulkanTexture> VulkanTexture::CreateDepthStencil(int32 width, int32 height,s
     texture->Width = width;
     texture->Format = PixelFormatToVkFormat(DepthFormat, false);
     texture->NumSamples = NumSamples;
+    texture->IsUpload       = true;
 
     if(DepthFormat == PF_D24)
     {
@@ -241,6 +242,7 @@ Ref<VulkanTexture> VulkanTexture::Create2D(Ref<VulkanDevice> vulkanDevice,Ref<Vu
     Texture->MipLevels      = mipLevels;
     Texture->LayerCount     = 1;
     Texture->NumSamples     = sampleCount;
+    Texture->IsUpload       = false;
 
     return Texture;
 }
@@ -433,6 +435,7 @@ Ref<VulkanTexture> VulkanTexture::Create2D(const uint8* rgbaData,uint32 size,VkF
     texture->Width          = width;
     texture->MipLevels      = MipLevels;
     texture->LayerCount     = 1;
+    texture->IsUpload       = true;
 
     return texture;
 }
@@ -512,6 +515,7 @@ Ref<VulkanTexture> VulkanTexture::CreateFrameGraphAliasingTexture(Ref<VulkanDevi
     texture->MipLevels      = Mipmap;
     texture->LayerCount     = 1;
     texture->mVmaAllocation = 0;
+    texture->IsUpload       = true;
 
     return texture;
 }
@@ -603,6 +607,7 @@ Ref<VulkanTexture> VulkanTexture::CreateFrameGraphTexture(Ref<VulkanDevice> vulk
     texture->Width          = width;
     texture->MipLevels      = Mipmap;
     texture->LayerCount     = 1;
+    texture->IsUpload       = true;
 
     return texture;
 }

@@ -3,6 +3,8 @@
 #include <ColorFilter_frag.h>
 #include <DepthFilter_frag.h>
 #include <quad_vert.h>
+#include <marl/defer.h>
+
 #include "Mesh/Quad.h"
 #include "Platform/Vulkan/VulkanContext.h"
 
@@ -13,20 +15,15 @@ void FrameGraphTemplateLayer::OnCreateBackBuffer()
 
 void FrameGraphTemplateLayer::OnInit()
 {
+    VkContext->Instance->GetDevice()->mContext = VkContext;
     mTaskScheduler = Application::GetInstance().GetTaskSheduler();
     mIOThread = new PinnedThread(Application::GetInstance().GetTaskSheduler(),mTaskScheduler->GetNumTaskThreads() - 1);
-    mLoadTask = new AsyncLoaderMainTask(mIOThread);
-    mLoadTask->mAsyncLoader->RequestTexture("Hello World");
-
-    Application::GetInstance().GetTimerManager()->timeout([this]()
+    mLoadTask = new AsyncLoaderMainTask(mIOThread,VkContext->Instance->GetDevice());
+    mLoadTask->mAsyncLoader->RequestTexture("Assets/Mesh/Room/miniHouse_Part1.jpg",[this](FileLoadCallBackParamStruct Ready)
     {
-        mLoadTask->mAsyncLoader->RequestTexture("Hello World 3");
-    },std::chrono::seconds(3));
-
-    Application::GetInstance().GetTimerManager()->timeout([this]()
-    {
-        mLoadTask->mAsyncLoader->RequestTexture("Hello World 10");
-    },std::chrono::seconds(10));
+        RE_INFO("Call Back :Width:{0} Height:{1}",Ready.TextureHanle->Width,Ready.TextureHanle->Height);
+    });
+    
     
     m_RingBuffer = CreateRef<VulkanDynamicBufferRing>();
     m_RingBuffer->OnCreate(VkContext->Instance->GetDevice(),3,20 * 1024 * 1024);
@@ -75,6 +72,7 @@ void FrameGraphTemplateLayer::OnDeInit()
 
 void FrameGraphTemplateLayer::OnUpdate(Timestep ts)
 {
+    mLoadTask->Update_MainThread(ts);
     m_RingBuffer->OnBeginFrame();
     m_Camera->OnUpdate(ts);
 

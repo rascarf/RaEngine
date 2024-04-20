@@ -3,70 +3,6 @@
 #include "Platform/Vulkan/VulkanDevice.h"
 #include "Platform/Vulkan/VulkanBuffers/VulkanCommandBuffer.h"
 
-FORCE_INLINE void SetImageBarrierInfo(ImageLayoutBarrier source, ImageLayoutBarrier dest, VkImageMemoryBarrier& inOutBarrier, VkPipelineStageFlags& inOutSourceStage, VkPipelineStageFlags& inOutDestStage)
-{
-    inOutSourceStage |= GetImageBarrierFlags(source, inOutBarrier.srcAccessMask, inOutBarrier.oldLayout);
-    inOutDestStage   |= GetImageBarrierFlags(dest,   inOutBarrier.dstAccessMask, inOutBarrier.newLayout);
-}
-
-FORCE_INLINE void ImagePipelineBarrier(VkCommandBuffer CommandBuffer,VkImage Image,ImageLayoutBarrier Source,ImageLayoutBarrier Dest,const VkImageSubresourceRange& subresourceRange)
-{
-    VkImageMemoryBarrier ImageBarrier;
-    ZeroVulkanStruct(ImageBarrier, VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
-    ImageBarrier.image = Image;
-    ImageBarrier.subresourceRange    = subresourceRange;
-    ImageBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    ImageBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-
-    VkPipelineStageFlags sourceStages = (VkPipelineStageFlags)0;
-    VkPipelineStageFlags destStages   = (VkPipelineStageFlags)0;
-    
-    SetImageBarrierInfo(Source, Dest, ImageBarrier, sourceStages, destStages);
-
-    if (Source == ImageLayoutBarrier::Present)
-    {
-        sourceStages = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-    }
-    else if (Dest == ImageLayoutBarrier::Present)
-    {
-        destStages = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-    }
-
-    vkCmdPipelineBarrier(CommandBuffer, sourceStages, destStages, 0, 0, nullptr, 0, nullptr, 1, &ImageBarrier); 
-}
-
-FORCE_INLINE void ImagePipelineBarrier(VkCommandBuffer CommandBuffer,VkImage Image,ImageLayoutBarrier Source,ImageLayoutBarrier Dest,uint32 BaseMiplevel,uint32 MipCount,bool IsDepth)
-{
-    VkImageMemoryBarrier ImageBarrier;
-    ZeroVulkanStruct(ImageBarrier, VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
-
-    ImageBarrier.image = Image;
-    ImageBarrier.subresourceRange.aspectMask = IsDepth ? VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
-    ImageBarrier.subresourceRange.baseArrayLayer    = 0;
-    ImageBarrier.subresourceRange.layerCount    = 1;
-    ImageBarrier.subresourceRange.levelCount    = MipCount;
-    ImageBarrier.subresourceRange.baseMipLevel = BaseMiplevel;
-    
-    ImageBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    ImageBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-
-    VkPipelineStageFlags sourceStages = (VkPipelineStageFlags)0;
-    VkPipelineStageFlags destStages   = (VkPipelineStageFlags)0;
-    
-    SetImageBarrierInfo(Source, Dest, ImageBarrier, sourceStages, destStages);
-
-    if (Source == ImageLayoutBarrier::Present)
-    {
-        sourceStages = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-    }
-    else if (Dest == ImageLayoutBarrier::Present)
-    {
-        destStages = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-    }
-
-    vkCmdPipelineBarrier(CommandBuffer, sourceStages, destStages, 0, 0, nullptr, 0, nullptr, 1, &ImageBarrier); 
-}
-
 VK_DEFINE_HANDLE( VmaAllocator )
 VK_DEFINE_HANDLE( VmaAllocation )
 
@@ -188,6 +124,102 @@ public:
         VkImageUsageFlags usage,
         int32 Mipmap,
         VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT);
+
+    static void SetImageBarrierInfo(ImageLayoutBarrier source, ImageLayoutBarrier dest, VkImageMemoryBarrier& inOutBarrier, VkPipelineStageFlags& inOutSourceStage, VkPipelineStageFlags& inOutDestStage)
+    {
+        inOutSourceStage |= GetImageBarrierFlags(source, inOutBarrier.srcAccessMask, inOutBarrier.oldLayout);
+        inOutDestStage   |= GetImageBarrierFlags(dest,   inOutBarrier.dstAccessMask, inOutBarrier.newLayout);
+    }
+
+    static FORCE_INLINE void ImagePipelineBarrier(VkCommandBuffer CommandBuffer,Ref<VulkanTexture> Texture,ImageLayoutBarrier Source,ImageLayoutBarrier Dest,const VkImageSubresourceRange& subresourceRange,uint32_t SrcQueueFmily = VK_QUEUE_FAMILY_IGNORED,uint32_t DstQueueFamily = VK_QUEUE_FAMILY_IGNORED)
+    {
+        VkImageMemoryBarrier ImageBarrier;
+        ZeroVulkanStruct(ImageBarrier, VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
+        ImageBarrier.image = Texture->Image;
+        ImageBarrier.subresourceRange    = subresourceRange;
+        ImageBarrier.srcQueueFamilyIndex = SrcQueueFmily;
+        ImageBarrier.dstQueueFamilyIndex = DstQueueFamily;
+
+        VkPipelineStageFlags sourceStages = (VkPipelineStageFlags)0;
+        VkPipelineStageFlags destStages   = (VkPipelineStageFlags)0;
+        
+        SetImageBarrierInfo(Source, Dest, ImageBarrier, sourceStages, destStages);
+
+        if (Source == ImageLayoutBarrier::Present)
+        {
+            sourceStages = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+        }
+        else if (Dest == ImageLayoutBarrier::Present)
+        {
+            destStages = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+        }
+
+        vkCmdPipelineBarrier(CommandBuffer, sourceStages, destStages, 0, 0, nullptr, 0, nullptr, 1, &ImageBarrier);
+
+        Texture->DescriptorInfo.imageLayout = ImageBarrier.newLayout;
+        Texture->ImageLayout = ImageBarrier.newLayout;
+    }
+
+    static FORCE_INLINE void ImagePipelineBarrier(VkCommandBuffer CommandBuffer,VkImage Image,ImageLayoutBarrier Source,ImageLayoutBarrier Dest,const VkImageSubresourceRange& subresourceRange,uint32_t SrcQueueFmily = VK_QUEUE_FAMILY_IGNORED,uint32_t DstQueueFamily = VK_QUEUE_FAMILY_IGNORED)
+    {
+        VkImageMemoryBarrier ImageBarrier;
+        ZeroVulkanStruct(ImageBarrier, VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
+        ImageBarrier.image = Image;
+        ImageBarrier.subresourceRange    = subresourceRange;
+        ImageBarrier.srcQueueFamilyIndex = SrcQueueFmily;
+        ImageBarrier.dstQueueFamilyIndex = DstQueueFamily;
+
+        VkPipelineStageFlags sourceStages = (VkPipelineStageFlags)0;
+        VkPipelineStageFlags destStages   = (VkPipelineStageFlags)0;
+        
+        SetImageBarrierInfo(Source, Dest, ImageBarrier, sourceStages, destStages);
+
+        if (Source == ImageLayoutBarrier::Present)
+        {
+            sourceStages = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+        }
+        else if (Dest == ImageLayoutBarrier::Present)
+        {
+            destStages = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+        }
+
+        vkCmdPipelineBarrier(CommandBuffer, sourceStages, destStages, 0, 0, nullptr, 0, nullptr, 1, &ImageBarrier);
+    }
+
+    static FORCE_INLINE void ImagePipelineBarrier(VkCommandBuffer CommandBuffer,Ref<VulkanTexture> Texture,ImageLayoutBarrier Source,ImageLayoutBarrier Dest,uint32 BaseMiplevel,uint32 MipCount,bool IsDepth)
+    {
+        VkImageMemoryBarrier ImageBarrier;
+        ZeroVulkanStruct(ImageBarrier, VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
+
+        ImageBarrier.image = Texture->Image;
+        ImageBarrier.subresourceRange.aspectMask = IsDepth ? VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
+        ImageBarrier.subresourceRange.baseArrayLayer    = 0;
+        ImageBarrier.subresourceRange.layerCount    = 1;
+        ImageBarrier.subresourceRange.levelCount    = MipCount;
+        ImageBarrier.subresourceRange.baseMipLevel = BaseMiplevel;
+        
+        ImageBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        ImageBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+
+        VkPipelineStageFlags sourceStages = (VkPipelineStageFlags)0;
+        VkPipelineStageFlags destStages   = (VkPipelineStageFlags)0;
+        
+        SetImageBarrierInfo(Source, Dest, ImageBarrier, sourceStages, destStages);
+
+        if (Source == ImageLayoutBarrier::Present)
+        {
+            sourceStages = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+        }
+        else if (Dest == ImageLayoutBarrier::Present)
+        {
+            destStages = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+        }
+
+        vkCmdPipelineBarrier(CommandBuffer, sourceStages, destStages, 0, 0, nullptr, 0, nullptr, 1, &ImageBarrier);
+
+        Texture->ImageLayout = ImageBarrier.newLayout;
+        Texture->DescriptorInfo.imageLayout = ImageBarrier.newLayout;
+    }
     
 public:
     Ref<VulkanDevice> Device = nullptr;
@@ -215,4 +247,6 @@ public:
     int32 BindlessIndex;
 
     bool bIsDepth();
+
+    bool IsUpload = false;
 };

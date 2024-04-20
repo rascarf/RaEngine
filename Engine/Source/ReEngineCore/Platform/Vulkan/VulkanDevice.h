@@ -10,12 +10,19 @@
 #include <memory>
 #include <map>
 
-VK_DEFINE_HANDLE( VmaAllocator )
+namespace ReEngine
+{
+    class VulkanContext;
+}
+
+VK_DEFINE_HANDLE(VmaAllocator)
 class VulkanFenceManager;
 class VulkanDeviceMemoryManager;
 
+
 class VulkanDevice
 {
+    friend class ReEngine::VulkanContext;
 public:
     VulkanDevice(VkPhysicalDevice physicalDevice);
     
@@ -114,7 +121,6 @@ private:
     
 private:
     friend class VulkanInstance;
-    friend class VulkanContext;
 
 private:
     VkDevice                                m_Device;
@@ -138,5 +144,6 @@ private:
 	std::vector<const char*>				m_AppDeviceExtensions;
 
 public:
-    VmaAllocator                    vma_allocator;
+    VmaAllocator                            vma_allocator;
+    VulkanContext*                          mContext;
 };

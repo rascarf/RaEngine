@@ -51,12 +51,14 @@ namespace ReEngine
         void Pop_Back()
         {
             LockGuard(*mlock);
+            
             Data.pop_back();
         }
 
         ElementType& Back()
         {
             LockGuard(*mlock);
+            
             return Data.back();
         }
     };

@@ -2,7 +2,9 @@
 #include "GraphicalLayer.h"
 #include "Camera/EditorCamera.h"
 #include "Platform/Vulkan/VulkanMaterial.h"
+#include "Platform/Vulkan/Mesh/AsyncLoader.h"
 #include "Platform/Vulkan/Mesh/VulkanMesh.h"
+#include "Platform/Vulkan/Mesh/AsyncLoader.h"
 
 
 class RTLayer : public GraphicalLayer
@@ -49,4 +51,8 @@ private:
 
     Ref<EditorCamera>                               m_Camera = nullptr;        
     Ref<VulkanDynamicBufferRing>                    m_RingBuffer = nullptr;
+
+    class PinnedThread*                             mIOThread = nullptr;
+    AsyncLoaderMainTask*                            mLoadTask = nullptr;
+    enki::TaskScheduler*                            mTaskScheduler = nullptr;
 };

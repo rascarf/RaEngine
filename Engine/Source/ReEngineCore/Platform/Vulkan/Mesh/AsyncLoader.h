@@ -1,5 +1,6 @@
 #pragma once
 #include "FileLoadRequest.h"
+#include "Core/Timestep.h"
 #include "MultiThread/PinnedThread.h"
 #include "MultiThread/SimpleMultThreadVector.h"
 
@@ -11,28 +12,33 @@ namespace ReEngine
         AsyncLoader(){}
         ~AsyncLoader();
     
-        void Init(class AsyncLoaderMainTask* InMainTask);
-        void Update();
+        void Init(class AsyncLoaderMainTask* InMainTask,Ref<VulkanDevice> InDevice);
+        void Update_IOThread();
+        void Update_MainThread();
         void ShutDown();
 
-        void RequestTexture(std::string path);
-        void RequestBufferUpload();
-        void RequestBufferCopy();
+        void RequestTexture(std::string path,FileLoadCallBack CallBack);
+        void RequestBufferUpload(void* Data);
+        void RequestBufferCopy(Ref<VulkanBuffer> Src,Ref<VulkanBuffer> Dst);
 
-        class AsyncLoaderMainTask*        OwnerTask = nullptr;
+        class AsyncLoaderMainTask*                 OwnerTask = nullptr;
         SimpleMultThreadVector<FileLoadRequest>    FileLoadRequests;
         SimpleMultThreadVector<UploadRequest>      UploadRequests;
+        SimpleMultThreadVector<FileReadyRequest>   ReadyUploadRequests;
+        
+        Ref<VulkanBuffer>                          StagingBuffer = nullptr;
+        std::atomic_size_t                         StagingBufferOffset;
 
-        Ref<VulkanBuffer>               StagingBuffer;
-        std::atomic_size_t              StagingBufferOffset;
+        Ref<VulkanBuffer>                          CPUBufferReady = nullptr;
+        Ref<VulkanBuffer>                          GPUBufferReady = nullptr;
+        Ref<VulkanTexture>                         TextureReady = nullptr;
 
-        Ref<VulkanBuffer>               CPUBufferReady;
-        Ref<VulkanBuffer>               GPUBufferReady;
+        std::vector<VkCommandPool>                 CommandPools;
+        std::vector<Ref<NewVulkanCommandBuffer>>   CommandBuffer;
+        VkSemaphore                                TransferCompleteSemaphore;
+        VkFence                                    TransFence;
 
-        VkCommandPool                   CommandPools[RE_BUFFERCOUNT];
-        VkCommandBuffer                 CommandBuffer[RE_BUFFERCOUNT];
-        VkSemaphore                     TransferCompleteSemaphore;
-        VkFence                     TransFence;
+        Ref<VulkanDevice>                          mDevice;
     };
 
 
@@ -41,22 +47,27 @@ namespace ReEngine
     {
     public:
 
-        AsyncLoaderMainTask(PinnedThread* InRunThread):
+        AsyncLoaderMainTask(PinnedThread* InRunThread,Ref<VulkanDevice> InDevice):
         PinnedThreadTask(InRunThread)
         {
             mTaskScheduler = InRunThread->PinnedThreadLoopTask->mTaskScheduler;
             
             mAsyncLoader = CreateRef<AsyncLoader>();
-            mAsyncLoader->Init(this);
+            mAsyncLoader->Init(this,InDevice);
             
             InRunThread->AddTaskToThread(this);
+        }
+
+        virtual void Update_MainThread(Timestep ts)
+        {
+            mAsyncLoader->Update_MainThread();
         }
     
         virtual void Execute() override
         {
             while(Run)
             {
-                mAsyncLoader->Update();
+                mAsyncLoader->Update_IOThread();
             }
         }
 

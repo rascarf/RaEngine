@@ -72,7 +72,7 @@ void VulkanDevice::CreateDevice()
 	 }
 	
 	VkPhysicalDeviceVulkan12Features deviceVulkan12Features  = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES };
-	deviceVulkan12Features.pNext = &deviceFeatures2;
+	deviceVulkan12Features.pNext = nullptr;
 	deviceVulkan12Features.descriptorIndexing = VK_TRUE;
 	deviceVulkan12Features.bufferDeviceAddress = VK_TRUE;//
 	deviceVulkan12Features.bufferDeviceAddressCaptureReplay = VK_TRUE;
@@ -101,7 +101,6 @@ void VulkanDevice::CreateDevice()
 	deviceInfo.enabledLayerCount       = uint32_t(validationLayers.size());
 	deviceInfo.ppEnabledLayerNames     = validationLayers.data();
 	deviceInfo.pNext = &deviceVulkan12Features;
-	
 	deviceInfo.pEnabledFeatures = nullptr;
 	
     RE_CORE_INFO("Found {0} Queue Families", (int32)m_QueueFamilyProps.size());

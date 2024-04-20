@@ -192,7 +192,7 @@ void VulkanRenderTarget::BeginRenderPass(VkCommandBuffer CmdBuffer)
             subResRange.levelCount     = 1;
             subResRange.layerCount     = texture->Depth;
             subResRange.baseArrayLayer = 0;
-            ImagePipelineBarrier(CmdBuffer, image, ImageLayoutBarrier::Undefined, ImageLayoutBarrier::ColorAttachment, subResRange);
+            VulkanTexture::ImagePipelineBarrier(CmdBuffer, texture, ImageLayoutBarrier::Undefined, ImageLayoutBarrier::ColorAttachment, subResRange);
     }
 
     if (RenderPassInfo.DepthStencilRenderTarget.DepthStencilTarget)
@@ -206,7 +206,7 @@ void VulkanRenderTarget::BeginRenderPass(VkCommandBuffer CmdBuffer)
         subResRange.levelCount     = 1;
         subResRange.layerCount     = RenderPassInfo.DepthStencilRenderTarget.DepthStencilTarget->Depth;
         subResRange.baseArrayLayer = 0;
-        ImagePipelineBarrier(CmdBuffer, image, ImageLayoutBarrier::Undefined, ImageLayoutBarrier::DepthStencilAttachment, subResRange);
+        VulkanTexture::ImagePipelineBarrier(CmdBuffer, texture, ImageLayoutBarrier::Undefined, ImageLayoutBarrier::DepthStencilAttachment, subResRange);
     }
 
     VkViewport viewport = {};
@@ -253,7 +253,7 @@ void VulkanRenderTarget::EndRenderPass(VkCommandBuffer CmdBuffer)
         subResRange.levelCount     = 1;
         subResRange.layerCount     = texture->Depth;
         subResRange.baseArrayLayer = 0;
-        ImagePipelineBarrier(CmdBuffer, image, ImageLayoutBarrier::ColorAttachment, colorLayout, subResRange);
+        VulkanTexture::ImagePipelineBarrier(CmdBuffer, texture, ImageLayoutBarrier::ColorAttachment, colorLayout, subResRange);
     }
 
     if (RenderPassInfo.DepthStencilRenderTarget.DepthStencilTarget)
@@ -272,7 +272,7 @@ void VulkanRenderTarget::EndRenderPass(VkCommandBuffer CmdBuffer)
         subResRange.levelCount     = 1;
         subResRange.layerCount     = RenderPassInfo.DepthStencilRenderTarget.DepthStencilTarget->Depth;
         subResRange.baseArrayLayer = 0;
-        ImagePipelineBarrier(CmdBuffer, image, ImageLayoutBarrier::DepthStencilAttachment, depthLayout, subResRange);
+        VulkanTexture::ImagePipelineBarrier(CmdBuffer, texture, ImageLayoutBarrier::DepthStencilAttachment, depthLayout, subResRange);
     }
 }
 

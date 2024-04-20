@@ -16,15 +16,24 @@ void RTLayer::OnCreateBackBuffer()
 
 void RTLayer::OnInit()
 {
+    VkContext->Instance->GetDevice()->mContext = VkContext;
+    mTaskScheduler = Application::GetInstance().GetTaskSheduler();
+    mIOThread = new PinnedThread(Application::GetInstance().GetTaskSheduler(),mTaskScheduler->GetNumTaskThreads() - 1);
+    mLoadTask = new AsyncLoaderMainTask(mIOThread,VkContext->Instance->GetDevice());
+    
     CreateRenderTarget();
     LoadAsset();
 }
 
 void RTLayer::OnDeInit()
 {
-    m_Camera.reset();        
- 
-
+    mLoadTask->ShutDown();
+    
+    delete mLoadTask;
+    delete mIOThread;
+    
+    m_Camera.reset();
+    
     SceneModel.reset();
     mQuad.reset();
 
@@ -56,6 +65,8 @@ void RTLayer::OnDeInit()
 
 void RTLayer::OnUpdate(Timestep ts)
 {
+    mLoadTask->Update_MainThread(ts);
+    
     m_RingBuffer->OnBeginFrame();
     m_Camera->OnUpdate(ts);
     
@@ -95,7 +106,14 @@ void RTLayer::OnRender()
         vkCmdBindPipeline(VkContext->GetCommandList(),VK_PIPELINE_BIND_POINT_GRAPHICS,SceneMaterial->mPipeline->Pipeline);
         for(int32 i = 0; i < RenderObject.size(); i++)
         {
-            SceneMaterial->SetTexture("DiffuseMap",TextureArray[i]);
+            if(TextureArray.size() > i + 1)
+            {
+                if(TextureArray[i])
+                {
+                    SceneMaterial->SetTexture("DiffuseMap",TextureArray[i]);
+                }
+            }
+            
             for(auto& Mesh : RenderObject[i])
             {
                 m_MVPData.model = Mesh->LinkNode.lock()->GetGlobalMatrix();
@@ -238,11 +256,20 @@ void RTLayer::LoadAsset()
     TextureArray.resize(diffusePaths.size());
     for(int32 index = 0 ; index < diffusePaths.size();index++)
     {
-        TextureArray[index] = VulkanTexture::Create2D(
-            diffusePaths[index],
-            device,
-            cmdBuffer
-        );
+        // TextureArray[index] = VulkanTexture::Create2D(
+        //     diffusePaths[index],
+        //     device,
+        //     cmdBuffer
+        // );
+
+        Application::GetInstance().GetTimerManager()->timeout([this,diffusePaths,index]
+        {
+            mLoadTask->mAsyncLoader->RequestTexture(diffusePaths[index],[index,this](FileLoadCallBackParamStruct Ready)
+            {
+                TextureArray[index] = Ready.TextureHanle;
+                RE_INFO("Index:{3} {0} :Width:{1} Height:{2}",Ready.FilePath,Ready.TextureHanle->Width,Ready.TextureHanle->Height,index);
+            });
+        },std::chrono::seconds(index * 10 + 5));
     }
 
     RenderObject.resize(diffusePaths.size());
