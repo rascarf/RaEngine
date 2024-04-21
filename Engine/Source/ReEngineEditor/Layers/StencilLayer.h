@@ -36,6 +36,7 @@ private:
     Ref<VulkanModel> SceneModel;
     Ref<VulkanShader> SceneShader;
     Ref<VulkanMaterial> SceneMaterial;
+    
     std::vector<Ref<VulkanTexture>> TextureArray;
 
     std::vector<std::vector<Ref<VulkanMesh>>> RenderObject;

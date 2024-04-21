@@ -93,30 +93,32 @@ void RTLayer::OnRender()
     scissor.extent.height = FrameBuffer->m_Height;
     scissor.offset.x      = 0;
     scissor.offset.y      = 0;
-
-    // const auto ViewBufferView = m_RingBuffer->AllocConstantBuffer(sizeof(ViewProjectionBlock),&m_VPData);
+    
     {
-        RenderTarget->BeginRenderPass(VkContext->GetCommandList());
+        std::vector<std::string> diffusePaths =  {
+            "Assets/Mesh/Room/miniHouse_Part1.jpg",
+            "Assets/Mesh/Room/miniHouse_Part2.jpg",
+            "Assets/Mesh/Room/miniHouse_Part3.jpg",
+            "Assets/Mesh/Room/miniHouse_Part4.jpg"
+        };
         
+        for(int32 i = 0; i < RenderObject.size(); i++)
+        {
+            if(TextureArray[i])
+                SceneMaterial->SetTexture("DiffuseMap",TextureArray[i],diffusePaths[i]);
+        }
+        
+        RenderTarget->BeginRenderPass(VkContext->GetCommandList());
+
         vkCmdBindPipeline(VkContext->GetCommandList(),VK_PIPELINE_BIND_POINT_GRAPHICS,SceneMaterial->mPipeline->Pipeline);
         for(int32 i = 0; i < RenderObject.size(); i++)
         {
-            if(TextureArray.size() > i + 1)
-            {
-                if(TextureArray[i])
-                {
-                    SceneMaterial->SetTexture("DiffuseMap",TextureArray[i]);
-                }
-            }
-            
             for(auto& Mesh : RenderObject[i])
             {
                 m_MVPData.model = Mesh->LinkNode.lock()->GetGlobalMatrix();
                 
-
-                // SceneMaterial->SetLocalUniform("uboViewProj",ViewBufferView);
                 SceneMaterial->SetLocalUniform("uboMVP",&m_MVPData,sizeof(ModelViewProjectionBlock));
-                SceneMaterial->BindDescriptorSets(VkContext->GetCommandList(),VK_PIPELINE_BIND_POINT_GRAPHICS);
+                SceneMaterial->BindDescriptorSets(VkContext->GetCommandList(),VK_PIPELINE_BIND_POINT_GRAPHICS,diffusePaths[i]);
 
                 Mesh->BindDraw(VkContext->GetCommandList());
             }
@@ -216,6 +218,7 @@ void RTLayer::LoadAsset()
             SceneShader,
             m_RingBuffer
         );
+        
         SceneMaterial->PreparePipeline();
     }
 
@@ -241,30 +244,29 @@ void RTLayer::LoadAsset()
         SceneShader->perVertexAttributes
     );
 
-    std::vector<std::string> diffusePaths = {
+    std::vector<std::string> diffusePaths =  {
         "Assets/Mesh/Room/miniHouse_Part1.jpg",
         "Assets/Mesh/Room/miniHouse_Part2.jpg",
         "Assets/Mesh/Room/miniHouse_Part3.jpg",
         "Assets/Mesh/Room/miniHouse_Part4.jpg"
     };
-
+    
     TextureArray.resize(diffusePaths.size());
     for(int32 index = 0 ; index < diffusePaths.size();index++)
     {
+        SceneMaterial->Prepare(diffusePaths[index]);
+        
         // TextureArray[index] = VulkanTexture::Create2D(
         //     diffusePaths[index],
         //     device,
         //     cmdBuffer
         // );
-
-        Application::GetInstance().GetTimerManager()->timeout([this,diffusePaths,index]
+        
+        m_ASyncLoader->RequestTexture(diffusePaths[index],[index,this](FileLoadCallBackParamStruct Ready)
         {
-            m_ASyncLoader->RequestTexture(diffusePaths[index],[index,this](FileLoadCallBackParamStruct Ready)
-            {
-                TextureArray[index] = Ready.TextureHanle;
-                RE_INFO("Index:{3} {0} :Width:{1} Height:{2}",Ready.FilePath,Ready.TextureHanle->Width,Ready.TextureHanle->Height,index);
-            });
-        },std::chrono::seconds(index * 10 + 5));
+            TextureArray[index] = Ready.TextureHanle;
+            RE_INFO("Index:{3} {0} :Width:{1} Height:{2}",Ready.FilePath,Ready.TextureHanle->Width,Ready.TextureHanle->Height,index);
+        });
     }
 
     RenderObject.resize(diffusePaths.size());

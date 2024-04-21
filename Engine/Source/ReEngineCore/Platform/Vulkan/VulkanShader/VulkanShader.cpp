@@ -742,6 +742,7 @@ Ref<VulkanDescriptorSet> VulkanShader::AllocateDescriptorSet()
     }
 
     Ref<VulkanShaderDescriptorPool> setPool = CreateRef<VulkanShaderDescriptorPool>(device, 64, SetLayoutsInfo, descriptorSetLayouts);
+    RE_INFO("Create DescriptorPool");
 
     descriptorSetPools.push_back(setPool);
 

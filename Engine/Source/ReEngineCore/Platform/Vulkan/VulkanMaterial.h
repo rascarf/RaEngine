@@ -43,17 +43,22 @@ namespace ReEngine
         static Ref<VulkanMaterial> Create(Ref<VulkanDevice> vulkanDevice,Ref<VulkanRenderTarget>,VkPipelineCache PipelineCache,Ref<VulkanShader> Shader,Ref<VulkanDynamicBufferRing> RingBuffer);
 
         void PreparePipeline();
-        void Prepare();
-
-        void BindDescriptorSets(VkCommandBuffer commandBuffer,VkPipelineBindPoint bindPoint);
+        void Prepare(std::string MeshName);
         
         void SetLocalUniform(const std::string& name, void* dataPtr, uint32 size);
         void SetLocalUniform(const std::string& name,VkDescriptorBufferInfo BufferView);
         
         void SetTexture(const std::string& name,Ref<VulkanTexture> texture);
+        void SetTexture(const std::string& name,Ref<VulkanTexture> texture,std::string MeshName);
+        
         void SetInputAttachment(const std::string& name, Ref<VulkanTexture> texture);
-    
+        void SetInputAttachment(const std::string& name, Ref<VulkanTexture> texture,std::string MeshName);
+        
         void SetStorageBuffer(const std::string& name, Ref<VulkanBuffer> buffer);
+        void SetStorageBuffer(const std::string& name, Ref<VulkanBuffer> buffer,std::string MeshName);
+    
+        void BindDescriptorSets(VkCommandBuffer commandBuffer,VkPipelineBindPoint bindPoint);
+        void BindDescriptorSets(VkCommandBuffer commandBuffer,VkPipelineBindPoint bindPoint,std::string MeshName);
     public:
         VulkanMaterial();
 
@@ -66,7 +71,8 @@ namespace ReEngine
 
         VulkanPipelineInfo mPipelineInfo;
         Ref<VulkanPipeline> mPipeline;
-        Ref<VulkanDescriptorSet> DescriptorSet;
+        
+        std::unordered_map<std::string,Ref<VulkanDescriptorSet>> MeshDescriptorSet;
 
         uint32 DynamicOffsetCount;
         std::vector<uint32>     DynamicOffsets;

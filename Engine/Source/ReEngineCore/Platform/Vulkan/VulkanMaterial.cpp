@@ -3,7 +3,11 @@
 VulkanMaterial::~VulkanMaterial()
 {
     mShader.reset();
-    DescriptorSet.reset();
+
+    for(auto it : MeshDescriptorSet)
+    {
+        it.second.reset();
+    }
 
     textures.clear();
     uniformBuffers.clear();
@@ -27,7 +31,8 @@ Ref<VulkanMaterial> VulkanMaterial::Create(Ref<VulkanDevice> vulkanDevice, VkRen
     Material->mPipelineCache = PipelineCache;
     Material->RingBuffer = InRingBuffer;
 
-    Material->Prepare();
+    // 创建默认的
+    Material->Prepare("default");
 
     return Material;
 }
@@ -42,8 +47,9 @@ Ref<VulkanMaterial> VulkanMaterial::Create(Ref<VulkanDevice> vulkanDevice, Ref<V
     Material->mRenderPass    = RT->GetRenderPass();
     Material->mPipelineCache = PipelineCache;
     Material->RingBuffer     = InRingBuffer;
-    
-    Material->Prepare();
+
+    // 创建默认的
+    Material->Prepare("default");
 
     return Material;
 }
@@ -67,9 +73,9 @@ void VulkanMaterial::PreparePipeline()
         );
 }
 
-void VulkanMaterial::Prepare()
+void VulkanMaterial::Prepare(std::string MeshName)
 {
-    DescriptorSet = mShader->AllocateDescriptorSet();
+    Ref<VulkanDescriptorSet> DescriptorSet = mShader->AllocateDescriptorSet();
     for(auto it = mShader->bufferParams.begin(); it != mShader->bufferParams.end();++it)
     {
         VulkanSimulateBuffer UniformBuffer = {};
@@ -130,11 +136,18 @@ void VulkanMaterial::Prepare()
         texture.StageFlags      = it->second.StageFlags;
         textures.insert(std::make_pair(it->first, texture));
     }
-}
 
+    MeshDescriptorSet.try_emplace(MeshName,DescriptorSet);
+}
 
 void VulkanMaterial::BindDescriptorSets(VkCommandBuffer commandBuffer, VkPipelineBindPoint bindPoint)
 {
+    BindDescriptorSets(commandBuffer,bindPoint,"default");
+}
+
+void VulkanMaterial::BindDescriptorSets(VkCommandBuffer commandBuffer, VkPipelineBindPoint bindPoint,std::string MeshName)
+{
+    auto DescriptorSet = MeshDescriptorSet[MeshName];
     vkCmdBindDescriptorSets(
             commandBuffer,
             bindPoint,
@@ -149,42 +162,60 @@ void VulkanMaterial::BindDescriptorSets(VkCommandBuffer commandBuffer, VkPipelin
 
 void VulkanMaterial::SetTexture(const std::string& name, Ref<VulkanTexture> texture)
 {
+    SetTexture(name,texture,"default");
+}
+
+void VulkanMaterial::SetTexture(const std::string& name, Ref<VulkanTexture> texture, std::string MeshName)
+{
     auto it = textures.find(name);
     if(it == textures.end())
     {
-        RE_CORE_ERROR("Texture {0} not found. ",name);
+        RE_ERROR("Texture {0} not found. ",name);
         return;
     }
 
     if(texture == nullptr)
     {
-        RE_CORE_ERROR("Texture {0} can't be null. ",name);
+        RE_ERROR("Texture {0} can't be null. ",name);
     }
 
     if(it->second.Texture != texture)
     {
         it->second.Texture = texture;
+
+        auto DescriptorSet = MeshDescriptorSet[MeshName];
+        
         DescriptorSet->WriteImage(name,texture);
     }
 }
 
 void VulkanMaterial::SetInputAttachment(const std::string& name, Ref<VulkanTexture> texture)
 {
-    SetTexture(name,texture);
+    SetTexture(name,texture,"default");
+}
+
+void VulkanMaterial::SetInputAttachment(const std::string& name, Ref<VulkanTexture> texture, std::string MeshName)
+{
+    SetTexture(name,texture,MeshName);
 }
 
 void VulkanMaterial::SetStorageBuffer(const std::string& name, Ref<VulkanBuffer> buffer)
 {
+    SetStorageBuffer(name,buffer,"default");
+}
+
+void VulkanMaterial::SetStorageBuffer(const std::string& name, Ref<VulkanBuffer> buffer, std::string MeshName)
+{
     auto it = storageBuffers.find(name);
     if (it == storageBuffers.end())
     {
-        RE_CORE_ERROR("StorageBuffer {0} not found.", name.c_str());
+        RE_ERROR("StorageBuffer {0} not found.", name.c_str());
         return;
     }
 
     if (buffer == nullptr)
     {
-        RE_CORE_ERROR("StorageBuffer {0} can't be null.", name.c_str());
+        RE_ERROR("StorageBuffer {0} can't be null.", name.c_str());
         return;
     }
 
@@ -194,6 +225,8 @@ void VulkanMaterial::SetStorageBuffer(const std::string& name, Ref<VulkanBuffer>
         it->second.BufferInfo->buffer = buffer->Buffer;
         it->second.BufferInfo->offset = 0;
         it->second.BufferInfo->range  = buffer->Size;
+
+        auto DescriptorSet = MeshDescriptorSet[MeshName];
         DescriptorSet->WriteBuffer(name, buffer);
     }
 }
@@ -203,7 +236,7 @@ void VulkanMaterial::SetLocalUniform(const std::string& name, void* dataPtr, uin
     auto it = uniformBuffers.find(name);
     if(it == uniformBuffers.end())
     {
-        RE_CORE_ERROR("Uniform {0} not found.", name.c_str());
+        RE_ERROR("Uniform {0} not found.", name.c_str());
         return;
     }
 
@@ -221,7 +254,7 @@ void VulkanMaterial::SetLocalUniform(const std::string& name, VkDescriptorBuffer
     auto it = uniformBuffers.find(name);
     if(it == uniformBuffers.end())
     {
-        RE_CORE_ERROR("Uniform {0} not found.", name.c_str());
+        RE_ERROR("Uniform {0} not found.", name.c_str());
         return;
     }
 
@@ -331,7 +364,7 @@ void VulkanComputeMaterial::SetUniform(const std::string& name, void* dataPtr, u
     auto it = uniformBuffers.find(name);
     if(it == uniformBuffers.end())
     {
-        RE_CORE_ERROR("Uniform {0} not found.", name.c_str());
+        RE_ERROR("Uniform {0} not found.", name.c_str());
     }
 
     const auto BufferView =  RingBuffer->AllocConstantBuffer(it->second.DataSize,dataPtr);
@@ -348,7 +381,7 @@ void VulkanComputeMaterial::SetUniform(const std::string& name, VkDescriptorBuff
     auto it = uniformBuffers.find(name);
     if(it == uniformBuffers.end())
     {
-        RE_CORE_ERROR("Uniform {0} not found.", name.c_str());
+        RE_ERROR("Uniform {0} not found.", name.c_str());
     }
 
     // 获取Object的起始位置以及DynamicOffset的起始位置
@@ -363,13 +396,13 @@ void VulkanComputeMaterial::SetTexture(const std::string& name, Ref<VulkanTextur
     auto it = textures.find(name);
     if(it == textures.end())
     {
-        RE_CORE_ERROR("Texture {0} not found. ",name);
+        RE_ERROR("Texture {0} not found. ",name);
         return;
     }
 
     if(texture == nullptr)
     {
-        RE_CORE_ERROR("Texture {0} can't be null. ",name);
+        RE_ERROR("Texture {0} can't be null. ",name);
     }
 
     if(it->second.Texture != texture)
@@ -384,13 +417,13 @@ void VulkanComputeMaterial::SetStorageBuffer(const std::string& name, Ref<Vulkan
    auto it = storageBuffers.find(name);
     if(it == storageBuffers.end())
     {
-        RE_CORE_ERROR("storageBuffers {0} not found. ",name);
+        RE_ERROR("storageBuffers {0} not found. ",name);
         return;
     }
 
     if(buffer == nullptr)
     {
-        RE_CORE_ERROR("storageBuffers {0} can't be null. ",name);
+        RE_ERROR("storageBuffers {0} can't be null. ",name);
         return;
     }
 
