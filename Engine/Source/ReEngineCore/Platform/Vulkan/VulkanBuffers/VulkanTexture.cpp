@@ -612,6 +612,111 @@ Ref<VulkanTexture> VulkanTexture::CreateFrameGraphTexture(Ref<VulkanDevice> vulk
     return texture;
 }
 
+void VulkanTexture::ImagePipelineBarrier(VkCommandBuffer CommandBuffer, Ref<VulkanTexture> Texture,
+    ImageLayoutBarrier Source, ImageLayoutBarrier Dest, const VkImageSubresourceRange& subresourceRange,
+    uint32_t SrcQueueFmily, uint32_t DstQueueFamily)
+{
+    {
+        VkImageMemoryBarrier ImageBarrier;
+        ZeroVulkanStruct(ImageBarrier, VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
+        ImageBarrier.image = Texture->Image;
+        ImageBarrier.subresourceRange    = subresourceRange;
+        ImageBarrier.srcQueueFamilyIndex = SrcQueueFmily;
+        ImageBarrier.dstQueueFamilyIndex = DstQueueFamily;
+
+        VkPipelineStageFlags sourceStages = (VkPipelineStageFlags)0;
+        VkPipelineStageFlags destStages   = (VkPipelineStageFlags)0;
+        
+        SetImageBarrierInfo(Source, Dest, ImageBarrier, sourceStages, destStages);
+
+        if (Source == ImageLayoutBarrier::Present)
+        {
+            sourceStages = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+        }
+        else if (Dest == ImageLayoutBarrier::Present)
+        {
+            destStages = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+        }
+
+        vkCmdPipelineBarrier(CommandBuffer, sourceStages, destStages, 0, 0, nullptr, 0, nullptr, 1, &ImageBarrier);
+
+        Texture->DescriptorInfo.imageLayout = ImageBarrier.newLayout;
+        Texture->ImageLayout = ImageBarrier.newLayout;
+        Texture->OwnerQueueFamily = ImageBarrier.dstQueueFamilyIndex;
+        Texture->mImageLayoutBarrier = Dest;
+    }
+}
+
+void VulkanTexture::ImagePipelineBarrier(VkCommandBuffer CommandBuffer, VkImage Image, ImageLayoutBarrier Source,
+    ImageLayoutBarrier Dest, const VkImageSubresourceRange& subresourceRange, uint32_t SrcQueueFmily,
+    uint32_t DstQueueFamily)
+{
+    {
+        VkImageMemoryBarrier ImageBarrier;
+        ZeroVulkanStruct(ImageBarrier, VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
+        ImageBarrier.image = Image;
+        ImageBarrier.subresourceRange    = subresourceRange;
+        ImageBarrier.srcQueueFamilyIndex = SrcQueueFmily;
+        ImageBarrier.dstQueueFamilyIndex = DstQueueFamily;
+
+        VkPipelineStageFlags sourceStages = (VkPipelineStageFlags)0;
+        VkPipelineStageFlags destStages   = (VkPipelineStageFlags)0;
+        
+        SetImageBarrierInfo(Source, Dest, ImageBarrier, sourceStages, destStages);
+
+        if (Source == ImageLayoutBarrier::Present)
+        {
+            sourceStages = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+        }
+        else if (Dest == ImageLayoutBarrier::Present)
+        {
+            destStages = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+        }
+
+        vkCmdPipelineBarrier(CommandBuffer, sourceStages, destStages, 0, 0, nullptr, 0, nullptr, 1, &ImageBarrier);
+    }
+}
+
+void VulkanTexture::ImagePipelineBarrier(VkCommandBuffer CommandBuffer, Ref<VulkanTexture> Texture,
+    ImageLayoutBarrier Source, ImageLayoutBarrier Dest, uint32 BaseMiplevel, uint32 MipCount, bool IsDepth,
+    uint32_t SrcQueueFmily ,uint32_t DstQueueFamily )
+{
+    VkImageMemoryBarrier ImageBarrier;
+    ZeroVulkanStruct(ImageBarrier, VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
+
+    ImageBarrier.image = Texture->Image;
+    ImageBarrier.subresourceRange.aspectMask = IsDepth ? VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
+    ImageBarrier.subresourceRange.baseArrayLayer    = 0;
+    ImageBarrier.subresourceRange.layerCount    = 1;
+    ImageBarrier.subresourceRange.levelCount    = MipCount;
+    ImageBarrier.subresourceRange.baseMipLevel = BaseMiplevel;
+        
+    ImageBarrier.srcQueueFamilyIndex = SrcQueueFmily;
+    ImageBarrier.dstQueueFamilyIndex = DstQueueFamily;
+
+    VkPipelineStageFlags sourceStages = (VkPipelineStageFlags)0;
+    VkPipelineStageFlags destStages   = (VkPipelineStageFlags)0;
+        
+    SetImageBarrierInfo(Source, Dest, ImageBarrier, sourceStages, destStages);
+
+    if (Source == ImageLayoutBarrier::Present)
+    {
+        sourceStages = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+    }
+    else if (Dest == ImageLayoutBarrier::Present)
+    {
+        destStages = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+    }
+
+    vkCmdPipelineBarrier(CommandBuffer, sourceStages, destStages, 0, 0, nullptr, 0, nullptr, 1, &ImageBarrier);
+
+    Texture->ImageLayout = ImageBarrier.newLayout;
+    Texture->DescriptorInfo.imageLayout = ImageBarrier.newLayout;
+    Texture->OwnerQueueFamily = ImageBarrier.dstQueueFamilyIndex;
+    Texture->mImageLayoutBarrier = Dest;
+}
+
+
 bool VulkanTexture::bIsDepth()
 {
     return Format >= VK_FORMAT_D16_UNORM && Format <= VK_FORMAT_D32_SFLOAT_S8_UINT; 

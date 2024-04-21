@@ -12,7 +12,7 @@ namespace ReEngine
         AsyncLoader(){}
         ~AsyncLoader();
     
-        void Init(class AsyncLoaderMainTask* InMainTask,Ref<VulkanDevice> InDevice);
+        void Init(Ref<VulkanDevice> InDevice);
         void Update_IOThread();
         void Update_MainThread();
         void ShutDown();
@@ -20,8 +20,7 @@ namespace ReEngine
         void RequestTexture(std::string path,FileLoadCallBack CallBack);
         void RequestBufferUpload(void* Data);
         void RequestBufferCopy(Ref<VulkanBuffer> Src,Ref<VulkanBuffer> Dst);
-
-        class AsyncLoaderMainTask*                 OwnerTask = nullptr;
+        
         SimpleMultThreadVector<FileLoadRequest>    FileLoadRequests;
         SimpleMultThreadVector<UploadRequest>      UploadRequests;
         SimpleMultThreadVector<FileReadyRequest>   ReadyUploadRequests;
@@ -38,6 +37,9 @@ namespace ReEngine
         VkSemaphore                                TransferCompleteSemaphore;
         VkFence                                    TransFence;
 
+        class PinnedThread*                        mIOThread = nullptr;
+        class AsyncLoaderMainTask*                 mLoadTask = nullptr;
+        enki::TaskScheduler*                       mTaskScheduler = nullptr;
         Ref<VulkanDevice>                          mDevice;
     };
 
@@ -51,25 +53,10 @@ namespace ReEngine
         PinnedThreadTask(InRunThread)
         {
             mTaskScheduler = InRunThread->PinnedThreadLoopTask->mTaskScheduler;
-            
-            mAsyncLoader = CreateRef<AsyncLoader>();
-            mAsyncLoader->Init(this,InDevice);
-            
             InRunThread->AddTaskToThread(this);
         }
-
-        virtual void Update_MainThread(Timestep ts)
-        {
-            mAsyncLoader->Update_MainThread();
-        }
     
-        virtual void Execute() override
-        {
-            while(Run)
-            {
-                mAsyncLoader->Update_IOThread();
-            }
-        }
+        virtual void Execute() override;
 
         virtual void ShutDown()
         {
@@ -77,16 +64,11 @@ namespace ReEngine
             
             mTaskScheduler->WaitforTaskSet(this);
             RE_INFO("AsyncLoaderMainTask ShutDown");
-
-            mAsyncLoader.reset();
         }
 
-        virtual ~AsyncLoaderMainTask()
-        {
-            
-        }
-        
-        Ref<AsyncLoader>                mAsyncLoader = nullptr;
+        virtual ~AsyncLoaderMainTask(){}
+
+        AsyncLoader*                    mAsyncLoader = nullptr;
         enki::TaskScheduler*            mTaskScheduler = nullptr;
         std::atomic<bool>               Run = true;
     };

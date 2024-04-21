@@ -10,19 +10,7 @@ class VulkanTexture
 {
 public:
     VulkanTexture(){}
-
-
     ~VulkanTexture();
-
-
-    void UpdateSampler(
-        VkFilter magFilter = VK_FILTER_LINEAR, 
-        VkFilter minFilter = VK_FILTER_LINEAR,
-        VkSamplerMipmapMode mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR,
-        VkSamplerAddressMode addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT, 
-        VkSamplerAddressMode addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT, 
-        VkSamplerAddressMode addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT
-        );
     
     // static Ref<VulkanTexture> Create2DArray(const std::vector<std::string> filenames, std::shared_ptr<VulkanDevice> vulkanDevice, Ref<VulkanCommandBuffer> cmdBuffer);
     // static Ref<VulkanTexture> Create3D(VkFormat format, const uint8* rgbaData, int32 size, int32 width, int32 height, int32 depth, std::shared_ptr<VulkanDevice> vulkanDevice, Ref<VulkanCommandBuffer> cmdBuffer);
@@ -124,102 +112,27 @@ public:
         VkImageUsageFlags usage,
         int32 Mipmap,
         VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT);
-
+public:
+    bool bIsDepth();
+    void UpdateSampler(
+        VkFilter magFilter = VK_FILTER_LINEAR, 
+        VkFilter minFilter = VK_FILTER_LINEAR,
+        VkSamplerMipmapMode mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR,
+        VkSamplerAddressMode addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT, 
+        VkSamplerAddressMode addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT, 
+        VkSamplerAddressMode addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT
+    );
+public:
+    //*************************** Util *************************************************//
     static void SetImageBarrierInfo(ImageLayoutBarrier source, ImageLayoutBarrier dest, VkImageMemoryBarrier& inOutBarrier, VkPipelineStageFlags& inOutSourceStage, VkPipelineStageFlags& inOutDestStage)
     {
         inOutSourceStage |= GetImageBarrierFlags(source, inOutBarrier.srcAccessMask, inOutBarrier.oldLayout);
         inOutDestStage   |= GetImageBarrierFlags(dest,   inOutBarrier.dstAccessMask, inOutBarrier.newLayout);
     }
 
-    static FORCE_INLINE void ImagePipelineBarrier(VkCommandBuffer CommandBuffer,Ref<VulkanTexture> Texture,ImageLayoutBarrier Source,ImageLayoutBarrier Dest,const VkImageSubresourceRange& subresourceRange,uint32_t SrcQueueFmily = VK_QUEUE_FAMILY_IGNORED,uint32_t DstQueueFamily = VK_QUEUE_FAMILY_IGNORED)
-    {
-        VkImageMemoryBarrier ImageBarrier;
-        ZeroVulkanStruct(ImageBarrier, VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
-        ImageBarrier.image = Texture->Image;
-        ImageBarrier.subresourceRange    = subresourceRange;
-        ImageBarrier.srcQueueFamilyIndex = SrcQueueFmily;
-        ImageBarrier.dstQueueFamilyIndex = DstQueueFamily;
-
-        VkPipelineStageFlags sourceStages = (VkPipelineStageFlags)0;
-        VkPipelineStageFlags destStages   = (VkPipelineStageFlags)0;
-        
-        SetImageBarrierInfo(Source, Dest, ImageBarrier, sourceStages, destStages);
-
-        if (Source == ImageLayoutBarrier::Present)
-        {
-            sourceStages = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-        }
-        else if (Dest == ImageLayoutBarrier::Present)
-        {
-            destStages = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-        }
-
-        vkCmdPipelineBarrier(CommandBuffer, sourceStages, destStages, 0, 0, nullptr, 0, nullptr, 1, &ImageBarrier);
-
-        Texture->DescriptorInfo.imageLayout = ImageBarrier.newLayout;
-        Texture->ImageLayout = ImageBarrier.newLayout;
-    }
-
-    static FORCE_INLINE void ImagePipelineBarrier(VkCommandBuffer CommandBuffer,VkImage Image,ImageLayoutBarrier Source,ImageLayoutBarrier Dest,const VkImageSubresourceRange& subresourceRange,uint32_t SrcQueueFmily = VK_QUEUE_FAMILY_IGNORED,uint32_t DstQueueFamily = VK_QUEUE_FAMILY_IGNORED)
-    {
-        VkImageMemoryBarrier ImageBarrier;
-        ZeroVulkanStruct(ImageBarrier, VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
-        ImageBarrier.image = Image;
-        ImageBarrier.subresourceRange    = subresourceRange;
-        ImageBarrier.srcQueueFamilyIndex = SrcQueueFmily;
-        ImageBarrier.dstQueueFamilyIndex = DstQueueFamily;
-
-        VkPipelineStageFlags sourceStages = (VkPipelineStageFlags)0;
-        VkPipelineStageFlags destStages   = (VkPipelineStageFlags)0;
-        
-        SetImageBarrierInfo(Source, Dest, ImageBarrier, sourceStages, destStages);
-
-        if (Source == ImageLayoutBarrier::Present)
-        {
-            sourceStages = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-        }
-        else if (Dest == ImageLayoutBarrier::Present)
-        {
-            destStages = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-        }
-
-        vkCmdPipelineBarrier(CommandBuffer, sourceStages, destStages, 0, 0, nullptr, 0, nullptr, 1, &ImageBarrier);
-    }
-
-    static FORCE_INLINE void ImagePipelineBarrier(VkCommandBuffer CommandBuffer,Ref<VulkanTexture> Texture,ImageLayoutBarrier Source,ImageLayoutBarrier Dest,uint32 BaseMiplevel,uint32 MipCount,bool IsDepth)
-    {
-        VkImageMemoryBarrier ImageBarrier;
-        ZeroVulkanStruct(ImageBarrier, VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
-
-        ImageBarrier.image = Texture->Image;
-        ImageBarrier.subresourceRange.aspectMask = IsDepth ? VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
-        ImageBarrier.subresourceRange.baseArrayLayer    = 0;
-        ImageBarrier.subresourceRange.layerCount    = 1;
-        ImageBarrier.subresourceRange.levelCount    = MipCount;
-        ImageBarrier.subresourceRange.baseMipLevel = BaseMiplevel;
-        
-        ImageBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        ImageBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-
-        VkPipelineStageFlags sourceStages = (VkPipelineStageFlags)0;
-        VkPipelineStageFlags destStages   = (VkPipelineStageFlags)0;
-        
-        SetImageBarrierInfo(Source, Dest, ImageBarrier, sourceStages, destStages);
-
-        if (Source == ImageLayoutBarrier::Present)
-        {
-            sourceStages = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-        }
-        else if (Dest == ImageLayoutBarrier::Present)
-        {
-            destStages = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-        }
-
-        vkCmdPipelineBarrier(CommandBuffer, sourceStages, destStages, 0, 0, nullptr, 0, nullptr, 1, &ImageBarrier);
-
-        Texture->ImageLayout = ImageBarrier.newLayout;
-        Texture->DescriptorInfo.imageLayout = ImageBarrier.newLayout;
-    }
+    static void ImagePipelineBarrier(VkCommandBuffer CommandBuffer,Ref<VulkanTexture> Texture,ImageLayoutBarrier Source,ImageLayoutBarrier Dest,const VkImageSubresourceRange& subresourceRange,uint32_t SrcQueueFmily = VK_QUEUE_FAMILY_IGNORED,uint32_t DstQueueFamily = VK_QUEUE_FAMILY_IGNORED);
+    static void ImagePipelineBarrier(VkCommandBuffer CommandBuffer,Ref<VulkanTexture> Texture,ImageLayoutBarrier Source,ImageLayoutBarrier Dest,uint32 BaseMiplevel,uint32 MipCount,bool IsDepth,uint32_t SrcQueueFmily = VK_QUEUE_FAMILY_IGNORED,uint32_t DstQueueFamily = VK_QUEUE_FAMILY_IGNORED);
+    static void ImagePipelineBarrier(VkCommandBuffer CommandBuffer,VkImage Image,ImageLayoutBarrier Source,ImageLayoutBarrier Dest,const VkImageSubresourceRange& subresourceRange,uint32_t SrcQueueFmily = VK_QUEUE_FAMILY_IGNORED,uint32_t DstQueueFamily = VK_QUEUE_FAMILY_IGNORED);
     
 public:
     Ref<VulkanDevice> Device = nullptr;
@@ -229,24 +142,23 @@ public:
     
     VkImageView ImageView = VK_NULL_HANDLE;
     VkImageLayout ImageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    
     VkSampler ImageSampler = VK_NULL_HANDLE;
     VkDescriptorImageInfo DescriptorInfo;
-
+    
+    ImageLayoutBarrier mImageLayoutBarrier = ImageLayoutBarrier::Undefined;
+    VkFormat Format = VK_FORMAT_R8G8B8A8_UNORM;
+    VkSampleCountFlagBits NumSamples = VK_SAMPLE_COUNT_1_BIT;
+    uint32_t OwnerQueueFamily = VK_QUEUE_FAMILY_IGNORED;
+    
     int32 Width = 0;
     int32 Height = 0;
     int32 Depth = 1;
     int32 MipLevels = 0;
-
-    bool IsCubeMap = false;
     int32 LayerCount = 1;
-    VkFormat Format = VK_FORMAT_R8G8B8A8_UNORM;
-    VkSampleCountFlagBits NumSamples = VK_SAMPLE_COUNT_1_BIT;
+    int32 BindlessIndex = -1;     // 标识此Texture在全局Texture中的序号
+    
     bool bOnlyDepth = false; // 是否是DepthOnly的，区分DepthStencil
-
-    // 标识此Texture在全局Texture中的序号
-    int32 BindlessIndex;
-
-    bool bIsDepth();
-
     bool IsUpload = false;
+    bool IsCubeMap = false;
 };

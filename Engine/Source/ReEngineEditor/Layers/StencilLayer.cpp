@@ -17,9 +17,8 @@ void RTLayer::OnCreateBackBuffer()
 void RTLayer::OnInit()
 {
     VkContext->Instance->GetDevice()->mContext = VkContext;
-    mTaskScheduler = Application::GetInstance().GetTaskSheduler();
-    mIOThread = new PinnedThread(Application::GetInstance().GetTaskSheduler(),mTaskScheduler->GetNumTaskThreads() - 1);
-    mLoadTask = new AsyncLoaderMainTask(mIOThread,VkContext->Instance->GetDevice());
+    m_ASyncLoader = CreateRef<AsyncLoader>();
+    m_ASyncLoader->Init( VkContext->Instance->GetDevice());
     
     CreateRenderTarget();
     LoadAsset();
@@ -27,11 +26,7 @@ void RTLayer::OnInit()
 
 void RTLayer::OnDeInit()
 {
-    mLoadTask->ShutDown();
-    
-    delete mLoadTask;
-    delete mIOThread;
-    
+    m_ASyncLoader->ShutDown();
     m_Camera.reset();
     
     SceneModel.reset();
@@ -65,7 +60,7 @@ void RTLayer::OnDeInit()
 
 void RTLayer::OnUpdate(Timestep ts)
 {
-    mLoadTask->Update_MainThread(ts);
+    m_ASyncLoader->Update_MainThread();
     
     m_RingBuffer->OnBeginFrame();
     m_Camera->OnUpdate(ts);
@@ -264,7 +259,7 @@ void RTLayer::LoadAsset()
 
         Application::GetInstance().GetTimerManager()->timeout([this,diffusePaths,index]
         {
-            mLoadTask->mAsyncLoader->RequestTexture(diffusePaths[index],[index,this](FileLoadCallBackParamStruct Ready)
+            m_ASyncLoader->RequestTexture(diffusePaths[index],[index,this](FileLoadCallBackParamStruct Ready)
             {
                 TextureArray[index] = Ready.TextureHanle;
                 RE_INFO("Index:{3} {0} :Width:{1} Height:{2}",Ready.FilePath,Ready.TextureHanle->Width,Ready.TextureHanle->Height,index);

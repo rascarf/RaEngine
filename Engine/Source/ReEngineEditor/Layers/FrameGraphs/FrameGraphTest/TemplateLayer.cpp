@@ -16,14 +16,6 @@ void FrameGraphTemplateLayer::OnCreateBackBuffer()
 void FrameGraphTemplateLayer::OnInit()
 {
     VkContext->Instance->GetDevice()->mContext = VkContext;
-    mTaskScheduler = Application::GetInstance().GetTaskSheduler();
-    mIOThread = new PinnedThread(Application::GetInstance().GetTaskSheduler(),mTaskScheduler->GetNumTaskThreads() - 1);
-    mLoadTask = new AsyncLoaderMainTask(mIOThread,VkContext->Instance->GetDevice());
-    mLoadTask->mAsyncLoader->RequestTexture("Assets/Mesh/Room/miniHouse_Part1.jpg",[this](FileLoadCallBackParamStruct Ready)
-    {
-        RE_INFO("Call Back :Width:{0} Height:{1}",Ready.TextureHanle->Width,Ready.TextureHanle->Height);
-    });
-    
     
     m_RingBuffer = CreateRef<VulkanDynamicBufferRing>();
     m_RingBuffer->OnCreate(VkContext->Instance->GetDevice(),3,20 * 1024 * 1024);
@@ -50,11 +42,6 @@ void FrameGraphTemplateLayer::OnInit()
 
 void FrameGraphTemplateLayer::OnDeInit()
 {
-    mLoadTask->ShutDown();
-    
-    delete mLoadTask;
-    delete mIOThread;
-    
     m_Camera.reset();
 
     mQuad.reset();
@@ -72,7 +59,6 @@ void FrameGraphTemplateLayer::OnDeInit()
 
 void FrameGraphTemplateLayer::OnUpdate(Timestep ts)
 {
-    mLoadTask->Update_MainThread(ts);
     m_RingBuffer->OnBeginFrame();
     m_Camera->OnUpdate(ts);
 

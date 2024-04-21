@@ -14,11 +14,15 @@ namespace ReEngine
         ShutDown();
     }
 
-    void AsyncLoader::Init(AsyncLoaderMainTask* InMainTask,Ref<VulkanDevice> InDevice)
+    void AsyncLoader::Init(Ref<VulkanDevice> InDevice)
     {
-        OwnerTask = InMainTask;
+        mTaskScheduler = Application::GetInstance().GetTaskSheduler();
         mDevice = InDevice;
 
+        mIOThread = new PinnedThread(Application::GetInstance().GetTaskSheduler(),mTaskScheduler->GetNumTaskThreads() - 1);
+        mLoadTask = new AsyncLoaderMainTask(mIOThread,mDevice);
+        mLoadTask->mAsyncLoader = this;
+        
         StagingBuffer = VulkanBuffer::CreateBuffer(
             InDevice,
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
@@ -45,12 +49,11 @@ namespace ReEngine
         VkFenceCreateInfo fence_info{ VK_STRUCTURE_TYPE_FENCE_CREATE_INFO };
         fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
         vkCreateFence(  mDevice->GetInstanceHandle(), &fence_info, nullptr, &TransFence );
-        
     }
 
     void AsyncLoader::Update_IOThread()
     {
-        if(UploadRequests.GetSize() > 0 )
+       if(UploadRequests.GetSize() > 0 )
         {
             if(vkGetFenceStatus(mDevice->GetInstanceHandle(),TransFence) != VK_SUCCESS)
             {
@@ -167,6 +170,11 @@ namespace ReEngine
 
     void AsyncLoader::ShutDown()
     {
+        mLoadTask->ShutDown();
+        
+        delete mLoadTask;
+        delete mIOThread;
+        
         StagingBuffer.reset();
         for ( uint32_t i = 0; i < RE_BUFFERCOUNT; ++i ) {
             vkDestroyCommandPool( mDevice->GetInstanceHandle(), CommandPools[ i ], nullptr);
@@ -202,10 +210,17 @@ namespace ReEngine
         NewUploadRequest.data = nullptr;
         NewUploadRequest.CpuBuffer = Src;
         NewUploadRequest.GpuBuffer = Dst;
-        // NewUploadRequest.Callback = CallBack;
 
         UploadRequests.Emplace_Back(NewUploadRequest);
     }
-    
+
+    void AsyncLoaderMainTask::Execute()
+    {
+        while(Run)
+        {
+            mAsyncLoader->Update_IOThread();
+        }
+        
+    }
 }
 

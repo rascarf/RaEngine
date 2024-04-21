@@ -40,9 +40,6 @@ private:
     FrameGraph                                      mFrameGraph;
 
     Ref<PreDepthRenderPass>                         DepthTemplateRenderPass = nullptr;
-    PinnedThread*                                   mIOThread = nullptr;
-    AsyncLoaderMainTask*                            mLoadTask = nullptr;
-    enki::TaskScheduler*                            mTaskScheduler = nullptr;
     // Ref<TemplateRenderPass>                         GBufferRenderPass;
     
 };

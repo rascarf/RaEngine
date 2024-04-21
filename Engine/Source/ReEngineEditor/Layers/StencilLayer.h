@@ -51,8 +51,5 @@ private:
 
     Ref<EditorCamera>                               m_Camera = nullptr;        
     Ref<VulkanDynamicBufferRing>                    m_RingBuffer = nullptr;
-
-    class PinnedThread*                             mIOThread = nullptr;
-    AsyncLoaderMainTask*                            mLoadTask = nullptr;
-    enki::TaskScheduler*                            mTaskScheduler = nullptr;
+    Ref<AsyncLoader>                                m_ASyncLoader = nullptr;
 };
