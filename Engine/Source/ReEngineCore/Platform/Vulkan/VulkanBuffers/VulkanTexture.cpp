@@ -722,11 +722,23 @@ bool VulkanTexture::bIsDepth()
     return Format >= VK_FORMAT_D16_UNORM && Format <= VK_FORMAT_D32_SFLOAT_S8_UINT; 
 }
 
-// Ref<VulkanTexture> VulkanTexture::Create2DArray(const std::vector<std::string> filenames,std::shared_ptr<VulkanDevice> vulkanDevice, Ref<VulkanCommandBuffer> cmdBuffer)
-// {
-// }
+Ref<VulkanTexture> VulkanTexture::CreateCube(Ref<VulkanDevice> VulkanDevice, Ref<VulkanCommandBuffer> CmdBuffer,
+    VkFormat Format, VkImageAspectFlags Aspect, int32 Width, int32 Height, bool Mipmap, VkImageUsageFlags Usage,VkSampleCountFlagBits SampleCount, ImageLayoutBarrier ImageLayout)
+{
+    
+}
 
-// Ref<VulkanTexture> VulkanTexture::Create3D(VkFormat format, const uint8* rgbaData, int32 size, int32 width,
-//     int32 height, int32 depth, std::shared_ptr<VulkanDevice> vulkanDevice, Ref<VulkanCommandBuffer> cmdBuffer)
-// {
-// }
+Ref<VulkanTexture> VulkanTexture::CreateCube(std::vector<std::string> FileNames, Ref<VulkanDevice> VulkanDevice,
+    int32 Width, int32 Height, VkImageUsageFlags Usage, ImageLayoutBarrier imageLayout)
+{
+}
+
+Ref<VulkanTexture> VulkanTexture::CreateCubeRT(Ref<VulkanDevice> InvulkanDevice, VkFormat format,
+    VkImageAspectFlags aspect, int32 width, int32 height, VkImageUsageFlags usage, VkSampleCountFlagBits sampleCount)
+{
+    Ref<VulkanTexture> CubeTexture = CreateCube(InvulkanDevice,nullptr,format,aspect,width,height,false,usage,sampleCount);
+    CubeTexture->ImageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    CubeTexture->DescriptorInfo.imageLayout = VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL;
+
+    return CubeTexture;
+}

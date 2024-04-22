@@ -19,6 +19,7 @@ namespace ReEngine
     public:
         SimpleMultThreadVector()
         {
+            Data.empty();
             mlock = new SpinLock();
         }
         
@@ -60,6 +61,13 @@ namespace ReEngine
             LockGuard(*mlock);
             
             return Data.back();
+        }
+
+        ElementType& operator[](uint32_t Index)
+        {
+            LockGuard(*mlock);
+            
+            return Data[Index];
         }
     };
 }

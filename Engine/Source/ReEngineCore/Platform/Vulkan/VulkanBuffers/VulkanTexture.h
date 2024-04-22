@@ -55,7 +55,40 @@ public:
     ImageLayoutBarrier imageLayout = ImageLayoutBarrier::Undefined
     );
 
-    /*----------------------------------------------*/
+    /*-------------------- Cube --------------------------*/
+    static Ref<VulkanTexture> CreateCube(
+        Ref<VulkanDevice> VulkanDevice,
+        Ref<VulkanCommandBuffer> CmdBuffer,
+        VkFormat Format,
+        VkImageAspectFlags Aspect,
+        int32 Width,
+        int32 Height,
+        bool Mipmap,
+        VkImageUsageFlags Usage,
+        VkSampleCountFlagBits SampleCount = VK_SAMPLE_COUNT_1_BIT,
+        ImageLayoutBarrier ImageLayout = ImageLayoutBarrier::Undefined
+    );
+
+    static Ref<VulkanTexture> CreateCube(
+        std::vector<std::string> FileNames,
+        Ref<VulkanDevice> VulkanDevice,
+        int32 Width,
+        int32 Height,
+        VkImageUsageFlags Usage,
+        ImageLayoutBarrier imageLayout = ImageLayoutBarrier::PixelShaderRead
+    );
+
+    static Ref<VulkanTexture> CreateCubeRT(
+        Ref<VulkanDevice> vulkanDevice,
+        VkFormat format,
+        VkImageAspectFlags aspect,
+        int32 width,
+        int32 height,
+        VkImageUsageFlags usage,
+        VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT
+    );
+    
+    /*--------------------RT--------------------------*/
     
     /*创建DepthStencil*/
     //没有初始数据的
