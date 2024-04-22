@@ -35,6 +35,9 @@ typedef const char*         cstring;
 
 #define RE_BUFFERCOUNT 3
 
+// RenderPass并行录制的SecondaryCMD的数量是5
+#define RE_PARALLELRECORD 5 
+
 namespace ReEngine
 {
     template<typename T>

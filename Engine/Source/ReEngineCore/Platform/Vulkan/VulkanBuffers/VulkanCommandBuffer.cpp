@@ -83,10 +83,10 @@ void NewVulkanCommandBuffer::UploadTextureData(Ref<VulkanTexture> DstTexture,voi
 
     VkImageSubresourceRange subresourceRange = {};
     subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
-    subresourceRange.levelCount     = 1;
-    subresourceRange.layerCount     = 1;
-    subresourceRange.baseArrayLayer = 0;
     subresourceRange.baseMipLevel   = 0;
+    subresourceRange.levelCount     = DstTexture->MipLevels;
+    subresourceRange.baseArrayLayer = 0;
+    subresourceRange.layerCount     = DstTexture->IsCubeMap ? 6 : 1;
 
     // undefined to TransferDest
     VulkanTexture::ImagePipelineBarrier(CmdBuffer, DstTexture, ImageLayoutBarrier::Undefined, ImageLayoutBarrier::TransferDest, subresourceRange);
@@ -95,7 +95,7 @@ void NewVulkanCommandBuffer::UploadTextureData(Ref<VulkanTexture> DstTexture,voi
     bufferCopyRegion.imageSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
     bufferCopyRegion.imageSubresource.mipLevel       = 0;
     bufferCopyRegion.imageSubresource.baseArrayLayer = 0;
-    bufferCopyRegion.imageSubresource.layerCount     = 1;
+    bufferCopyRegion.imageSubresource.layerCount     = DstTexture->IsCubeMap ? 6 : 1;
     bufferCopyRegion.imageExtent.width  = width;
     bufferCopyRegion.imageExtent.height = height;
     bufferCopyRegion.imageExtent.depth  = 1;
@@ -132,14 +132,14 @@ void NewVulkanCommandBuffer::GenerateMipMaps(Ref<VulkanTexture> DstTexture)
         int32 mip1Height = ReEngine::Math::Max(height >> (i - 0), 1);
     
         imageBlit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        imageBlit.srcSubresource.layerCount = 1;
+        imageBlit.srcSubresource.layerCount = DstTexture->IsCubeMap ? 6 : 1;
         imageBlit.srcSubresource.mipLevel   = i - 1;
         imageBlit.srcOffsets[1].x = int32_t(mip0Width);
         imageBlit.srcOffsets[1].y = int32_t(mip0Height);
         imageBlit.srcOffsets[1].z = 1;
     
         imageBlit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        imageBlit.dstSubresource.layerCount = 1;
+        imageBlit.dstSubresource.layerCount = DstTexture->IsCubeMap ? 6 : 1;
         imageBlit.dstSubresource.mipLevel   = i;
         imageBlit.dstOffsets[1].x = int32_t(mip1Width);
         imageBlit.dstOffsets[1].y = int32_t(mip1Height);
@@ -149,8 +149,8 @@ void NewVulkanCommandBuffer::GenerateMipMaps(Ref<VulkanTexture> DstTexture)
         mipSubRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
         mipSubRange.baseMipLevel   = i;
         mipSubRange.levelCount     = 1;
-        mipSubRange.layerCount     = 1;
         mipSubRange.baseArrayLayer = 0;
+        mipSubRange.layerCount     = DstTexture->IsCubeMap ? 6 :1;
     
         // undefined to dst
         VulkanTexture::ImagePipelineBarrier(CmdBuffer, DstTexture, ImageLayoutBarrier::Undefined, ImageLayoutBarrier::TransferDest, mipSubRange);

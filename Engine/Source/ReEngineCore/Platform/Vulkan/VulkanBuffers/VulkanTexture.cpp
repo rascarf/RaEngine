@@ -612,6 +612,245 @@ Ref<VulkanTexture> VulkanTexture::CreateFrameGraphTexture(Ref<VulkanDevice> vulk
     return texture;
 }
 
+
+
+bool VulkanTexture::bIsDepth()
+{
+    return Format >= VK_FORMAT_D16_UNORM && Format <= VK_FORMAT_D32_SFLOAT_S8_UINT; 
+}
+
+Ref<VulkanTexture> VulkanTexture::CreateCube(Ref<VulkanDevice> InVulkanDevice, Ref<VulkanCommandBuffer> CmdBuffer,
+    VkFormat Format, VkImageAspectFlags Aspect, int32 Width, int32 Height, bool Mipmap, VkImageUsageFlags Usage,VkSampleCountFlagBits SampleCount, ImageLayoutBarrier ImageLayout)
+{
+    VkDevice Device = InVulkanDevice->GetInstanceHandle();
+    int MipMaps = 1;
+    if(Mipmap)
+    {
+        MipMaps = Math::FloorToInt(Math::Log2(float(Math::Max(Width,Height)))) + 1;
+    }
+
+    VkImage                         image = VK_NULL_HANDLE;
+    VkImageView                     imageView = VK_NULL_HANDLE;
+    VkSampler                       imageSampler = VK_NULL_HANDLE;
+    VmaAllocation                   imageAllocation;
+
+    VmaAllocationCreateInfo memory_info{};
+    memory_info.usage = VMA_MEMORY_USAGE_AUTO;
+    
+    VkImageCreateInfo ImageCreatInfo;
+    ZeroVulkanStruct(ImageCreatInfo,VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO);
+    ImageCreatInfo.imageType = VK_IMAGE_TYPE_2D; //TextureArray for Cube
+    ImageCreatInfo.format = Format;
+    ImageCreatInfo.mipLevels = MipMaps;
+    ImageCreatInfo.arrayLayers = 6;
+    ImageCreatInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+    ImageCreatInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    ImageCreatInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    ImageCreatInfo.extent = {(uint32_t)Width,(uint32_t)Height,1};
+    ImageCreatInfo.usage = Usage;
+    ImageCreatInfo.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT; //
+    
+    auto Result = vmaCreateImage(
+        InVulkanDevice->vma_allocator,
+        &ImageCreatInfo,
+        &memory_info,
+        &image,
+        &imageAllocation,
+        nullptr);
+
+    if(Result != VK_SUCCESS)
+    {
+        RE_ERROR("Can't Create CubeTexture");
+        return nullptr;
+    }
+
+    
+    VkImageViewCreateInfo viewInfo;
+    ZeroVulkanStruct(viewInfo, VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO);
+    viewInfo.image      = image;
+    viewInfo.viewType   = VK_IMAGE_VIEW_TYPE_CUBE; //Note
+    viewInfo.format     = Format;
+    viewInfo.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
+    
+    viewInfo.subresourceRange.aspectMask = Aspect;
+    viewInfo.subresourceRange.levelCount = Mipmap;
+    viewInfo.subresourceRange.layerCount = 6;
+    viewInfo.subresourceRange.baseMipLevel = 0;
+    viewInfo.subresourceRange.baseArrayLayer = 0;
+    
+    VERIFYVULKANRESULT(vkCreateImageView(Device, &viewInfo, VULKAN_CPU_ALLOCATOR, &imageView));
+    
+    VkSamplerCreateInfo samplerInfo;
+    ZeroVulkanStruct(samplerInfo, VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO);
+    samplerInfo.magFilter        = VK_FILTER_LINEAR;
+    samplerInfo.minFilter        = VK_FILTER_LINEAR;
+    samplerInfo.mipmapMode       = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+    samplerInfo.addressModeU     = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerInfo.addressModeV     = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerInfo.addressModeW     = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerInfo.compareOp        = VK_COMPARE_OP_NEVER;
+    samplerInfo.borderColor      = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+    samplerInfo.maxAnisotropy    = 1.0;
+    samplerInfo.anisotropyEnable = VK_FALSE;
+    samplerInfo.maxLod           = (float)Mipmap;
+    samplerInfo.minLod           = 0.0f;
+    VERIFYVULKANRESULT(vkCreateSampler(Device, &samplerInfo, VULKAN_CPU_ALLOCATOR, &imageSampler));
+
+    if(CmdBuffer != nullptr && ImageLayout != ImageLayoutBarrier::Undefined)
+    {
+        VkImageSubresourceRange subresourceRange = {};
+        subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+        subresourceRange.levelCount     = Mipmap;
+        subresourceRange.layerCount     = 6;
+        subresourceRange.baseArrayLayer = 0;
+        subresourceRange.baseMipLevel   = 0;
+
+        CmdBuffer->Begin();
+        ImagePipelineBarrier(CmdBuffer->CmdBuffer,image,ImageLayoutBarrier::Undefined,ImageLayout,subresourceRange);
+        CmdBuffer->End();
+    }
+    else
+    {
+        ImageLayout = ImageLayoutBarrier::Undefined;
+    }
+
+    VkDescriptorImageInfo Info;
+    Info.sampler = imageSampler;
+    Info.imageView = imageView;
+    Info.imageLayout = GetImageLayout(ImageLayout);
+    
+    Ref<VulkanTexture> texture   = CreateRef<VulkanTexture>();
+    texture->Device         = InVulkanDevice;
+    texture->DescriptorInfo = Info;
+    texture->Format         = Format;
+    texture->Height         = Height;
+    texture->Width          = Width;
+    texture->ImageLayout    = VK_IMAGE_LAYOUT_UNDEFINED;
+    texture->mVmaAllocation = imageAllocation;
+    texture->ImageSampler   = imageSampler;
+    texture->ImageView      = imageView;
+    texture->Image          = image;
+    texture->MipLevels      = Mipmap;
+    texture->LayerCount     = 1;
+    texture->Depth          = 6;       
+    texture->IsCubeMap      = true;
+    texture->IsUpload       = false;
+    
+    return texture;
+}
+
+Ref<VulkanTexture> VulkanTexture::CreateCube(std::vector<std::string> FileNames, Ref<VulkanDevice> InVulkanDevice,Ref<VulkanCommandBuffer> CommandBuffer,
+    int32 Width, int32 Height, VkImageAspectFlags Aspect,VkImageUsageFlags Usage, ImageLayoutBarrier imageLayout)
+{
+    struct ImageInfo
+    {
+        int32   width  = 0;
+        int32   height = 0;
+        int32   comp   = 0;
+        uint8*  data   = nullptr;
+        uint32  size   = 0;
+    };
+
+    std::vector<ImageInfo> images(FileNames.size());
+    for (int32 i = 0; i < FileNames.size(); ++i)
+    {
+        uint32 dataSize = 0;
+        uint8* dataPtr  = nullptr;
+        if (!AssetManager::ReadFile(FileNames[i], dataPtr, dataSize))
+        {
+            RE_ERROR("Failed load image : {0}", FileNames[i].c_str());
+            return nullptr;
+        }
+
+        ImageInfo& imageInfo = images[i];
+        imageInfo.data = (uint8*)StbImage::LoadFloatFromMemory(dataPtr, dataSize, &imageInfo.width, &imageInfo.height, &imageInfo.comp, 4);
+        imageInfo.comp = 4;
+        imageInfo.size = imageInfo.width * imageInfo.height * imageInfo.comp * 4;
+
+        delete[] dataPtr;
+        dataPtr = nullptr;
+
+        if (!imageInfo.data)
+        {
+            RE_ERROR("Failed load image : %s", FileNames[i].c_str());
+            return nullptr;
+        }
+    }
+
+    // 图片信息，TextureArray要求尺寸一致
+    int32 width     = images[0].width;
+    int32 height    = images[0].height;
+    int32 numArray  = (int32)images.size();
+    VkFormat format = VK_FORMAT_R32G32B32A32_SFLOAT; // 可以改
+    int32 mipLevels = Math::FloorToInt(Math::Log2((float)Math::Max(width, height))) + 1;
+    VkDevice device = InVulkanDevice->GetInstanceHandle();
+
+    Ref<VulkanBuffer> StagingBuffer = VulkanBuffer::CreateBuffer(
+        InVulkanDevice,
+        VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+        images[0].size * 6
+    );
+
+    for(int32 i = 0 ; i < images.size() ; ++i)
+    {
+        uint8* src  = images[i].data;
+        uint32 size = images[i].size;
+        
+        StagingBuffer->Map(size, size * i);
+        StagingBuffer->CopyFrom(src, size);
+        StagingBuffer->UnMap();
+
+        StbImage::Free(src);
+    }
+
+    Ref<VulkanTexture> Cube = CreateCube(
+        InVulkanDevice,
+        CommandBuffer,
+        format,
+        Aspect,
+        Width,
+        Height,
+        true,
+        Usage,
+        VK_SAMPLE_COUNT_1_BIT
+    );
+
+    CommandBuffer->UploadTextureData(Cube,nullptr,StagingBuffer,0);
+    
+    VkImageSubresourceRange subresourceRange = {};
+    subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+    subresourceRange.levelCount     = 1;
+    subresourceRange.layerCount     = numArray;
+    subresourceRange.baseMipLevel   = 0;
+    subresourceRange.baseArrayLayer = 0;
+    ImagePipelineBarrier(CommandBuffer->CmdBuffer,Cube,Cube->mImageLayoutBarrier,ImageLayoutBarrier::TransferSource,subresourceRange);
+    
+    CommandBuffer->GenerateMipMaps(Cube); 
+
+    subresourceRange.aspectMask   = VK_IMAGE_ASPECT_COLOR_BIT; 
+    subresourceRange.levelCount   = mipLevels;
+    subresourceRange.layerCount   = numArray;
+    subresourceRange.baseMipLevel = 0;
+    ImagePipelineBarrier(CommandBuffer->CmdBuffer,Cube,Cube->mImageLayoutBarrier,imageLayout,subresourceRange);
+
+    CommandBuffer->End();
+    CommandBuffer->Submit();
+
+    StagingBuffer.reset();
+    
+}
+
+Ref<VulkanTexture> VulkanTexture::CreateCubeRT(Ref<VulkanDevice> InvulkanDevice, VkFormat format,
+    VkImageAspectFlags aspect, int32 width, int32 height, VkImageUsageFlags usage, VkSampleCountFlagBits sampleCount)
+{
+    Ref<VulkanTexture> CubeTexture = CreateCube(InvulkanDevice,nullptr,format,aspect,width,height,false,usage,sampleCount);
+    CubeTexture->ImageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    CubeTexture->DescriptorInfo.imageLayout = VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL;
+
+    return CubeTexture;
+}
+
 void VulkanTexture::ImagePipelineBarrier(VkCommandBuffer CommandBuffer, Ref<VulkanTexture> Texture,
     ImageLayoutBarrier Source, ImageLayoutBarrier Dest, const VkImageSubresourceRange& subresourceRange,
     uint32_t SrcQueueFmily, uint32_t DstQueueFamily)
@@ -716,29 +955,3 @@ void VulkanTexture::ImagePipelineBarrier(VkCommandBuffer CommandBuffer, Ref<Vulk
     Texture->mImageLayoutBarrier = Dest;
 }
 
-
-bool VulkanTexture::bIsDepth()
-{
-    return Format >= VK_FORMAT_D16_UNORM && Format <= VK_FORMAT_D32_SFLOAT_S8_UINT; 
-}
-
-Ref<VulkanTexture> VulkanTexture::CreateCube(Ref<VulkanDevice> VulkanDevice, Ref<VulkanCommandBuffer> CmdBuffer,
-    VkFormat Format, VkImageAspectFlags Aspect, int32 Width, int32 Height, bool Mipmap, VkImageUsageFlags Usage,VkSampleCountFlagBits SampleCount, ImageLayoutBarrier ImageLayout)
-{
-    
-}
-
-Ref<VulkanTexture> VulkanTexture::CreateCube(std::vector<std::string> FileNames, Ref<VulkanDevice> VulkanDevice,
-    int32 Width, int32 Height, VkImageUsageFlags Usage, ImageLayoutBarrier imageLayout)
-{
-}
-
-Ref<VulkanTexture> VulkanTexture::CreateCubeRT(Ref<VulkanDevice> InvulkanDevice, VkFormat format,
-    VkImageAspectFlags aspect, int32 width, int32 height, VkImageUsageFlags usage, VkSampleCountFlagBits sampleCount)
-{
-    Ref<VulkanTexture> CubeTexture = CreateCube(InvulkanDevice,nullptr,format,aspect,width,height,false,usage,sampleCount);
-    CubeTexture->ImageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-    CubeTexture->DescriptorInfo.imageLayout = VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL;
-
-    return CubeTexture;
-}
