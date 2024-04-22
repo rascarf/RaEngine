@@ -24,7 +24,7 @@ if(NOT TARGET glfw)
     option(GLFW_BUILD_DOCS "" OFF)
     option(GLFW_INSTALL "" OFF)
     add_subdirectory(GLFW)   
-    set_target_properties(GLFW3 PROPERTIES FOLDER ${ThirdPartyFolder}/GLFW)
+    set_target_properties(glfw PROPERTIES FOLDER ${ThirdPartyFolder}/glfw)
 endif()
 
 if(NOT TARGET glm)

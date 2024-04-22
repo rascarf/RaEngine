@@ -11,7 +11,6 @@ namespace ReEngine
 {
     AsyncLoader::~AsyncLoader()
     {
-        ShutDown();
     }
 
     void AsyncLoader::Init(Ref<VulkanDevice> InDevice)

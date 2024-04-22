@@ -48,12 +48,7 @@ set(CONSOLE_BINARIES offscreen)
 
 set_target_properties(${GUI_ONLY_BINARIES} ${CONSOLE_BINARIES} PROPERTIES
                       C_STANDARD 99
-                      FOLDER "ThirdParty/Examples")
-
-if (GLFW_USE_OSMESA)
-    find_package(OSMesa REQUIRED)
-    target_compile_definitions(offscreen PRIVATE USE_NATIVE_OSMESA)
-endif()
+                      FOLDER "GLFW3/Examples")
 
 if (MSVC)
     # Tell MSVC to use main instead of WinMain
