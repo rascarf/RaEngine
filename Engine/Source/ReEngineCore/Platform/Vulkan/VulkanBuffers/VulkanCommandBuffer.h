@@ -27,6 +27,7 @@ public:
 
 public:
     void  UploadTextureData(Ref<class VulkanTexture> DstTexture,void* SrcData,Ref<class VulkanBuffer> StagingBuffer,uint32 StagingBuffer_Offset);
+    void  UploadCubeTextureData(Ref<class VulkanTexture> DstTexture,Ref<class VulkanBuffer> StagingBuffer,uint32 SliceSize);
     void  GenerateMipMaps(Ref<class VulkanTexture> DstTexture);
 };
 

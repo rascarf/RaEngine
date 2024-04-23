@@ -49,7 +49,7 @@ Ref<VulkanBuffer> VulkanBuffer::CreateBuffer(std::shared_ptr<VulkanDevice> devic
     return dvkBuffer;
 }
 
-VkResult VulkanBuffer::Map(VkDeviceSize size, VkDeviceSize offset)
+VkResult VulkanBuffer::Map()
 {
     if(Mapped)
     {

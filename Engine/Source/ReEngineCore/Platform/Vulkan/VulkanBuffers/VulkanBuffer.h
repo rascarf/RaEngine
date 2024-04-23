@@ -32,7 +32,7 @@ public:
     static void TransferBuffer(const Ref<VulkanDevice>& Device, Ref<VulkanCommandBuffer> CommandBuffer,Ref<VulkanBuffer> SrcBuffer, Ref<VulkanBuffer> DstBuffer, VkDeviceSize size);
 
     //开始数据映射
-    VkResult Map(VkDeviceSize size = VK_WHOLE_SIZE, VkDeviceSize offset = 0);
+    VkResult Map();
 
     //结束数据映射
     void UnMap();

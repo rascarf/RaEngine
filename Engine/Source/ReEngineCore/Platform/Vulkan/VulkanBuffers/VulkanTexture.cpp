@@ -648,6 +648,7 @@ Ref<VulkanTexture> VulkanTexture::CreateCube(Ref<VulkanDevice> InVulkanDevice, R
     ImageCreatInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     ImageCreatInfo.extent = {(uint32_t)Width,(uint32_t)Height,1};
     ImageCreatInfo.usage = Usage;
+    ImageCreatInfo.samples = SampleCount;
     ImageCreatInfo.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT; //
     
     auto Result = vmaCreateImage(
@@ -740,7 +741,7 @@ Ref<VulkanTexture> VulkanTexture::CreateCube(Ref<VulkanDevice> InVulkanDevice, R
 }
 
 Ref<VulkanTexture> VulkanTexture::CreateCube(std::vector<std::string> FileNames, Ref<VulkanDevice> InVulkanDevice,Ref<VulkanCommandBuffer> CommandBuffer,
-    int32 Width, int32 Height, VkImageAspectFlags Aspect,VkImageUsageFlags Usage, ImageLayoutBarrier imageLayout)
+     VkImageAspectFlags Aspect,VkImageUsageFlags Usage, ImageLayoutBarrier imageLayout)
 {
     struct ImageInfo
     {
@@ -792,31 +793,32 @@ Ref<VulkanTexture> VulkanTexture::CreateCube(std::vector<std::string> FileNames,
         images[0].size * 6
     );
 
+    StagingBuffer->Map();
     for(int32 i = 0 ; i < images.size() ; ++i)
     {
         uint8* src  = images[i].data;
         uint32 size = images[i].size;
         
-        StagingBuffer->Map(size, size * i);
-        StagingBuffer->CopyFrom(src, size);
-        StagingBuffer->UnMap();
+        memcpy((uint8*)StagingBuffer->Mapped + size * i , src , size);
 
         StbImage::Free(src);
     }
+    StagingBuffer->UnMap();
 
     Ref<VulkanTexture> Cube = CreateCube(
         InVulkanDevice,
         CommandBuffer,
         format,
         Aspect,
-        Width,
-        Height,
+        width,
+        height,
         true,
         Usage,
         VK_SAMPLE_COUNT_1_BIT
     );
 
-    CommandBuffer->UploadTextureData(Cube,nullptr,StagingBuffer,0);
+    CommandBuffer->Begin();
+    CommandBuffer->UploadCubeTextureData(Cube,StagingBuffer,images[0].size);
     
     VkImageSubresourceRange subresourceRange = {};
     subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -838,7 +840,8 @@ Ref<VulkanTexture> VulkanTexture::CreateCube(std::vector<std::string> FileNames,
     CommandBuffer->Submit();
 
     StagingBuffer.reset();
-    
+
+    return Cube;
 }
 
 Ref<VulkanTexture> VulkanTexture::CreateCubeRT(Ref<VulkanDevice> InvulkanDevice, VkFormat format,

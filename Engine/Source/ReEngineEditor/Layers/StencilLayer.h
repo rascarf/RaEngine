@@ -41,6 +41,12 @@ private:
 
     std::vector<std::vector<Ref<VulkanMesh>>> RenderObject;
 
+    Ref<VulkanShader>       SkyBoxShader;
+    Ref<VulkanMaterial>     SkyBoxMaterial;
+    Ref<VulkanModel>        SkyBox;
+    Ref<VulkanTexture>      CubeMap; 
+    Ref<VulkanRenderTarget> SkyBoxRenderTarget;
+
     struct ModelViewProjectionBlock
     {
         glm::mat4 model;

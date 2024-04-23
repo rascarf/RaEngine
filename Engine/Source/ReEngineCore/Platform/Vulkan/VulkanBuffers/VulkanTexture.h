@@ -73,8 +73,6 @@ public:
         std::vector<std::string> FileNames,
         Ref<VulkanDevice> VulkanDevice,
         Ref<VulkanCommandBuffer> CommandBuffer,
-        int32 Width,
-        int32 Height,
         VkImageAspectFlags Aspect,
         VkImageUsageFlags Usage,
         ImageLayoutBarrier imageLayout = ImageLayoutBarrier::PixelShaderRead

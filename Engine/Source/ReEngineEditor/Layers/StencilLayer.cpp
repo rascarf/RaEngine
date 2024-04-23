@@ -6,6 +6,9 @@
 #include <FilterPixelation_frag.h>
 #include <ColorFilter_frag.h>
 
+#include <SkyBox_vert.h>
+#include <SkyBox_frag.h>
+
 #include "Mesh/Quad.h"
 #include "Platform/Vulkan/VulkanContext.h"
 
@@ -48,7 +51,14 @@ void RTLayer::OnDeInit()
     ColorRT.reset();
     DepthRT.reset();
 
+    SkyBoxShader.reset();
+    SkyBoxMaterial.reset();
+    SkyBox.reset();
+    CubeMap.reset();
+    
+    SkyBoxRenderTarget.reset();
     RenderTarget.reset();
+    
     SceneShader.reset();
     mFilterShader.reset();
     
@@ -93,6 +103,32 @@ void RTLayer::OnRender()
     scissor.extent.height = FrameBuffer->m_Height;
     scissor.offset.x      = 0;
     scissor.offset.y      = 0;
+
+    {
+        SkyBoxMaterial->SetTexture("diffuseMap",CubeMap);
+        
+        RenderTarget->BeginRenderPass(VkContext->GetCommandList());
+        vkCmdBindPipeline(VkContext->GetCommandList(),VK_PIPELINE_BIND_POINT_GRAPHICS,SkyBoxMaterial->mPipeline->Pipeline);
+
+        ModelViewProjectionBlock SkyBoxBlock;
+        SkyBoxBlock.model = glm::identity<glm::mat4x4>();
+        SkyBoxBlock.view = m_Camera->GetViewMatrix();
+        SkyBoxBlock.view[3][0] = 0.0f;
+        SkyBoxBlock.view[3][1] = 0.0f;
+        SkyBoxBlock.view[3][2] = 0.0f;
+        
+        SkyBoxBlock.projection = m_Camera->GetProjection();
+        
+        SkyBoxMaterial->SetLocalUniform("uboMVP",&SkyBoxBlock,sizeof(ModelViewProjectionBlock));
+        SkyBoxMaterial->BindDescriptorSets(VkContext->GetCommandList(),VK_PIPELINE_BIND_POINT_GRAPHICS);
+
+        for(const auto Mesh : SkyBox->Meshes)
+        {
+            Mesh->BindDraw(VkContext->GetCommandList());
+        }
+        
+        RenderTarget->EndRenderPass(VkContext->GetCommandList());
+    }
     
     {
         std::vector<std::string> diffusePaths =  {
@@ -116,7 +152,7 @@ void RTLayer::OnRender()
             for(auto& Mesh : RenderObject[i])
             {
                 m_MVPData.model = Mesh->LinkNode.lock()->GetGlobalMatrix();
-                
+
                 SceneMaterial->SetLocalUniform("uboMVP",&m_MVPData,sizeof(ModelViewProjectionBlock));
                 SceneMaterial->BindDescriptorSets(VkContext->GetCommandList(),VK_PIPELINE_BIND_POINT_GRAPHICS,diffusePaths[i]);
 
@@ -190,9 +226,19 @@ void RTLayer::CreateRenderTarget()
         VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
     );
 
-    VulkanRenderPassInfo PassInfo
+    const VulkanRenderPassInfo SkyBoxInfo
     {
         ColorRT,VK_ATTACHMENT_LOAD_OP_CLEAR,VK_ATTACHMENT_STORE_OP_NONE,
+    };
+    SkyBoxRenderTarget = VulkanRenderTarget::Create
+    (
+        device,
+        SkyBoxInfo
+    );
+
+    const VulkanRenderPassInfo PassInfo
+    {
+        ColorRT,VK_ATTACHMENT_LOAD_OP_LOAD,VK_ATTACHMENT_STORE_OP_NONE,
         DepthRT,VK_ATTACHMENT_LOAD_OP_CLEAR,VK_ATTACHMENT_STORE_OP_STORE
     };
 
@@ -269,8 +315,48 @@ void RTLayer::LoadAsset()
         });
     }
 
-    RenderObject.resize(diffusePaths.size());
-    for(const auto& Mesh : SceneModel->Meshes)
+    std::vector<std::string> FilaNames = {
+        "Assets/Textures/cubemap/output_skybox_posx.hdr",
+        "Assets/Textures/cubemap/output_skybox_negx.hdr",
+        "Assets/Textures/cubemap/output_skybox_posy.hdr",
+        "Assets/Textures/cubemap/output_skybox_negy.hdr",
+        "Assets/Textures/cubemap/output_skybox_posz.hdr",
+        "Assets/Textures/cubemap/output_skybox_negz.hdr"
+    };
+    CubeMap = VulkanTexture::CreateCube(
+           FilaNames,
+           device,
+           cmdBuffer,
+           VK_IMAGE_ASPECT_COLOR_BIT,
+           VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT
+   );
+    
+    SkyBoxShader = VulkanShader::Create(device,true,&SKYBOX_VERT,&SKYBOX_FRAG,nullptr,nullptr,nullptr,nullptr);
+    SkyBoxMaterial = VulkanMaterial::Create(
+        device,
+        RenderTarget->GetRenderPass(),
+        VkContext->CommandPool->m_PipelineCache,
+        SkyBoxShader,
+        m_RingBuffer
+        );
+    
+    SkyBoxMaterial->mPipelineInfo.RasterizationState.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+    SkyBoxMaterial->mPipelineInfo.DepthStencilState.depthCompareOp = VK_COMPARE_OP_ALWAYS;
+    SkyBoxMaterial->mPipelineInfo.DepthStencilState.depthTestEnable = VK_FALSE;
+    SkyBoxMaterial->mPipelineInfo.DepthStencilState.depthWriteEnable = VK_FALSE;
+    SkyBoxMaterial->mPipelineInfo.DepthStencilState.stencilTestEnable = VK_FALSE; 
+    SkyBoxMaterial->PreparePipeline();
+    SkyBoxMaterial->SetTexture("diffuseMap",CubeMap);
+    
+    SkyBox = VulkanModel::LoadFromFile(
+        "Assets/Mesh/cube.obj",
+        device,
+        cmdBuffer,
+        SkyBoxShader->perVertexAttributes
+    );
+    
+    RenderObject.resize(diffusePaths.size()); 
+    for(const auto& Mesh : SceneModel->Meshes) 
     {
         const std::string& DiffuseName = Mesh->Material.Diffuse;
         if (DiffuseName == "miniHouse_Part1")

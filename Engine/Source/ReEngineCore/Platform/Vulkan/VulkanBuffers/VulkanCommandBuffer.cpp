@@ -103,6 +103,50 @@ void NewVulkanCommandBuffer::UploadTextureData(Ref<VulkanTexture> DstTexture,voi
     vkCmdCopyBufferToImage(CmdBuffer, InStagingBuffer->Buffer, DstTexture->Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &bufferCopyRegion);
     
     VulkanTexture::ImagePipelineBarrier(CmdBuffer, DstTexture, ImageLayoutBarrier::TransferDest, ImageLayoutBarrier::PixelShaderRead, subresourceRange);
+    DstTexture->IsUpload = true;
+}
+
+void NewVulkanCommandBuffer::UploadCubeTextureData(Ref<VulkanTexture> DstTexture, Ref<VulkanBuffer> StagingBuffer,uint32 SliceSize)
+{
+    if(!DstTexture)
+    {
+        RE_ERROR("UploadTextureData Failed : DstTexture is nullptr");    
+        return;
+    }
+
+    int32 width = DstTexture->Width;
+    int32 height = DstTexture->Height;
+
+    VkImageSubresourceRange subresourceRange = {};
+    subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+    subresourceRange.baseMipLevel   = 0;
+    subresourceRange.levelCount     = DstTexture->MipLevels;
+    subresourceRange.baseArrayLayer = 0;
+    subresourceRange.layerCount     = 6;
+
+    // undefined to TransferDest
+    VulkanTexture::ImagePipelineBarrier(CmdBuffer, DstTexture, ImageLayoutBarrier::Undefined, ImageLayoutBarrier::TransferDest, subresourceRange);
+
+    std::vector<VkBufferImageCopy> bufferCopyRegions;
+    for(int i = 0 ; i < 6 ; i++)
+    {
+        VkBufferImageCopy SliceCopy = {};
+        SliceCopy.imageSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+        SliceCopy.imageSubresource.mipLevel       = 0; // 这里可以看作Slice为基准
+        SliceCopy.imageSubresource.baseArrayLayer = i;
+        SliceCopy.imageSubresource.layerCount     = 1;
+        SliceCopy.imageExtent.width  = width;
+        SliceCopy.imageExtent.height = height;
+        SliceCopy.imageExtent.depth  = 1;
+        SliceCopy.bufferOffset = SliceSize * i;
+        
+        bufferCopyRegions.push_back(SliceCopy);
+    }
+    
+    vkCmdCopyBufferToImage(CmdBuffer, StagingBuffer->Buffer, DstTexture->Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, bufferCopyRegions.size(), bufferCopyRegions.data());
+    
+    VulkanTexture::ImagePipelineBarrier(CmdBuffer, DstTexture, ImageLayoutBarrier::TransferDest, ImageLayoutBarrier::PixelShaderRead, subresourceRange);
+    DstTexture->IsUpload = true;
 }
 
 void NewVulkanCommandBuffer::GenerateMipMaps(Ref<VulkanTexture> DstTexture)
