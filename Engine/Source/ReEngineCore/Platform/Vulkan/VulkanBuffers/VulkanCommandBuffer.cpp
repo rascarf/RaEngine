@@ -165,6 +165,15 @@ void NewVulkanCommandBuffer::GenerateMipMaps(Ref<VulkanTexture> DstTexture)
     int32 height = DstTexture->Height;
     
     int32 MipLevels = Math::FloorToInt(Math::Log2(Math::Max(DstTexture->Width,DstTexture->Height))) + 1;
+
+    VkImageSubresourceRange subresourceRange = {};
+    subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+    subresourceRange.levelCount     = DstTexture->MipLevels;
+    subresourceRange.layerCount     = DstTexture->IsCubeMap ? 6 : 1;
+    subresourceRange.baseArrayLayer = 0;
+    subresourceRange.baseMipLevel   = 0;
+    
+    VulkanTexture::ImagePipelineBarrier(CmdBuffer,DstTexture->Image,ImageLayoutBarrier::Undefined, ImageLayoutBarrier::TransferSource,subresourceRange);
     
     for(uint32_t i = 1 ; i <(uint32_t) MipLevels ; i++)
     {
@@ -198,15 +207,31 @@ void NewVulkanCommandBuffer::GenerateMipMaps(Ref<VulkanTexture> DstTexture)
     
         // undefined to dst
         VulkanTexture::ImagePipelineBarrier(CmdBuffer, DstTexture, ImageLayoutBarrier::Undefined, ImageLayoutBarrier::TransferDest, mipSubRange);
-    
-        // blit image
+        
         vkCmdBlitImage(CmdBuffer, DstTexture->Image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, DstTexture->Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageBlit, VK_FILTER_LINEAR);
-    
+        
         // dst to src
         VulkanTexture::ImagePipelineBarrier(CmdBuffer, DstTexture, ImageLayoutBarrier::TransferDest, ImageLayoutBarrier::TransferSource, mipSubRange);
     }
+}
+
+void NewVulkanCommandBuffer::CopyImage(Ref<VulkanTexture> Src, Ref<VulkanTexture> Dst)
+{
+    VulkanTexture::ImagePipelineBarrier(CmdBuffer,Src,Src->mImageLayoutBarrier,ImageLayoutBarrier::TransferSource);
+    VulkanTexture::ImagePipelineBarrier(CmdBuffer,Dst,Dst->mImageLayoutBarrier,ImageLayoutBarrier::TransferDest);
     
-    // VulkanTexture::ImagePipelineBarrier(CmdBuffer, DstTexture, DstTexture->mImageLayoutBarrier, ImageLayoutBarrier::TransferSource,0,MipLevels,false,DstTexture->OwnerQueueFamily,queue->GetFamilyIndex());
+    VkImageCopy copyRegion = {};
+    copyRegion.extent.width = Dst->Width;
+    copyRegion.extent.height = Dst->Height;
+    copyRegion.extent.depth = 1;
+    copyRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    copyRegion.srcSubresource.layerCount = Dst->LayerCount;
+    copyRegion.srcSubresource.mipLevel = 0;
+    copyRegion.dstSubresource = copyRegion.srcSubresource;
+    vkCmdCopyImage(CmdBuffer,Src->Image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,Dst->Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,1, &copyRegion);
+
+    VulkanTexture::ImagePipelineBarrier(CmdBuffer,Src,Src->mImageLayoutBarrier,ImageLayoutBarrier::PixelGeneralRW);
+    VulkanTexture::ImagePipelineBarrier(CmdBuffer,Dst,Dst->mImageLayoutBarrier,ImageLayoutBarrier::PixelGeneralRW);
 }
 
 

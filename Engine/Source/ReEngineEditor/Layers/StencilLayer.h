@@ -50,6 +50,10 @@ private:
     Ref<VulkanTexture>      EnvTextureEquirect;
     Ref<VulkanShader>       EnvEquirect2CubeShader;       
     Ref<VulkanComputePipeline> EnvEquirect2CubePipe;
+    Ref<VulkanTexture>      PreFilterCubeMap;
+
+    Ref<VulkanShader>       SpcularFilterShader;       
+    Ref<VulkanComputePipeline> SpcularFilterPipe;
     Ref<VulkanTexture>      EnvCubeMap;
 
     struct ModelViewProjectionBlock
@@ -58,10 +62,17 @@ private:
         glm::mat4 view;
         glm::mat4 projection;
     }m_MVPData;
+
+    struct SpecularFilterPushConstants
+    {
+        uint32_t level;
+        float roughness;
+    };
     
     AttachmentParamBlock DebugParam;
 
     Ref<EditorCamera>                               m_Camera = nullptr;        
     Ref<VulkanDynamicBufferRing>                    m_RingBuffer = nullptr;
     Ref<AsyncLoader>                                m_ASyncLoader = nullptr;
+    VulkanSpecialInfo                               vkInfo;
 };

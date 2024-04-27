@@ -134,6 +134,7 @@ void VulkanMaterial::Prepare(std::string MeshName)
         texture.DescriptorType  = it->second.DescriptorType;
         texture.Set             = it->second.Set;
         texture.StageFlags      = it->second.StageFlags;
+        texture.Count           = it->second.Count;
         textures.insert(std::make_pair(it->first, texture));
     }
 
@@ -186,6 +187,30 @@ void VulkanMaterial::SetTexture(const std::string& name, Ref<VulkanTexture> text
         auto DescriptorSet = MeshDescriptorSet[MeshName];
         
         DescriptorSet->WriteImage(name,texture);
+    }
+}
+
+void VulkanMaterial::SetTextures(const std::string& name, std::vector<VkImageView> ImageViews, std::string MeshName)
+{
+    auto it = textures.find(name);
+    if(it == textures.end())
+    {
+        RE_ERROR("Texture {0} not found. ",name);
+        return;
+    }
+
+    if(ImageViews.size() == 0)
+    {
+        RE_ERROR("Textures {0} can't be size 0. ",name);
+    }
+
+    if(it->second.Count != ImageViews.size())
+    {
+        it->second.Textures = ImageViews;
+
+        auto DescriptorSet = MeshDescriptorSet[MeshName];
+        
+        DescriptorSet->WriteImages(name,ImageViews);
     }
 }
 
@@ -412,6 +437,28 @@ void VulkanComputePipeline::SetTexture(const std::string& name, Ref<VulkanTextur
     }
 }
 
+void VulkanComputePipeline::SetTextures(const std::string& name, std::vector<VkImageView> ImageViews)
+{
+    auto it = textures.find(name);
+    if(it == textures.end())
+    {
+        RE_ERROR("Texture {0} not found. ",name);
+        return;
+    }
+
+    if(ImageViews.size() == 0)
+    {
+        RE_ERROR("Textures {0} can't be size 0. ",name);
+    }
+
+    if(it->second.Count != ImageViews.size())
+    {
+        it->second.Textures = ImageViews;
+        
+        DescriptorSet->WriteImages(name,ImageViews);
+    }
+}
+
 void VulkanComputePipeline::SetStorageBuffer(const std::string& name, Ref<VulkanBuffer> buffer)
 {
    auto it = storageBuffers.find(name);
@@ -440,6 +487,11 @@ void VulkanComputePipeline::SetStorageBuffer(const std::string& name, Ref<Vulkan
 void VulkanComputePipeline::SetStorageTexture(const std::string& name, Ref<VulkanTexture> texture)
 {
     SetTexture(name,texture);
+}
+
+void VulkanComputePipeline::PushContant(Ref<VulkanCommandBuffer> cmd, uint32 Index, uint32 size, void* Data)
+{
+    vkCmdPushConstants(cmd->CmdBuffer, GetPipelineLayout(), VK_SHADER_STAGE_COMPUTE_BIT, Index, size, Data);
 }
 
 void VulkanComputePipeline::Prepare()
@@ -509,6 +561,8 @@ void VulkanComputePipeline::Prepare()
         texture.DescriptorType  = it->second.DescriptorType;
         texture.Set             = it->second.Set;
         texture.StageFlags      = it->second.StageFlags;
+        texture.Count           = it->second.Count;
+        
         textures.insert(std::make_pair(it->first, texture));
     }
 }

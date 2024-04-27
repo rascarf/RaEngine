@@ -30,6 +30,7 @@ public:
     {
         int32 Set;
         int32 Binding;
+        int32 Count;
         uint32_t DynamicOffset;
         bool bDynamic;
     };
@@ -94,6 +95,7 @@ public:
         BindInfo paramInfo = {};
         paramInfo.Set      = Set;
         paramInfo.Binding  = binding.binding;
+        paramInfo.Count    = binding.descriptorCount;
         ParamsMap.insert(std::make_pair(VarName, paramInfo));
     }
 
@@ -135,6 +137,43 @@ public:
         writeDescriptorSet.descriptorType  = SetLayoutsInfo.GetDescriptorType(BindInfo.Set, BindInfo.Binding);
         writeDescriptorSet.pBufferInfo     = nullptr;
         writeDescriptorSet.pImageInfo      = &(Texture->DescriptorInfo);
+        writeDescriptorSet.dstBinding      = BindInfo.Binding;
+        vkUpdateDescriptorSets(device, 1, &writeDescriptorSet, 0, nullptr);
+    }
+
+    void WriteImages(const std::string& name,std::vector<VkImageView> Textures)
+    {
+        auto it = SetLayoutsInfo.ParamsMap.find(name);
+        if (it == SetLayoutsInfo.ParamsMap.end())
+        {
+            RE_CORE_ERROR("Failed write buffer, {0} not found!", name.c_str());
+            return;
+        }
+
+        auto BindInfo = it->second;
+
+        std::vector<VkDescriptorImageInfo> Descriptors;
+        for(int i = 0 ; i < Textures.size() ; i++)
+        {
+            Descriptors.push_back(VkDescriptorImageInfo{ VK_NULL_HANDLE, Textures[i], VK_IMAGE_LAYOUT_GENERAL });
+        }
+
+        Descriptors.push_back(VkDescriptorImageInfo{ VK_NULL_HANDLE, Textures[0], VK_IMAGE_LAYOUT_GENERAL });
+        
+        // TODO 做一个容错
+        if(BindInfo.Count < Descriptors.size())
+        {
+            RE_ERROR("DescriptorSet:BindInfo.Count != Descriptors.size()");
+            return;
+        }
+
+        VkWriteDescriptorSet writeDescriptorSet;
+        ZeroVulkanStruct(writeDescriptorSet, VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
+        writeDescriptorSet.dstSet          = DescriptorSets[BindInfo.Set];
+        writeDescriptorSet.descriptorType  = SetLayoutsInfo.GetDescriptorType(BindInfo.Set, BindInfo.Binding);
+        writeDescriptorSet.pBufferInfo     = nullptr;
+        writeDescriptorSet.pImageInfo      = Descriptors.data();
+        writeDescriptorSet.descriptorCount = Descriptors.size();
         writeDescriptorSet.dstBinding      = BindInfo.Binding;
         vkUpdateDescriptorSets(device, 1, &writeDescriptorSet, 0, nullptr);
     }

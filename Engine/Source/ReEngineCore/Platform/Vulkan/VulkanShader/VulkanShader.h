@@ -6,6 +6,19 @@
 #include "VulkanDescriptorSet.h"
 
 
+class VulkanSpecialInfo
+{
+public:
+    std::string VarName = "";
+    uint32_t specializationData;
+    VkSpecializationMapEntry Entry = {};
+    VkSpecializationInfo Info = {};
+
+    void Register(Ref<class VulkanShader> Shader);
+    VulkanSpecialInfo(){}
+};
+
+
 //ShaderModule之间是可以共享数据的
 class VulkanShader
 {
@@ -26,6 +39,7 @@ public:
     {
         uint32 Set = 0;
         uint32 Binding = 0;
+        uint32 Count = 0;
         VkDescriptorType DescriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         VkShaderStageFlags StageFlags = 0;
     };
@@ -39,7 +53,7 @@ public:
     };
     
     static Ref<VulkanShader> Create(Ref<VulkanDevice> vulkanDevice,bool DynamicUBO,const std::vector<unsigned char>* Vert,const std::vector<unsigned char>* Frag,const std::vector<unsigned char>* Geom,const std::vector<unsigned char>* Compute,const std::vector<unsigned char>* Tesc,const std::vector<unsigned char>* Tese);
-    static Ref<VulkanShader> CreateCompute(Ref<VulkanDevice> vulkanDevice,bool DynamicUBO,const std::vector<unsigned char>* Compute);
+    static Ref<VulkanShader> CreateCompute(Ref<VulkanDevice> vulkanDevice,bool DynamicUBO,const std::vector<unsigned char>* Compute,VulkanSpecialInfo specializationInfo = {});
     static Ref<VulkanShader> CreateRayTracingShader(Ref<VulkanDevice> vulkanDevice,const std::vector<unsigned char>* ClosethitShaderModule,const std::vector<unsigned char>* RayGenerationShaderModule,const std::vector<unsigned char>* MissShaderModule);
     static Ref<VulkanShader> CreateRayTracingShader(Ref<VulkanDevice> vulkanDevice,const std::vector<unsigned char>* ClosethitShaderModule,const std::vector<unsigned char>* RayGenerationShaderModule,const std::vector<unsigned char>* MissShaderModule,const std::unordered_map<std::string,int>& ArrayParams);
     
@@ -98,6 +112,7 @@ public:
     std::vector<VertexAttribute>    perVertexAttributes;
 
     std::unordered_map<std::string,int32>   ArrayParams;
+    std::vector<VkPushConstantRange> PushConstantParams;
 
 //------------------------------GPU------------------------------------
     
@@ -109,6 +124,9 @@ public:
     std::vector<Ref<VulkanShaderDescriptorPool>>        descriptorSetPools;
     VkPipelineLayout                pipelineLayout = VK_NULL_HANDLE;
     VkDevice    device;
+
+    VkSpecializationInfo                    specializationInfo;
+    std::unordered_map<std::string,uint32_t>specializationRuntimeMap;
 };
 
 

@@ -16,7 +16,6 @@ vec3 getSamplingVector()
     vec2 uv = 2.0 * vec2 (st.x,1.0 - st.y) - vec2(1.0); // 移轴
 
     vec3 ret;
-    
     if(gl_GlobalInvocationID.z == 0)      ret = vec3(1.0,  uv.y, -uv.x);
     else if(gl_GlobalInvocationID.z == 1) ret = vec3(-1.0, uv.y,  uv.x);
     else if(gl_GlobalInvocationID.z == 2) ret = vec3(uv.x, 1.0, -uv.y);

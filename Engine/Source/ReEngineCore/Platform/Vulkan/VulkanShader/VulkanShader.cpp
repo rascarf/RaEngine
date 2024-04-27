@@ -2,6 +2,8 @@
 #include "spirv_cross.hpp"
 #include "Platform/Vulkan/VulkanBuffers/VulkanVertexBuffer.h"
 
+
+
 VulkanShader::~VulkanShader()
 {
     if (vertShaderModule)
@@ -83,6 +85,7 @@ Ref<VulkanShader> VulkanShader::Create(Ref<VulkanDevice> vulkanDevice,bool Dynam
                                        ,const std::vector<unsigned char>* Tesc,const std::vector<unsigned char>* Tese)
 {
     using ShaderModuleRef = Ref<VulkanShaderModule>;
+
     
     ShaderModuleRef vertModule = Vert ? VulkanShaderModule::Create(vulkanDevice, *Vert, VK_SHADER_STAGE_VERTEX_BIT)   : nullptr;
     ShaderModuleRef fragModule = Frag ? VulkanShaderModule::Create(vulkanDevice, *Frag, VK_SHADER_STAGE_FRAGMENT_BIT) : nullptr;
@@ -92,7 +95,7 @@ Ref<VulkanShader> VulkanShader::Create(Ref<VulkanDevice> vulkanDevice,bool Dynam
     ShaderModuleRef teseModule = Tese ? VulkanShaderModule::Create(vulkanDevice, *Tese, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT) : nullptr;
 
     Ref<VulkanShader> Shader = CreateRef<VulkanShader>();
-
+    
     Shader->device = vulkanDevice->GetInstanceHandle();
     Shader->dynamicUBO = DynamicUBO;
     Shader->vertShaderModule = vertModule;
@@ -101,13 +104,14 @@ Ref<VulkanShader> VulkanShader::Create(Ref<VulkanDevice> vulkanDevice,bool Dynam
     Shader->compShaderModule = compModule;
     Shader->tescShaderModule = tescModule;
     Shader->teseShaderModule = teseModule;
+    Shader->specializationInfo = {};
 
     Shader->Compile();
 
     return Shader;
 }
 
-Ref<VulkanShader> VulkanShader::CreateCompute(Ref<VulkanDevice> vulkanDevice, bool DynamicUBO,const std::vector<unsigned char>* Compute)
+Ref<VulkanShader> VulkanShader::CreateCompute(Ref<VulkanDevice> vulkanDevice, bool DynamicUBO,const std::vector<unsigned char>* Compute,VulkanSpecialInfo specializationInfo)
 {
     using ShaderModuleRef = Ref<VulkanShaderModule>;
 
@@ -117,6 +121,13 @@ Ref<VulkanShader> VulkanShader::CreateCompute(Ref<VulkanDevice> vulkanDevice, bo
     Shader->device = vulkanDevice->GetInstanceHandle();
     Shader->dynamicUBO = DynamicUBO;
     Shader->compShaderModule = compModule;
+
+    if(specializationInfo.VarName != "")
+    {
+        Shader->specializationInfo = specializationInfo.Info;
+        specializationInfo.Register(Shader);
+    }
+    
     Shader->Compile();
 
     return Shader;
@@ -244,6 +255,8 @@ void VulkanShader::ProcessShaderModule(Ref<VulkanShaderModule> ShaderModule)
     ShaderCreateInfo.stage = ShaderModule->mShaderStage;
     ShaderCreateInfo.module = ShaderModule->Handle;
     ShaderCreateInfo.pName = "main"; //TODO 这里思考下如何拓展
+    ShaderCreateInfo.pSpecializationInfo = &specializationInfo;
+
     ShaderStageInfos.push_back(ShaderCreateInfo);
 
     spirv_cross::Compiler Compiler((uint32*)ShaderModule->Code->data(), ShaderModule->Code->size() / sizeof(uint32_t));
@@ -255,6 +268,19 @@ void VulkanShader::ProcessShaderModule(Ref<VulkanShaderModule> ShaderModule)
     ProcessStorageImages(Compiler, Resources, ShaderModule->mShaderStage);
     ProcessInput(Compiler, Resources, ShaderModule->mShaderStage);
     ProcessStorageBuffers(Compiler, Resources, ShaderModule->mShaderStage);
+
+    for (int32 i = 0; i < Resources.push_constant_buffers.size(); ++i)
+    {
+        spirv_cross::Resource& res = Resources.push_constant_buffers[i];
+        spirv_cross::SPIRType type = Compiler.get_type(res.type_id);
+
+        VkPushConstantRange Info;
+        Info.stageFlags = ShaderModule->mShaderStage;
+        Info.size = Compiler.get_declared_struct_size(type);
+        Info.offset = 0;
+        
+        PushConstantParams.push_back(Info);
+    }
 }
 
 void VulkanShader::ProcessAttachment(spirv_cross::Compiler& compiler, spirv_cross::ShaderResources& resources,VkPipelineStageFlags stageFlags)
@@ -482,16 +508,39 @@ void VulkanShader::ProcessStorageImages(spirv_cross::Compiler& compiler, spirv_c
     {
         spirv_cross::Resource& res      = resources.storage_images[i];
         spirv_cross::SPIRType type      = compiler.get_type(res.type_id);
+        
         spirv_cross::SPIRType base_type = compiler.get_type(res.base_type_id);
         const std::string&      varName = compiler.get_name(res.id);
+        
+        int32 DescriptorSize = 1;
+        if(type.array_size_literal.size() > 0 && type.array_size_literal[0])
+        {
+            DescriptorSize = type.array[0]; 
+        }
+        else
+        {
+            if(type.array.size() > 0)
+            {
+               auto Constant =  compiler.get_constant(type.array[0]);
+                if(Constant.is_used_as_array_length)
+                {
+                    const std::string& Name = compiler.get_name(type.array[0]);
+                    if(specializationRuntimeMap.contains(Name))
+                    {
+                        DescriptorSize =  specializationRuntimeMap[Name];
+                    }
+                    
+                }
+            }
+        }
 
         int32 set     = compiler.get_decoration(res.id, spv::DecorationDescriptorSet);
         int32 binding = compiler.get_decoration(res.id, spv::DecorationBinding);
-
+        
         VkDescriptorSetLayoutBinding setLayoutBinding = {};
         setLayoutBinding.binding             = binding;
         setLayoutBinding.descriptorType     = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-        setLayoutBinding.descriptorCount    = 1;
+        setLayoutBinding.descriptorCount    = DescriptorSize;
         setLayoutBinding.stageFlags         = stageFlags;
         setLayoutBinding.pImmutableSamplers = nullptr;
 
@@ -505,6 +554,7 @@ void VulkanShader::ProcessStorageImages(spirv_cross::Compiler& compiler, spirv_c
             imageInfo.Binding        = binding;
             imageInfo.StageFlags     = stageFlags;
             imageInfo.DescriptorType = setLayoutBinding.descriptorType;
+            imageInfo.Count          = setLayoutBinding.descriptorCount;
             imageParams.insert(std::make_pair(varName, imageInfo));
         }
         else
@@ -717,6 +767,9 @@ void VulkanShader::GenerateLayout()
     ZeroVulkanStruct(pipeLayoutInfo, VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO);
     pipeLayoutInfo.setLayoutCount = (uint32_t)descriptorSetLayouts.size();
     pipeLayoutInfo.pSetLayouts    = descriptorSetLayouts.data();
+    pipeLayoutInfo.pushConstantRangeCount = PushConstantParams.size();
+    pipeLayoutInfo.pPushConstantRanges = PushConstantParams.data();
+    
     VERIFYVULKANRESULT(vkCreatePipelineLayout(device, &pipeLayoutInfo, VULKAN_CPU_ALLOCATOR, &pipelineLayout));
 }
 
@@ -750,4 +803,9 @@ Ref<VulkanDescriptorSet> VulkanShader::AllocateDescriptorSet()
     {
         return OutSet;
     }
+}
+
+void VulkanSpecialInfo::Register(Ref<VulkanShader> Shader)
+{
+    Shader->specializationRuntimeMap.insert(std::make_pair(VarName,specializationData));
 }

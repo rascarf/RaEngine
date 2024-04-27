@@ -167,6 +167,8 @@ public:
         VkSamplerAddressMode addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT, 
         VkSamplerAddressMode addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT
     );
+
+    VkImageView CreateImageView(uint32 BaseMipLevel,uint32 NumMip);
 public:
     //*************************** Util *************************************************//
     static void SetImageBarrierInfo(ImageLayoutBarrier source, ImageLayoutBarrier dest, VkImageMemoryBarrier& inOutBarrier, VkPipelineStageFlags& inOutSourceStage, VkPipelineStageFlags& inOutDestStage)

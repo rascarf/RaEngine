@@ -16,7 +16,9 @@ namespace ReEngine
         uint32 Binding = 0;
         VkDescriptorType  DescriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
         VkShaderStageFlags StageFlags = 0;
+        uint32 Count = 0;
         Ref<VulkanTexture> Texture = nullptr;
+        std::vector<VkImageView> Textures;
     };
 
     struct VulkanSimulateBuffer
@@ -25,6 +27,7 @@ namespace ReEngine
         uint32 Set = 0;
         uint32 Binding = 0;
         uint32 DynamicIndex = 0;
+        uint32 Count = 0;
         VkDescriptorType DescriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         VkShaderStageFlags StageFlags = 0;
         VkDescriptorBufferInfo* BufferInfo;
@@ -50,6 +53,7 @@ namespace ReEngine
         
         void SetTexture(const std::string& name,Ref<VulkanTexture> texture);
         void SetTexture(const std::string& name,Ref<VulkanTexture> texture,std::string MeshName);
+        void SetTextures(const std::string& name,std::vector<VkImageView> ImageViews,std::string MeshName = "");
         
         void SetInputAttachment(const std::string& name, Ref<VulkanTexture> texture);
         void SetInputAttachment(const std::string& name, Ref<VulkanTexture> texture,std::string MeshName);
@@ -87,7 +91,7 @@ namespace ReEngine
         Ref<VulkanDynamicBufferRing> RingBuffer;
     };
 
-    class VulkanComputePipeline
+    class VulkanComputePipeline 
     {
     private:
         // 用于记录DynamicOffset以及速查当前运行的Shader是否有这些参数
@@ -109,10 +113,12 @@ namespace ReEngine
         void SetUniform(const std::string& name, void* dataPtr, uint32 size);
         void SetUniform(const std::string& name,VkDescriptorBufferInfo BufferView);
         void SetTexture(const std::string& name,Ref<VulkanTexture> texture);
+        void SetTextures(const std::string& name,std::vector<VkImageView> ImageViews);
         
         void SetStorageBuffer(const std::string& name, Ref<VulkanBuffer> buffer);
         void SetStorageTexture(const std::string& name,Ref<VulkanTexture> texture);
 
+        void PushContant(Ref<VulkanCommandBuffer> cmd,uint32 Index,uint32 size,void* Data);
     public:
         FORCE_INLINE VkPipeline GetVkPipeline()const
         {

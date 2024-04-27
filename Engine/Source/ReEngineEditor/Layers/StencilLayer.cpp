@@ -9,6 +9,7 @@
 #include <SkyBox_vert.h>
 #include <SkyBox_frag.h>
 #include <Equirect2Cube_comp.h>
+#include <SpecularFilter_comp.h>
 
 #include "Mesh/Quad.h"
 #include "Platform/Vulkan/VulkanContext.h"
@@ -56,6 +57,15 @@ void RTLayer::OnDeInit()
     SkyBoxMaterial.reset();
     SkyBox.reset();
     CubeMap.reset();
+    
+    EnvTextureEquirect.reset();
+    EnvEquirect2CubeShader.reset();       
+    EnvEquirect2CubePipe.reset();
+    PreFilterCubeMap.reset();
+
+    SpcularFilterShader.reset();       
+    SpcularFilterPipe.reset();
+    EnvCubeMap.reset();
     
     SkyBoxRenderTarget.reset();
     RenderTarget.reset();
@@ -108,7 +118,7 @@ void RTLayer::OnRender()
     {
         // SkyBoxMaterial->SetTexture("diffuseMap",CubeMap);
 
-        SkyBoxMaterial->SetTexture("diffuseMap",EnvCubeMap);
+        // SkyBoxMaterial->SetTexture("diffuseMap",EnvCubeMap);
         RenderTarget->BeginRenderPass(VkContext->GetCommandList());
         vkCmdBindPipeline(VkContext->GetCommandList(),VK_PIPELINE_BIND_POINT_GRAPHICS,SkyBoxMaterial->mPipeline->Pipeline);
 
@@ -273,21 +283,29 @@ void RTLayer::LoadAsset()
        device,
        VkContext->CommandPool->m_ComputeCommandPool,
        VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-       device->GetComputeQueue()
+       device->GetGraphicsQueue()
     );
     
     ComputeCmdBuffer->Begin();
-    EnvCubeMap = VulkanTexture::CreateCube(
+    PreFilterCubeMap = VulkanTexture::CreateCube(
         device,
         ComputeCmdBuffer,
         VK_FORMAT_R16G16B16A16_SFLOAT,
         VK_IMAGE_ASPECT_COLOR_BIT,
         1024,1024,
-        false,
-        VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+        true,
+        VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
         VK_SAMPLE_COUNT_1_BIT,
         ImageLayoutBarrier::ComputeGeneralRW
     );
+
+    // TODO 不知道为什么SpecializationInfo用不了
+    const VkSpecializationMapEntry specializationMap = { 0, 0, sizeof(uint32_t) };
+    vkInfo.specializationData = (uint32_t)PreFilterCubeMap->MipLevels;
+    VkSpecializationInfo Info = {1,&specializationMap,sizeof(uint32_t),&vkInfo.specializationData};
+    vkInfo.Entry = specializationMap;
+    vkInfo.Info = Info;
+    vkInfo.VarName = "NumMipLevels";
     
     EnvEquirect2CubeShader = VulkanShader::CreateCompute(device,true,&EQUIRECT2CUBE_COMP);
     EnvEquirect2CubePipe = VulkanComputePipeline::Create(
@@ -298,18 +316,70 @@ void RTLayer::LoadAsset()
     );
 
     EnvEquirect2CubePipe->SetTexture("inputTexture",EnvTextureEquirect);
-    EnvEquirect2CubePipe->SetTexture("outputTexture",EnvCubeMap);
+    EnvEquirect2CubePipe->SetTexture("outputTexture",PreFilterCubeMap);
     
     EnvEquirect2CubePipe->BindDispatch(ComputeCmdBuffer->CmdBuffer,1024 / 32,1024 / 32 , 6);
-        VulkanTexture::ImagePipelineBarrier(
+    PreFilterCubeMap->IsUpload = true;
+    
+    ComputeCmdBuffer->GenerateMipMaps(PreFilterCubeMap);
+    
+    VulkanTexture::ImagePipelineBarrier(
         ComputeCmdBuffer->CmdBuffer,
-        EnvCubeMap,
-        EnvCubeMap->mImageLayoutBarrier,
-        ImageLayoutBarrier::PixelShaderRead
+        PreFilterCubeMap,
+        PreFilterCubeMap->mImageLayoutBarrier,
+        ImageLayoutBarrier::PixelGeneralRW
     );
 
+    EnvCubeMap = VulkanTexture::CreateCube(
+        device,
+        ComputeCmdBuffer,
+        VK_FORMAT_R16G16B16A16_SFLOAT,
+        VK_IMAGE_ASPECT_COLOR_BIT,
+        1024,1024,
+        true,
+        VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+        VK_SAMPLE_COUNT_1_BIT,
+        ImageLayoutBarrier::ComputeGeneralRW
+    );
+
+    ComputeCmdBuffer->CopyImage(PreFilterCubeMap,EnvCubeMap);
+
+    SpcularFilterShader = VulkanShader::CreateCompute(device,true,&SPECULARFILTER_COMP,vkInfo);
+    
+    SpcularFilterPipe = VulkanComputePipeline::Create(
+        device,
+        VkContext->CommandPool->m_PipelineCache,
+        SpcularFilterShader,
+        m_RingBuffer
+    );
+    SpcularFilterPipe->SetTexture("inputTexture",PreFilterCubeMap);
+    
+    std::vector<VkImageView> envTextureMipTailViews;
+    for(int i = 1 ; i < PreFilterCubeMap->MipLevels ; i++)
+    {
+        envTextureMipTailViews.push_back(EnvCubeMap->CreateImageView(i,1));
+    }
+    SpcularFilterPipe->SetTextures("outputTexture",envTextureMipTailViews);
+
+    const float deltaRoughness = 1.0f / std::max(float(envTextureMipTailViews.size()), 1.0f);
+    for(uint32_t level = 1 ,size = EnvCubeMap->Width / 2 ; level < EnvCubeMap->MipLevels ; level++,size /= 2)
+    {
+        const uint32_t numGroups = std::max<uint32_t>(1, size/32);
+        
+        const SpecularFilterPushConstants pushConstants = { level-1, level * deltaRoughness };
+
+        SpcularFilterPipe->PushContant(ComputeCmdBuffer,0,sizeof(pushConstants),(void*)&pushConstants);
+
+        SpcularFilterPipe->BindDispatch(ComputeCmdBuffer->CmdBuffer,numGroups,numGroups,6);
+    }
+    
     ComputeCmdBuffer->End();
     ComputeCmdBuffer->Submit();
+
+    for(int i = 0 ; i < envTextureMipTailViews.size() ; i++)
+    {
+        vkDestroyImageView(device->GetInstanceHandle(),envTextureMipTailViews[i],nullptr);
+    }
     
     {
         SceneShader = VulkanShader::Create(device,true,&OBJ_VERT,&OBJ_FRAG,nullptr,nullptr,nullptr,nullptr);
@@ -357,17 +427,17 @@ void RTLayer::LoadAsset()
     {
         SceneMaterial->Prepare(diffusePaths[index]);
         
-        // TextureArray[index] = VulkanTexture::Create2D(
-        //     diffusePaths[index],
-        //     device,
-        //     cmdBuffer
-        // );
+        TextureArray[index] = VulkanTexture::Create2D(
+            diffusePaths[index],
+            device,
+            cmdBuffer
+        );
         
-        m_ASyncLoader->RequestTexture(diffusePaths[index],[index,this](FileLoadCallBackParamStruct Ready)
-        {
-            TextureArray[index] = Ready.TextureHanle;
-            RE_INFO("Index:{3} {0} :Width:{1} Height:{2}",Ready.FilePath,Ready.TextureHanle->Width,Ready.TextureHanle->Height,index);
-        });
+        // m_ASyncLoader->RequestTexture(diffusePaths[index],[index,this](FileLoadCallBackParamStruct Ready)
+        // {
+        //     TextureArray[index] = Ready.TextureHanle;
+        //     RE_INFO("Index:{3} {0} :Width:{1} Height:{2}",Ready.FilePath,Ready.TextureHanle->Width,Ready.TextureHanle->Height,index);
+        // });
     }
 
     std::vector<std::string> FilaNames = {
@@ -402,6 +472,7 @@ void RTLayer::LoadAsset()
     SkyBoxMaterial->mPipelineInfo.DepthStencilState.stencilTestEnable = VK_FALSE; 
     SkyBoxMaterial->PreparePipeline();
     // SkyBoxMaterial->SetTexture("diffuseMap",CubeMap);
+    // SkyBoxMaterial->SetTexture("diffuseMap",PreFilterCubeMap);
     SkyBoxMaterial->SetTexture("diffuseMap",EnvCubeMap);
     
     SkyBox = VulkanModel::LoadFromFile(
