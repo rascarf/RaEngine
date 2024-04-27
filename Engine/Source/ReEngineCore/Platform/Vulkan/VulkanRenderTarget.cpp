@@ -26,7 +26,7 @@ VulkanRenderTargetLayout::VulkanRenderTargetLayout(const VulkanRenderPassInfo& R
         attchmentDescription.storeOp        = colorEntry.StoreAction;
         attchmentDescription.stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
         attchmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        attchmentDescription.initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
+        attchmentDescription.initialLayout  =  colorEntry.LoadAction == VK_ATTACHMENT_LOAD_OP_LOAD? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_UNDEFINED ;
         attchmentDescription.finalLayout    = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
         ColorReferences[NumColorAttachments].attachment = NumAttachmentDescriptions;
@@ -108,7 +108,9 @@ VulkanRenderPass::VulkanRenderPass(VkDevice InDevice, const VulkanRenderTargetLa
     SubpassDesc.pColorAttachments       = RtLayout.NumColorAttachments > 0 ? RtLayout.ColorReferences : nullptr;
     SubpassDesc.pResolveAttachments     = RtLayout.HasResolveAttachments ? RtLayout.ResolveReferences : nullptr;
     SubpassDesc.pDepthStencilAttachment = RtLayout.HasDepthStencil ? &RtLayout.DepthStencilReference : nullptr;
-    SubpassDesc.pInputAttachments       = RtLayout.NumInputAttachments > 0 ? RtLayout.InputAttachments : nullptr; 
+    SubpassDesc.pInputAttachments       = RtLayout.NumInputAttachments > 0 ? RtLayout.InputAttachments : nullptr;
+
+    // RtLayout.Descriptions[0].initialLayout
     
     VkRenderPassCreateInfo renderPassCreateInfo;
     ZeroVulkanStruct(renderPassCreateInfo, VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO);

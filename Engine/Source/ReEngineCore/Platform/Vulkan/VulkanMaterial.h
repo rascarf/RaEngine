@@ -87,7 +87,7 @@ namespace ReEngine
         Ref<VulkanDynamicBufferRing> RingBuffer;
     };
 
-    class VulkanComputeMaterial
+    class VulkanComputePipeline
     {
     private:
         // 用于记录DynamicOffset以及速查当前运行的Shader是否有这些参数
@@ -96,12 +96,12 @@ namespace ReEngine
         typedef std::unordered_map<std::string,VulkanSimulateTexture> TexturesMap;
     
     public:
-        VulkanComputeMaterial(){}
-        ~VulkanComputeMaterial();
+        VulkanComputePipeline(){}
+        ~VulkanComputePipeline();
 
     public:
-        static Ref<VulkanComputeMaterial> Create(Ref<VulkanDevice> vulkanDevice,VkPipelineCache PipelineCache,Ref<VulkanShader> Shader,Ref<VulkanDynamicBufferRing> RingBuffer);
-        static Ref<VulkanComputeMaterial> Create(Ref<VulkanDevice> vulkanDevice,VkPipelineCache PipelineCache,Ref<VulkanShader> Shader);
+        static Ref<VulkanComputePipeline> Create(Ref<VulkanDevice> vulkanDevice,VkPipelineCache PipelineCache,Ref<VulkanShader> Shader,Ref<VulkanDynamicBufferRing> RingBuffer);
+        static Ref<VulkanComputePipeline> Create(Ref<VulkanDevice> vulkanDevice,VkPipelineCache PipelineCache,Ref<VulkanShader> Shader);
 
         void BindDispatch(VkCommandBuffer CommandBuffer,int groupX,int groupY,int groupZ);
         void BindDecriptorSets(VkCommandBuffer commandBuffer,VkPipelineBindPoint BindPoint);

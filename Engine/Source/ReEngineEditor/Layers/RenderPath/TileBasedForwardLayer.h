@@ -83,7 +83,7 @@ private:
 
     // Compute Pass
     Ref<VulkanShader>            ComputeShader;
-    Ref<VulkanComputeMaterial>   ComputeProcessor;
+    Ref<VulkanComputePipeline>   ComputeProcessor;
     Ref<VulkanBuffer>            LightCullingBuffer;
 
     glm::vec4                    Debug;

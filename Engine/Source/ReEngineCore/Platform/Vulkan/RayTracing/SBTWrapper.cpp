@@ -124,7 +124,6 @@ void SBTWrapper::Create(VkPipeline RtPipeline, VkRayTracingPipelineCreateInfoKHR
             mBuffer[i] = VulkanBuffer::CreateBuffer(
                     mCtx->GetVulkanInstance()->GetDevice(),
                     Usage_Flags,
-                    mem_flag,
                     Stage[i].size(),
                     Stage[i].data()
                 );

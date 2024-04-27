@@ -6,6 +6,8 @@
 #include "Platform/Vulkan/VulkanBuffers/VulkanBuffer.h"
 
 #include "vk_mem_alloc.h"
+#include "Platform/Vulkan/VulkanContext.h"
+#include "Renderer/RHI/Texture.h"
 
 VulkanTexture::~VulkanTexture()
 {
@@ -54,7 +56,7 @@ void VulkanTexture::UpdateSampler(VkFilter magFilter, VkFilter minFilter, VkSamp
     DescriptorInfo.sampler = ImageSampler;
 }
 
-Ref<VulkanTexture> VulkanTexture::Create2D(const std::string& filename, std::shared_ptr<VulkanDevice> vulkanDevice, Ref<VulkanCommandBuffer> cmdBuffer, VkImageUsageFlags imageUsageFlags, ImageLayoutBarrier imageLayout)
+Ref<VulkanTexture> VulkanTexture::Create2D(const std::string& filename, std::shared_ptr<VulkanDevice> vulkanDevice, Ref<VulkanCommandBuffer> cmdBuffer, VkImageUsageFlags imageUsageFlags, ImageLayoutBarrier imageLayout,VkFormat LoadFormat)
 {
     uint32 DataSize = 0;
     uint8* DataPtr = nullptr;
@@ -98,11 +100,6 @@ Ref<VulkanTexture> VulkanTexture::CreateDepthStencil(int32 width, int32 height,s
     texture->Format = PixelFormatToVkFormat(DepthFormat, false);
     texture->NumSamples = NumSamples;
     texture->IsUpload       = true;
-
-    if(DepthFormat == PF_D24)
-    {
-        
-    }
 
     VkImageCreateInfo imageCreateInfo;
     ZeroVulkanStruct(imageCreateInfo, VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO);
@@ -213,10 +210,8 @@ Ref<VulkanTexture> VulkanTexture::Create2D(Ref<VulkanDevice> vulkanDevice,Ref<Vu
         subresourceRange.layerCount     = 1;
         subresourceRange.baseArrayLayer = 0;
         subresourceRange.baseMipLevel   = 0;
-
-        cmdBuffer->Begin();
+        
         ImagePipelineBarrier(cmdBuffer->CmdBuffer, image, ImageLayoutBarrier::Undefined, imageLayout, subresourceRange);
-        cmdBuffer->Submit();
     }
     else
     {
@@ -247,6 +242,45 @@ Ref<VulkanTexture> VulkanTexture::Create2D(Ref<VulkanDevice> vulkanDevice,Ref<Vu
     return Texture;
 }
 
+Ref<VulkanTexture> VulkanTexture::Create2DWithData(const std::string& filename,std::shared_ptr<VulkanDevice> vulkanDevice, Ref<VulkanCommandBuffer> cmdBuffer, VkFormat LoadFormat,VkImageAspectFlags  Aspect,VkImageUsageFlags imageUsageFlags, ImageLayoutBarrier imageLayout, VkSampleCountFlagBits sampleCount)
+{
+    if(!cmdBuffer)
+    {
+        cmdBuffer = VulkanCommandBuffer::Create(
+           vulkanDevice,
+           vulkanDevice->mContext->CommandPool->m_ComputeCommandPool,
+           VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+           vulkanDevice->GetTransferQueue()
+        );
+    }
+    
+    cmdBuffer->Begin();
+    
+    const Ref<TextureData> Data = TextureData::FromeFile(filename);
+    
+    Ref<VulkanTexture> ResultImage =  Create2D(
+        vulkanDevice,
+        cmdBuffer,
+        LoadFormat,
+        Aspect,
+        Data->width(),
+        Data->height(),
+        imageUsageFlags,
+        sampleCount,
+        imageLayout
+    );
+
+    Ref<VulkanBuffer> StagingBuffer = VulkanBuffer::CreateBuffer(vulkanDevice,VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,Data->pitch() * Data->height(),Data->pixels<void>());
+
+    cmdBuffer->UploadTextureData(ResultImage,nullptr,StagingBuffer,0);
+
+    cmdBuffer->End();
+    cmdBuffer->Submit();
+
+    StagingBuffer.reset();
+    return ResultImage;
+}
+
 Ref<VulkanTexture> VulkanTexture::CreateRenderTarget(std::shared_ptr<VulkanDevice> vulkanDevice, VkFormat format,VkImageAspectFlags aspect, int32 width, int32 height, VkImageUsageFlags usage, VkSampleCountFlagBits sampleCount)
 {
     Ref<VulkanTexture> Texture = Create2D(vulkanDevice, nullptr, format, aspect, width, height, usage, sampleCount);
@@ -273,10 +307,7 @@ Ref<VulkanTexture> VulkanTexture::Create2D(const uint8* rgbaData,uint32 size,VkF
     const uint32 ImageSize = width * height *  G_PixelFormats[format].blockBytes;
     const uint32 Size =  ImageSize > size ? ImageSize : size;
     
-    auto StagingBuffer =  VulkanBuffer::CreateBuffer(
-        vulkanDevice,VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
-        , Size); 
+    auto StagingBuffer =  VulkanBuffer::CreateBuffer(vulkanDevice,VK_BUFFER_USAGE_TRANSFER_SRC_BIT, Size); 
 
     StagingBuffer->Map();
     StagingBuffer->CopyFrom((void*)rgbaData,size);
@@ -664,7 +695,6 @@ Ref<VulkanTexture> VulkanTexture::CreateCube(Ref<VulkanDevice> InVulkanDevice, R
         RE_ERROR("Can't Create CubeTexture");
         return nullptr;
     }
-
     
     VkImageViewCreateInfo viewInfo;
     ZeroVulkanStruct(viewInfo, VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO);
@@ -674,7 +704,7 @@ Ref<VulkanTexture> VulkanTexture::CreateCube(Ref<VulkanDevice> InVulkanDevice, R
     viewInfo.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
     
     viewInfo.subresourceRange.aspectMask = Aspect;
-    viewInfo.subresourceRange.levelCount = Mipmap;
+    viewInfo.subresourceRange.levelCount = Mipmap?MipMaps:1;
     viewInfo.subresourceRange.layerCount = 6;
     viewInfo.subresourceRange.baseMipLevel = 0;
     viewInfo.subresourceRange.baseArrayLayer = 0;
@@ -701,14 +731,12 @@ Ref<VulkanTexture> VulkanTexture::CreateCube(Ref<VulkanDevice> InVulkanDevice, R
     {
         VkImageSubresourceRange subresourceRange = {};
         subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
-        subresourceRange.levelCount     = Mipmap;
+        subresourceRange.levelCount     = MipMaps;
         subresourceRange.layerCount     = 6;
         subresourceRange.baseArrayLayer = 0;
         subresourceRange.baseMipLevel   = 0;
-
-        CmdBuffer->Begin();
+        
         ImagePipelineBarrier(CmdBuffer->CmdBuffer,image,ImageLayoutBarrier::Undefined,ImageLayout,subresourceRange);
-        CmdBuffer->End();
     }
     else
     {
@@ -731,7 +759,7 @@ Ref<VulkanTexture> VulkanTexture::CreateCube(Ref<VulkanDevice> InVulkanDevice, R
     texture->ImageSampler   = imageSampler;
     texture->ImageView      = imageView;
     texture->Image          = image;
-    texture->MipLevels      = Mipmap;
+    texture->MipLevels      = MipMaps;
     texture->LayerCount     = 1;
     texture->Depth          = 6;       
     texture->IsCubeMap      = true;
@@ -789,7 +817,6 @@ Ref<VulkanTexture> VulkanTexture::CreateCube(std::vector<std::string> FileNames,
     Ref<VulkanBuffer> StagingBuffer = VulkanBuffer::CreateBuffer(
         InVulkanDevice,
         VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
         images[0].size * 6
     );
 
@@ -889,9 +916,48 @@ void VulkanTexture::ImagePipelineBarrier(VkCommandBuffer CommandBuffer, Ref<Vulk
     }
 }
 
+void VulkanTexture::ImagePipelineBarrier(VkCommandBuffer CommandBuffer, Ref<VulkanTexture> Texture,ImageLayoutBarrier Source, ImageLayoutBarrier Dest, uint32_t SrcQueueFmily, uint32_t DstQueueFamily)
+{
+    VkImageMemoryBarrier ImageBarrier;
+    ZeroVulkanStruct(ImageBarrier, VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
+    ImageBarrier.image = Texture->Image;
+    ImageBarrier.srcQueueFamilyIndex = SrcQueueFmily;
+    ImageBarrier.dstQueueFamilyIndex = DstQueueFamily;
+    
+    VkImageSubresourceRange SubResourceRange{};
+    SubResourceRange.aspectMask = Texture->bIsDepth()?VK_IMAGE_ASPECT_DEPTH_BIT:VK_IMAGE_ASPECT_COLOR_BIT;
+    SubResourceRange.layerCount = Texture->LayerCount;
+    SubResourceRange.levelCount = Texture->MipLevels;
+    SubResourceRange.baseArrayLayer = 0;
+    SubResourceRange.baseMipLevel = 0;
+    
+    ImageBarrier.subresourceRange  = SubResourceRange;
+
+    VkPipelineStageFlags sourceStages = (VkPipelineStageFlags)0;
+    VkPipelineStageFlags destStages   = (VkPipelineStageFlags)0;
+        
+    SetImageBarrierInfo(Source, Dest, ImageBarrier, sourceStages, destStages);
+
+    if (Source == ImageLayoutBarrier::Present)
+    {
+        sourceStages = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+    }
+    else if (Dest == ImageLayoutBarrier::Present)
+    {
+        destStages = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+    }
+
+    vkCmdPipelineBarrier(CommandBuffer, sourceStages, destStages, 0, 0, nullptr, 0, nullptr, 1, &ImageBarrier);
+
+    Texture->DescriptorInfo.imageLayout = ImageBarrier.newLayout;
+    Texture->ImageLayout = ImageBarrier.newLayout;
+    Texture->OwnerQueueFamily = ImageBarrier.dstQueueFamilyIndex;
+    Texture->mImageLayoutBarrier = Dest;
+}
+
 void VulkanTexture::ImagePipelineBarrier(VkCommandBuffer CommandBuffer, VkImage Image, ImageLayoutBarrier Source,
-    ImageLayoutBarrier Dest, const VkImageSubresourceRange& subresourceRange, uint32_t SrcQueueFmily,
-    uint32_t DstQueueFamily)
+                                         ImageLayoutBarrier Dest, const VkImageSubresourceRange& subresourceRange, uint32_t SrcQueueFmily,
+                                         uint32_t DstQueueFamily)
 {
     {
         VkImageMemoryBarrier ImageBarrier;

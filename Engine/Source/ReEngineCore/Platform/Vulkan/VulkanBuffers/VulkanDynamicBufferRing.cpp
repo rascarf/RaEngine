@@ -11,7 +11,6 @@ VkResult VulkanDynamicBufferRing::OnCreate(Ref<VulkanDevice> Device, uint32_t NU
     m_Buffer = VulkanBuffer::CreateBuffer(
         Device,
         VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
         m_MemTotalSize
     );
     
@@ -32,7 +31,6 @@ VkResult VulkanDynamicBufferRing::OnCreate(Ref<VulkanDevice> Device, uint32_t NU
     m_Buffer = VulkanBuffer::CreateBuffer(
         Device,
         UsageFlagBit,
-        PropertyFlagBits,
         m_MemTotalSize
     );
     

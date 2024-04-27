@@ -32,7 +32,7 @@ private:
     
     std::vector<Ref<VulkanTexture>> ComputeTargets;
     std::vector<Ref<VulkanShader>> ComputeShaders;
-    std::vector<Ref<VulkanComputeMaterial>> ComputeMaterial;
+    std::vector<Ref<VulkanComputePipeline>> ComputeMaterial;
 
     std::vector<const char*> m_FilterNames;
     int32 m_FilterIndex;

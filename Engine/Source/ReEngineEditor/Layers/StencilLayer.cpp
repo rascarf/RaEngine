@@ -8,6 +8,7 @@
 
 #include <SkyBox_vert.h>
 #include <SkyBox_frag.h>
+#include <Equirect2Cube_comp.h>
 
 #include "Mesh/Quad.h"
 #include "Platform/Vulkan/VulkanContext.h"
@@ -105,8 +106,9 @@ void RTLayer::OnRender()
     scissor.offset.y      = 0;
 
     {
-        SkyBoxMaterial->SetTexture("diffuseMap",CubeMap);
-        
+        // SkyBoxMaterial->SetTexture("diffuseMap",CubeMap);
+
+        SkyBoxMaterial->SetTexture("diffuseMap",EnvCubeMap);
         RenderTarget->BeginRenderPass(VkContext->GetCommandList());
         vkCmdBindPipeline(VkContext->GetCommandList(),VK_PIPELINE_BIND_POINT_GRAPHICS,SkyBoxMaterial->mPipeline->Pipeline);
 
@@ -228,7 +230,7 @@ void RTLayer::CreateRenderTarget()
 
     const VulkanRenderPassInfo SkyBoxInfo
     {
-        ColorRT,VK_ATTACHMENT_LOAD_OP_CLEAR,VK_ATTACHMENT_STORE_OP_NONE,
+        ColorRT,VK_ATTACHMENT_LOAD_OP_CLEAR,VK_ATTACHMENT_STORE_OP_NONE,nullptr
     };
     SkyBoxRenderTarget = VulkanRenderTarget::Create
     (
@@ -251,10 +253,64 @@ void RTLayer::CreateRenderTarget()
 void RTLayer::LoadAsset()
 {
     auto device = VkContext->Instance->GetDevice();
+    auto cmdBuffer = VulkanCommandBuffer::Create(device, VkContext->CommandPool->m_CommandPool);
     
     m_RingBuffer = CreateRef<VulkanDynamicBufferRing>();
     m_RingBuffer->OnCreate(VkContext->Instance->GetDevice(),3,200 * 1024 * 1024);
+    
+    EnvTextureEquirect = VulkanTexture::Create2DWithData(
+        "Assets/Textures/environment.hdr",
+        device,
+        nullptr,
+        VK_FORMAT_R32G32B32A32_SFLOAT,
+        VK_IMAGE_ASPECT_COLOR_BIT,
+        VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+        ImageLayoutBarrier::ComputeGeneralRW,
+        VK_SAMPLE_COUNT_1_BIT
+    );
+    
+    const auto ComputeCmdBuffer = VulkanCommandBuffer::Create(
+       device,
+       VkContext->CommandPool->m_ComputeCommandPool,
+       VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+       device->GetComputeQueue()
+    );
+    
+    ComputeCmdBuffer->Begin();
+    EnvCubeMap = VulkanTexture::CreateCube(
+        device,
+        ComputeCmdBuffer,
+        VK_FORMAT_R16G16B16A16_SFLOAT,
+        VK_IMAGE_ASPECT_COLOR_BIT,
+        1024,1024,
+        false,
+        VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+        VK_SAMPLE_COUNT_1_BIT,
+        ImageLayoutBarrier::ComputeGeneralRW
+    );
+    
+    EnvEquirect2CubeShader = VulkanShader::CreateCompute(device,true,&EQUIRECT2CUBE_COMP);
+    EnvEquirect2CubePipe = VulkanComputePipeline::Create(
+        device,
+        VkContext->CommandPool->m_PipelineCache,
+        EnvEquirect2CubeShader,
+        m_RingBuffer
+    );
 
+    EnvEquirect2CubePipe->SetTexture("inputTexture",EnvTextureEquirect);
+    EnvEquirect2CubePipe->SetTexture("outputTexture",EnvCubeMap);
+    
+    EnvEquirect2CubePipe->BindDispatch(ComputeCmdBuffer->CmdBuffer,1024 / 32,1024 / 32 , 6);
+        VulkanTexture::ImagePipelineBarrier(
+        ComputeCmdBuffer->CmdBuffer,
+        EnvCubeMap,
+        EnvCubeMap->mImageLayoutBarrier,
+        ImageLayoutBarrier::PixelShaderRead
+    );
+
+    ComputeCmdBuffer->End();
+    ComputeCmdBuffer->Submit();
+    
     {
         SceneShader = VulkanShader::Create(device,true,&OBJ_VERT,&OBJ_FRAG,nullptr,nullptr,nullptr,nullptr);
         SceneMaterial = VulkanMaterial::Create(
@@ -280,7 +336,6 @@ void RTLayer::LoadAsset()
         mFilterMaterial->PreparePipeline();
     }
     
-    auto cmdBuffer = VulkanCommandBuffer::Create(device, VkContext->CommandPool->m_CommandPool);
 
     // scene model
     SceneModel = VulkanModel::LoadFromFile(
@@ -346,7 +401,8 @@ void RTLayer::LoadAsset()
     SkyBoxMaterial->mPipelineInfo.DepthStencilState.depthWriteEnable = VK_FALSE;
     SkyBoxMaterial->mPipelineInfo.DepthStencilState.stencilTestEnable = VK_FALSE; 
     SkyBoxMaterial->PreparePipeline();
-    SkyBoxMaterial->SetTexture("diffuseMap",CubeMap);
+    // SkyBoxMaterial->SetTexture("diffuseMap",CubeMap);
+    SkyBoxMaterial->SetTexture("diffuseMap",EnvCubeMap);
     
     SkyBox = VulkanModel::LoadFromFile(
         "Assets/Mesh/cube.obj",

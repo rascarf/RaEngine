@@ -18,7 +18,7 @@ public:
     /*------------------ 2D ---------------------------*/
 
     /*读取一张贴图*/
-    //创建的时候带有数据的
+    //创建的时候带有数据的 
     static Ref<VulkanTexture> Create2D(
     const uint8* rgbaData,
     uint32 size,
@@ -32,27 +32,39 @@ public:
 );
 
     /*读取一张贴图*/
-    //创建的时候带有数据的
+    //创建的时候带有数据的 - 基本废弃，请使用下面带有ImageData的版本
     static  Ref<VulkanTexture> Create2D(
         const std::string& filename,
         std::shared_ptr<VulkanDevice> vulkanDevice,
         Ref<VulkanCommandBuffer> cmdBuffer,
         VkImageUsageFlags imageUsageFlags = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
-        ImageLayoutBarrier imageLayout = ImageLayoutBarrier::PixelShaderRead
+        ImageLayoutBarrier imageLayout = ImageLayoutBarrier::PixelShaderRead,
+        VkFormat LoadFormat =  VK_FORMAT_R8G8B8A8_UNORM
     );
     
     /*创建StorageBuffer*/
     //创建的时候没有数据
     static  Ref<VulkanTexture> Create2D(
-    std::shared_ptr<VulkanDevice> vulkanDevice,
-    Ref<VulkanCommandBuffer> cmdBuffer,
-    VkFormat format,
-    VkImageAspectFlags aspect,
-    int32 width,
-    int32 height,
-    VkImageUsageFlags usage,
-    VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT,
-    ImageLayoutBarrier imageLayout = ImageLayoutBarrier::Undefined
+        std::shared_ptr<VulkanDevice> vulkanDevice,
+        Ref<VulkanCommandBuffer> cmdBuffer,
+        VkFormat format,
+        VkImageAspectFlags aspect,
+        int32 width,
+        int32 height,
+        VkImageUsageFlags usage,
+        VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT,
+        ImageLayoutBarrier imageLayout = ImageLayoutBarrier::Undefined
+    );
+
+    static Ref<VulkanTexture> Create2DWithData(
+        const std::string& filename,
+        std::shared_ptr<VulkanDevice> vulkanDevice,
+        Ref<VulkanCommandBuffer> cmdBuffer,
+        VkFormat LoadFormat =  VK_FORMAT_R8G8B8A8_UNORM,
+        VkImageAspectFlags  Aspect = VK_IMAGE_ASPECT_COLOR_BIT,
+        VkImageUsageFlags imageUsageFlags = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+        ImageLayoutBarrier imageLayout = ImageLayoutBarrier::PixelShaderRead,
+        VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT
     );
 
     /*-------------------- Cube --------------------------*/
@@ -164,6 +176,7 @@ public:
     }
 
     static void ImagePipelineBarrier(VkCommandBuffer CommandBuffer,Ref<VulkanTexture> Texture,ImageLayoutBarrier Source,ImageLayoutBarrier Dest,const VkImageSubresourceRange& subresourceRange,uint32_t SrcQueueFmily = VK_QUEUE_FAMILY_IGNORED,uint32_t DstQueueFamily = VK_QUEUE_FAMILY_IGNORED);
+    static void ImagePipelineBarrier(VkCommandBuffer CommandBuffer,Ref<VulkanTexture> Texture,ImageLayoutBarrier Source,ImageLayoutBarrier Dest,uint32_t SrcQueueFmily = VK_QUEUE_FAMILY_IGNORED,uint32_t DstQueueFamily = VK_QUEUE_FAMILY_IGNORED);
     static void ImagePipelineBarrier(VkCommandBuffer CommandBuffer,Ref<VulkanTexture> Texture,ImageLayoutBarrier Source,ImageLayoutBarrier Dest,uint32 BaseMiplevel,uint32 MipCount,bool IsDepth,uint32_t SrcQueueFmily = VK_QUEUE_FAMILY_IGNORED,uint32_t DstQueueFamily = VK_QUEUE_FAMILY_IGNORED);
     static void ImagePipelineBarrier(VkCommandBuffer CommandBuffer,VkImage Image,ImageLayoutBarrier Source,ImageLayoutBarrier Dest,const VkImageSubresourceRange& subresourceRange,uint32_t SrcQueueFmily = VK_QUEUE_FAMILY_IGNORED,uint32_t DstQueueFamily = VK_QUEUE_FAMILY_IGNORED);
     

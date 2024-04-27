@@ -270,7 +270,7 @@ VulkanMaterial::VulkanMaterial()
     
 }
 
-VulkanComputeMaterial::~VulkanComputeMaterial()
+VulkanComputePipeline::~VulkanComputePipeline()
 {
     VkDevice Device = mVulkanDevice->GetInstanceHandle();
     
@@ -291,10 +291,10 @@ VulkanComputeMaterial::~VulkanComputeMaterial()
     RingBuffer.reset();
 }
 
-Ref<VulkanComputeMaterial> VulkanComputeMaterial::Create(Ref<VulkanDevice> vulkanDevice, VkPipelineCache PipelineCache,Ref<VulkanShader> Shader, Ref<VulkanDynamicBufferRing> RingBuffer)
+Ref<VulkanComputePipeline> VulkanComputePipeline::Create(Ref<VulkanDevice> vulkanDevice, VkPipelineCache PipelineCache,Ref<VulkanShader> Shader, Ref<VulkanDynamicBufferRing> RingBuffer)
 {
     // 创建材质
-    Ref<VulkanComputeMaterial> Material = CreateRef<VulkanComputeMaterial>();
+    Ref<VulkanComputePipeline> Material = CreateRef<VulkanComputePipeline>();
     Material->mVulkanDevice  = vulkanDevice;
     Material->mShader        = Shader;
     Material->mPipelineCache = PipelineCache;
@@ -306,10 +306,10 @@ Ref<VulkanComputeMaterial> VulkanComputeMaterial::Create(Ref<VulkanDevice> vulka
     return Material;
 }
 
-Ref<VulkanComputeMaterial> VulkanComputeMaterial::Create(Ref<VulkanDevice> vulkanDevice, VkPipelineCache PipelineCache,Ref<VulkanShader> Shader)
+Ref<VulkanComputePipeline> VulkanComputePipeline::Create(Ref<VulkanDevice> vulkanDevice, VkPipelineCache PipelineCache,Ref<VulkanShader> Shader)
 {
     // 创建材质
-    Ref<VulkanComputeMaterial> Material = CreateRef<VulkanComputeMaterial>();
+    Ref<VulkanComputePipeline> Material = CreateRef<VulkanComputePipeline>();
     Material->mVulkanDevice  = vulkanDevice;
     Material->mShader        = Shader;
     Material->mPipelineCache = PipelineCache;
@@ -321,7 +321,7 @@ Ref<VulkanComputeMaterial> VulkanComputeMaterial::Create(Ref<VulkanDevice> vulka
     return Material;
 }
 
-void VulkanComputeMaterial::BindDecriptorSets(VkCommandBuffer commandBuffer, VkPipelineBindPoint BindPoint)
+void VulkanComputePipeline::BindDecriptorSets(VkCommandBuffer commandBuffer, VkPipelineBindPoint BindPoint)
 {
     if(DynamicOffsetCount > 0 )
     {
@@ -352,14 +352,14 @@ void VulkanComputeMaterial::BindDecriptorSets(VkCommandBuffer commandBuffer, VkP
     }
 }
 
-void VulkanComputeMaterial::BindDispatch(VkCommandBuffer CommandBuffer, int groupX, int groupY, int groupZ)
+void VulkanComputePipeline::BindDispatch(VkCommandBuffer CommandBuffer, int groupX, int groupY, int groupZ)
 {
     vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, ComputePipeline);
     BindDecriptorSets(CommandBuffer,VK_PIPELINE_BIND_POINT_COMPUTE);
     vkCmdDispatch(CommandBuffer,groupX,groupY,groupZ);
 }
 
-void VulkanComputeMaterial::SetUniform(const std::string& name, void* dataPtr, uint32 size)
+void VulkanComputePipeline::SetUniform(const std::string& name, void* dataPtr, uint32 size)
 {
     auto it = uniformBuffers.find(name);
     if(it == uniformBuffers.end())
@@ -376,7 +376,7 @@ void VulkanComputeMaterial::SetUniform(const std::string& name, void* dataPtr, u
     dynOffsets[it->second.DynamicIndex] = (uint32)BufferView.offset;
 }
 
-void VulkanComputeMaterial::SetUniform(const std::string& name, VkDescriptorBufferInfo BufferView)
+void VulkanComputePipeline::SetUniform(const std::string& name, VkDescriptorBufferInfo BufferView)
 {
     auto it = uniformBuffers.find(name);
     if(it == uniformBuffers.end())
@@ -391,7 +391,7 @@ void VulkanComputeMaterial::SetUniform(const std::string& name, VkDescriptorBuff
     dynOffsets[it->second.DynamicIndex] = (uint32)BufferView.offset;
 }
 
-void VulkanComputeMaterial::SetTexture(const std::string& name, Ref<VulkanTexture> texture)
+void VulkanComputePipeline::SetTexture(const std::string& name, Ref<VulkanTexture> texture)
 {
     auto it = textures.find(name);
     if(it == textures.end())
@@ -412,7 +412,7 @@ void VulkanComputeMaterial::SetTexture(const std::string& name, Ref<VulkanTextur
     }
 }
 
-void VulkanComputeMaterial::SetStorageBuffer(const std::string& name, Ref<VulkanBuffer> buffer)
+void VulkanComputePipeline::SetStorageBuffer(const std::string& name, Ref<VulkanBuffer> buffer)
 {
    auto it = storageBuffers.find(name);
     if(it == storageBuffers.end())
@@ -437,12 +437,12 @@ void VulkanComputeMaterial::SetStorageBuffer(const std::string& name, Ref<Vulkan
     }
 }
 
-void VulkanComputeMaterial::SetStorageTexture(const std::string& name, Ref<VulkanTexture> texture)
+void VulkanComputePipeline::SetStorageTexture(const std::string& name, Ref<VulkanTexture> texture)
 {
     SetTexture(name,texture);
 }
 
-void VulkanComputeMaterial::Prepare()
+void VulkanComputePipeline::Prepare()
 {
     DescriptorSet = mShader->AllocateDescriptorSet();
 
@@ -513,7 +513,7 @@ void VulkanComputeMaterial::Prepare()
     }
 }
 
-void VulkanComputeMaterial::PreparePipeline()
+void VulkanComputePipeline::PreparePipeline()
 {
     VkDevice Device = mVulkanDevice->GetInstanceHandle();
     if(ComputePipeline)

@@ -14,8 +14,39 @@ VulkanBuffer::~VulkanBuffer()
     Device.reset();
 }
 
-Ref<VulkanBuffer> VulkanBuffer::CreateBuffer(std::shared_ptr<VulkanDevice> device, VkBufferUsageFlags usageFlags,
-                                             VkMemoryPropertyFlags memoryPropertyFlags, VkDeviceSize size, void* data)
+Ref<VulkanBuffer> VulkanBuffer::CreateBuffer(std::shared_ptr<VulkanDevice> device, VkBufferUsageFlags usageFlags, VkDeviceSize size, void* data)
+{
+    Ref<VulkanBuffer> Buffer = CreateRef<VulkanBuffer>();
+    Buffer->Device = device;
+		
+    VkBufferCreateInfo bufferCreateInfo;
+    ZeroVulkanStruct(bufferCreateInfo, VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO);
+    bufferCreateInfo.usage = usageFlags;
+    bufferCreateInfo.size  = size;
+
+    VmaAllocationCreateInfo MemoryInfo{};
+    MemoryInfo.flags = VMA_ALLOCATION_CREATE_STRATEGY_BEST_FIT_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
+    MemoryInfo.usage = VMA_MEMORY_USAGE_AUTO;
+
+    VmaAllocationInfo AllocationInfo;
+    vmaCreateBuffer(device->vma_allocator,&bufferCreateInfo,&MemoryInfo,&Buffer->Buffer,&Buffer->VmaAllocation,&AllocationInfo);
+    
+    Buffer->Size       = AllocationInfo.size;
+    Buffer->UsageFlags = usageFlags;
+
+    if (data != nullptr)
+    {
+        Buffer->Map();
+        memcpy(Buffer->Mapped, data, size);
+        Buffer->UnMap();
+    }
+
+    Buffer->SetupDescriptor();
+
+    return Buffer;
+}
+
+Ref<VulkanBuffer> VulkanBuffer::CreateBuffer(std::shared_ptr<VulkanDevice> device, VkBufferUsageFlags usageFlags,VkDeviceSize size, const void* data)
 {
     Ref<VulkanBuffer> dvkBuffer = CreateRef<VulkanBuffer>();
     dvkBuffer->Device = device;
@@ -30,12 +61,10 @@ Ref<VulkanBuffer> VulkanBuffer::CreateBuffer(std::shared_ptr<VulkanDevice> devic
     MemoryInfo.usage = VMA_MEMORY_USAGE_AUTO;
 
     VmaAllocationInfo AllocationInfo;
-    vmaCreateBuffer(device->vma_allocator,&bufferCreateInfo,&MemoryInfo,
-        &dvkBuffer->Buffer,&dvkBuffer->VmaAllocation,&AllocationInfo);
+    vmaCreateBuffer(device->vma_allocator,&bufferCreateInfo,&MemoryInfo,&dvkBuffer->Buffer,&dvkBuffer->VmaAllocation,&AllocationInfo);
     
     dvkBuffer->Size       = AllocationInfo.size;
     dvkBuffer->UsageFlags = usageFlags;
-    dvkBuffer->MemoryPropertyFlags = memoryPropertyFlags;
 
     if (data != nullptr)
     {

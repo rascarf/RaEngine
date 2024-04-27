@@ -336,12 +336,11 @@ void TileBasedForwardLayer::LoadAsset()
     LightCullingBuffer = VulkanBuffer::CreateBuffer(
         device,
         VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
         sizeof(LightVisiblity) * TileCountPerColumn * TileCountPerRow
     );
     
     ComputeShader = VulkanShader::CreateCompute(device,true,&LIGHTCULLING_COMP);
-    ComputeProcessor = VulkanComputeMaterial::Create(
+    ComputeProcessor = VulkanComputePipeline::Create(
         device,
         VkContext->CommandPool->m_PipelineCache,
         ComputeShader,

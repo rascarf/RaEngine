@@ -33,7 +33,6 @@ namespace ReEngine
             Ref<VulkanBuffer> AccelBuffer = VulkanBuffer::CreateBuffer(
                 Device,
                 VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
-                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                 accel.size
             );
     

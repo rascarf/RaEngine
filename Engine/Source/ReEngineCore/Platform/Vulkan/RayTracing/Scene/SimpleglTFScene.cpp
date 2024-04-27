@@ -239,7 +239,6 @@ void glTFScene::LoadMeshes(Ref<VulkanCommandBuffer> cmdBuffer, tinygltf::Model& 
                     Ref<VulkanBuffer> vertexStaging = VulkanBuffer::CreateBuffer(
                         Device,
                         VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
                         vertices.size() * sizeof(float),
                         vertices.data()
                     );
@@ -247,7 +246,6 @@ void glTFScene::LoadMeshes(Ref<VulkanCommandBuffer> cmdBuffer, tinygltf::Model& 
                     mesh->VertexBuffer = VulkanBuffer::CreateBuffer(
                         Device,
                         VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR,
-                        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                         vertices.size() * sizeof(float)
                     );
 
@@ -267,7 +265,6 @@ void glTFScene::LoadMeshes(Ref<VulkanCommandBuffer> cmdBuffer, tinygltf::Model& 
                    Ref<VulkanBuffer> indexStaging = VulkanBuffer::CreateBuffer(
                         Device,
                         VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
                         indices.size() * sizeof(uint32),
                         indices.data()
                     );
@@ -275,7 +272,6 @@ void glTFScene::LoadMeshes(Ref<VulkanCommandBuffer> cmdBuffer, tinygltf::Model& 
                     mesh->IndexBuffer = VulkanBuffer::CreateBuffer(
                         Device,
                         VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR,
-                        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                         indices.size() * sizeof(uint32)
                     );
 
@@ -461,7 +457,6 @@ void glTFScene::BuildBlas(const std::vector<BlasInput>& input, VkBuildAccelerati
     Ref<VulkanBuffer> ScratchBuffer = VulkanBuffer::CreateBuffer(
         Device,
         VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
         MaxScratchSize
     );
 
@@ -646,7 +641,6 @@ void glTFScene::BuildTlas(std::vector<VkAccelerationStructureInstanceKHR>& insta
         Ref<VulkanBuffer> InstancesBuffer = VulkanBuffer::CreateBuffer(
             Device,
             VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR,
-            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, // todo 这里要不staging一下？
             sizeof(VkAccelerationStructureInstanceKHR) * Count_Instance,
             instances.data()
         );
@@ -712,11 +706,7 @@ void glTFScene::CmdBuildTlas(VkCommandBuffer cmdBuffer, uint32_t CountInstance, 
             Tla = AccelKHR::CreateAcceleration(Device,CreateInfo);
         }
 
-        ScratchBuffer = VulkanBuffer::CreateBuffer(
-            Device,
-            VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
-            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, size_info.buildScratchSize
-        );
+        ScratchBuffer = VulkanBuffer::CreateBuffer(Device,VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, size_info.buildScratchSize);
         VkDeviceAddress scratchAddress = ScratchBuffer->GetDeviceAddress();
 
         // Update build information

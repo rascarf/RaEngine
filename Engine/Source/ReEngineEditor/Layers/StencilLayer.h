@@ -47,6 +47,11 @@ private:
     Ref<VulkanTexture>      CubeMap; 
     Ref<VulkanRenderTarget> SkyBoxRenderTarget;
 
+    Ref<VulkanTexture>      EnvTextureEquirect;
+    Ref<VulkanShader>       EnvEquirect2CubeShader;       
+    Ref<VulkanComputePipeline> EnvEquirect2CubePipe;
+    Ref<VulkanTexture>      EnvCubeMap;
+
     struct ModelViewProjectionBlock
     {
         glm::mat4 model;

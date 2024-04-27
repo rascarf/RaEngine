@@ -71,13 +71,11 @@ Ref<VulkanVertexBuffer> VulkanVertexBuffer::Create(std::shared_ptr<VulkanDevice>
    auto stagingIndexBuffer = VulkanBuffer::CreateBuffer(
             device,
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
             VertexbufferSize,(void*)vertices.data());
     
     VertexBuffer->Buffer = VulkanBuffer::CreateBuffer(
              device,
              VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT ,
              VertexbufferSize);
 
     VulkanBuffer::TransferBuffer(device,cmdBuffer,stagingIndexBuffer,VertexBuffer->Buffer,VertexbufferSize);

@@ -294,7 +294,7 @@ void ComputeLayer::ProcessImage()
 
     for(int i = 0 ; i < 3 ; ++i)
     {
-        ComputeMaterial[i] = VulkanComputeMaterial::Create(device,VkContext->CommandPool->m_PipelineCache,ComputeShaders[i],m_RingBuffer);
+        ComputeMaterial[i] = VulkanComputePipeline::Create(device,VkContext->CommandPool->m_PipelineCache,ComputeShaders[i],m_RingBuffer);
         ComputeMaterial[i]->SetStorageTexture("inputImage",mTexture);
         ComputeMaterial[i]->SetStorageTexture("outputImage",ComputeTargets[i]);
     }

@@ -25,7 +25,6 @@ namespace ReEngine
         StagingBuffer = VulkanBuffer::CreateBuffer(
             InDevice,
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
             64 * 1024 * 1024 //64MB
         );
 

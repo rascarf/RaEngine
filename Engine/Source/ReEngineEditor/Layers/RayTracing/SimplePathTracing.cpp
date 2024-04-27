@@ -236,7 +236,6 @@ void SimplePathTracing::LoadAsset()
     mLightBuffer = VulkanBuffer::CreateBuffer(
         device,
         VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
         sizeof(LightData) * Scene.LightDatas.size(),
             Scene.LightDatas.data()
     );
@@ -244,7 +243,6 @@ void SimplePathTracing::LoadAsset()
     mMaterialBuffer = VulkanBuffer::CreateBuffer(
         device,
         VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
         sizeof(Material) * Scene.Materials.size(),
              Scene.Materials.data()
     );
@@ -264,7 +262,6 @@ void SimplePathTracing::LoadAsset()
     mObjectBuffer = VulkanBuffer::CreateBuffer(
         device,
         VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-       VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
        sizeof(ObjectInstance) * objects.size(),
         objects.data()
     );

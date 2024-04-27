@@ -1,11 +1,57 @@
 ﻿#include "Core/PCH.h"
 #include "Renderer/RHI/Texture.h"
+
+#include "stb_image.h"
 #include "Resource/AssetManager/AssetManager.h"
 #include "Renderer/RHI/Renderer.h"
 #include "Platform/OpenGL/OpenGLTexture.h"
 
 namespace ReEngine
 {
+    Ref<TextureData> TextureData::FromeFile(const std::string& FileName, int channel)
+    {
+        const std::string FilePath = AssetManager::GetFullPath(FileName).generic_string();
+        RE_INFO("Load Image : {0}",FilePath);
+        
+        Ref<TextureData> Image = CreateRef<TextureData>();
+        if(stbi_is_hdr(FilePath.c_str()))
+        {
+            float* pixels = stbi_loadf(FilePath.c_str(), &Image->m_width, &Image->m_height, &Image->m_channels, channel);
+            if(pixels) {
+                Image->m_pixels.reset(reinterpret_cast<unsigned char*>(pixels));
+                Image->m_hdr = true;
+            }
+        }
+        else
+        {
+            unsigned char* pixels = stbi_load(FilePath.c_str(), &Image->m_width, &Image->m_height, &Image->m_channels, channel);
+            if(pixels) {
+                Image->m_pixels.reset(pixels);
+                Image->m_hdr = false;
+            }  
+        }
+
+        if(channel > 0)
+        {
+            Image->m_channels = channel;
+        }
+
+        if(!Image->m_pixels)
+        {
+            RE_ERROR("Failed to load image file:{0}",FileName);
+        }
+
+        return Image;
+    }
+
+    TextureData::TextureData()
+    : m_width(0)
+    , m_height(0)
+    , m_channels(0)
+    , m_hdr(false)
+    {
+    }
+
     Ref<Texture2D> Texture2D::Create(uint32_t width, uint32_t height)
     {
         switch (RendererAPI::Current())
