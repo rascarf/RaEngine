@@ -1,5 +1,4 @@
 #version 450 core
-#extension GL_KHR_vulkan_glsl :enable
 
 const float PI = 3.141592;
 const float TwoPI = 2 * PI;
@@ -40,6 +39,7 @@ vec2 sampleHammersley(uint i)
 
 // 根据低差异和粗糙度对ggx采样，得到满足条件的采样光线
 // 这里采样出来的光线会偏向lobe，重要性采样
+// 逆变采样得到符合GGX分布的向量
 vec3 sampleGGX(float u1, float u2, float roughness)
 {
     float alpha = roughness * roughness;
@@ -52,8 +52,10 @@ vec3 sampleGGX(float u1, float u2, float roughness)
 	return vec3(sinTheta * cos(phi), sinTheta * sin(phi), cosTheta);
 }
 
-// 法线分布函数 根据roughness和入射光得到pdf
-// 本来就可以作为PDF使用（我觉得按理说应该去使用ggx的pdf）
+// 法线分布函数 根据roughness和半程向量得到pdf : Trowbridge-Reitz GGX
+// 本来就可以作为PDF使用（我觉得按理说应该去使用ggx的pdf
+// cosLh:N * H：N是平面法线 H是期望的半程向量，roughness：粗糙度
+// 返回值：float 代表H这条光线的概率密度
 float ndfGGX(float cosLh, float roughness)
 {
 	float alpha   = roughness * roughness;
@@ -122,23 +124,24 @@ void main(void)
     for(uint i=0; i<NumSamples; ++i) 
     {
         vec2 u = sampleHammersley(i);
-		vec3 Lh = tangentToWorld(sampleGGX(u.x, u.y, PARAM_ROUGHNESS), N, S, T);
+		vec3 Lh = tangentToWorld(sampleGGX(u.x, u.y, PARAM_ROUGHNESS), N, S, T); // 半程向量采样方向，符合GGX分布（高光波瓣中的某一条光线）
 
         // 反射向量
-        vec3 Li = 2.0 * dot(Lo, Lh) * Lh - Lo;
+        vec3 Li = 2.0 * dot(Lo, Lh) * Lh - Lo; // 视角反射方向
 
         // Cosθ
-        float cosLi = dot(N, Li);
+        float cosLi = dot(N, Li); // N * wi
         if(cosLi > 0.0)
         {
+            // N * wo
             float cosLh = max(dot(N, Lh), 0.0);
 
             //GGX的pdf 
             float pdf = ndfGGX(cosLh, PARAM_ROUGHNESS) * 0.25;
 
-            float ws = 1.0 / (NumSamples * pdf);
+            float ws = 1.0 / (NumSamples * pdf);//带权重要性采样，结果是“有偏”的！
 
-            float mipLevels = max(0.5 * log2(ws / wt) + 1.0 , 0.0);
+            float mipLevels = max(0.5 * log2(ws / wt) + 1.0 , 0.0); // 大手子提出可以提前滤波，因为越粗糙，光线的波瓣会越大
             color += textureLod(inputTexture,Li,mipLevels).rgb * cosLi;
             weight += cosLi;
         }

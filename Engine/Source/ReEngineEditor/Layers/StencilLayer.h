@@ -23,6 +23,7 @@ private:
 
     void CreateRenderTarget();
     void LoadAsset();
+    void GenerateDiffuseAndSpecular();
 private:
     
     Ref<VulkanModel> mQuad = nullptr;
@@ -50,11 +51,20 @@ private:
     Ref<VulkanTexture>      EnvTextureEquirect;
     Ref<VulkanShader>       EnvEquirect2CubeShader;       
     Ref<VulkanComputePipeline> EnvEquirect2CubePipe;
-    Ref<VulkanTexture>      PreFilterCubeMap;
 
+    Ref<VulkanTexture>      PreFilterCubeMap;
     Ref<VulkanShader>       SpcularFilterShader;       
     Ref<VulkanComputePipeline> SpcularFilterPipe;
     Ref<VulkanTexture>      EnvCubeMap;
+
+    Ref<VulkanTexture>      IrraMap;
+    Ref<VulkanShader>       IrraShader;       
+    Ref<VulkanComputePipeline> IrraPipe;
+
+    Ref<VulkanTexture>      Lut;
+    Ref<VulkanShader>       LutShader;       
+    Ref<VulkanComputePipeline> LutPipe;
+    
 
     struct ModelViewProjectionBlock
     {

@@ -10,6 +10,8 @@
 #include <SkyBox_frag.h>
 #include <Equirect2Cube_comp.h>
 #include <SpecularFilter_comp.h>
+#include <DiffuseFilter_comp.h>
+#include <Lut_comp.h>
 
 #include "Mesh/Quad.h"
 #include "Platform/Vulkan/VulkanContext.h"
@@ -63,9 +65,17 @@ void RTLayer::OnDeInit()
     EnvEquirect2CubePipe.reset();
     PreFilterCubeMap.reset();
 
+    IrraMap.reset();
+    IrraPipe.reset();
+    IrraShader.reset();
+
     SpcularFilterShader.reset();       
     SpcularFilterPipe.reset();
     EnvCubeMap.reset();
+
+    LutShader.reset();
+    LutPipe.reset();
+    Lut.reset();
     
     SkyBoxRenderTarget.reset();
     RenderTarget.reset();
@@ -116,9 +126,6 @@ void RTLayer::OnRender()
     scissor.offset.y      = 0;
 
     {
-        // SkyBoxMaterial->SetTexture("diffuseMap",CubeMap);
-
-        // SkyBoxMaterial->SetTexture("diffuseMap",EnvCubeMap);
         RenderTarget->BeginRenderPass(VkContext->GetCommandList());
         vkCmdBindPipeline(VkContext->GetCommandList(),VK_PIPELINE_BIND_POINT_GRAPHICS,SkyBoxMaterial->mPipeline->Pipeline);
 
@@ -190,7 +197,8 @@ void RTLayer::OnRender()
 
         {
             vkCmdBindPipeline(VkContext->GetCommandList(), VK_PIPELINE_BIND_POINT_GRAPHICS, mFilterMaterial->mPipeline->Pipeline);
-            mFilterMaterial->SetTexture("InputImageTexture", ColorRT);
+            // mFilterMaterial->SetTexture("InputImageTexture", ColorRT);
+            mFilterMaterial->SetTexture("InputImageTexture", Lut);
             mFilterMaterial->BindDescriptorSets(VkContext->GetCommandList(), VK_PIPELINE_BIND_POINT_GRAPHICS);
             mQuad->Meshes[0]->BindDraw(VkContext->GetCommandList());
         }
@@ -260,14 +268,9 @@ void RTLayer::CreateRenderTarget()
     );
 }
 
-void RTLayer::LoadAsset()
+void RTLayer::GenerateDiffuseAndSpecular()
 {
     auto device = VkContext->Instance->GetDevice();
-    auto cmdBuffer = VulkanCommandBuffer::Create(device, VkContext->CommandPool->m_CommandPool);
-    
-    m_RingBuffer = CreateRef<VulkanDynamicBufferRing>();
-    m_RingBuffer->OnCreate(VkContext->Instance->GetDevice(),3,200 * 1024 * 1024);
-    
     EnvTextureEquirect = VulkanTexture::Create2DWithData(
         "Assets/Textures/environment.hdr",
         device,
@@ -365,13 +368,53 @@ void RTLayer::LoadAsset()
     for(uint32_t level = 1 ,size = EnvCubeMap->Width / 2 ; level < EnvCubeMap->MipLevels ; level++,size /= 2)
     {
         const uint32_t numGroups = std::max<uint32_t>(1, size/32);
-        
         const SpecularFilterPushConstants pushConstants = { level-1, level * deltaRoughness };
 
         SpcularFilterPipe->PushContant(ComputeCmdBuffer,0,sizeof(pushConstants),(void*)&pushConstants);
-
         SpcularFilterPipe->BindDispatch(ComputeCmdBuffer->CmdBuffer,numGroups,numGroups,6);
     }
+
+    IrraMap = VulkanTexture::CreateCube(device,
+        ComputeCmdBuffer,
+        VK_FORMAT_R16G16B16A16_SFLOAT,
+        VK_IMAGE_ASPECT_COLOR_BIT,
+        128,128,
+        false,
+        VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+        VK_SAMPLE_COUNT_1_BIT,
+        ImageLayoutBarrier::ComputeGeneralRW
+    );
+    IrraShader = VulkanShader::CreateCompute(device,true,&DIFFUSEFILTER_COMP);
+    IrraPipe = VulkanComputePipeline::Create(
+        device,
+        VkContext->CommandPool->m_PipelineCache,
+        IrraShader,
+        m_RingBuffer
+    );
+
+    IrraPipe->SetTexture("inputTexture",EnvCubeMap);
+    IrraPipe->SetTexture("outputTexture",IrraMap);
+    IrraPipe->BindDispatch(ComputeCmdBuffer->CmdBuffer,128 / 32 , 128 / 32 ,6);
+    
+    Lut = VulkanTexture::Create2D(
+        device,
+        ComputeCmdBuffer,
+        VK_FORMAT_R16G16_SFLOAT,
+        VK_IMAGE_ASPECT_COLOR_BIT,
+        512,512,
+        VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+        VK_SAMPLE_COUNT_1_BIT,
+        ImageLayoutBarrier::ComputeGeneralRW
+    );
+    LutShader = VulkanShader::CreateCompute(device,true,&LUT_COMP);
+    LutPipe = VulkanComputePipeline::Create(
+        device,
+        VkContext->CommandPool->m_PipelineCache,
+        LutShader,
+        m_RingBuffer
+        );
+    LutPipe->SetTexture("LUT",Lut);
+    LutPipe->BindDispatch(ComputeCmdBuffer->CmdBuffer,512 / 32, 512/32,6);
     
     ComputeCmdBuffer->End();
     ComputeCmdBuffer->Submit();
@@ -380,6 +423,17 @@ void RTLayer::LoadAsset()
     {
         vkDestroyImageView(device->GetInstanceHandle(),envTextureMipTailViews[i],nullptr);
     }
+}
+
+void RTLayer::LoadAsset()
+{
+    auto device = VkContext->Instance->GetDevice();
+    auto cmdBuffer = VulkanCommandBuffer::Create(device, VkContext->CommandPool->m_CommandPool);
+    
+    m_RingBuffer = CreateRef<VulkanDynamicBufferRing>();
+    m_RingBuffer->OnCreate(VkContext->Instance->GetDevice(),3,200 * 1024 * 1024);
+
+    GenerateDiffuseAndSpecular();
     
     {
         SceneShader = VulkanShader::Create(device,true,&OBJ_VERT,&OBJ_FRAG,nullptr,nullptr,nullptr,nullptr);
@@ -473,7 +527,7 @@ void RTLayer::LoadAsset()
     SkyBoxMaterial->PreparePipeline();
     // SkyBoxMaterial->SetTexture("diffuseMap",CubeMap);
     // SkyBoxMaterial->SetTexture("diffuseMap",PreFilterCubeMap);
-    SkyBoxMaterial->SetTexture("diffuseMap",EnvCubeMap);
+    SkyBoxMaterial->SetTexture("diffuseMap",Lut);
     
     SkyBox = VulkanModel::LoadFromFile(
         "Assets/Mesh/cube.obj",
@@ -521,3 +575,5 @@ void RTLayer::LoadAsset()
 
     m_Camera = CreateRef<EditorCamera>();
 }
+
+
