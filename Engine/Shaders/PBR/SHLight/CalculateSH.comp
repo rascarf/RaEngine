@@ -1,0 +1,101 @@
+#version 450 core
+#extension GL_GOOGLE_include_directive : require
+
+#include "SHCommon.h"
+
+const uint NumSamples = 1024 * 1024; // 总的Sample数目（32 * 32个Group，每个Group处理32 * 32个线程）
+const float InvNumSamples = 1.0 / float(NumSamples);
+
+shared vec3 shcGroup[32 * 32 * 9]; //保存线程组的数据
+layout(set=0, binding=0) buffer shcBufferBlock{
+    vec4 shcBuffer[];
+};
+
+layout(set=1, binding=0) uniform samplerCube irradianceTexture;
+
+float radicalInverse_VdC(uint bits)
+{
+	bits = (bits << 16u) | (bits >> 16u);
+	bits = ((bits & 0x55555555u) << 1u) | ((bits & 0xAAAAAAAAu) >> 1u);
+	bits = ((bits & 0x33333333u) << 2u) | ((bits & 0xCCCCCCCCu) >> 2u);
+	bits = ((bits & 0x0F0F0F0Fu) << 4u) | ((bits & 0xF0F0F0F0u) >> 4u);
+	bits = ((bits & 0x00FF00FFu) << 8u) | ((bits & 0xFF00FF00u) >> 8u);
+	return float(bits) * 2.3283064365386963e-10; // / 0x100000000
+}
+
+// 不重复随机序列
+vec2 sampleHammersley(uint i)
+{
+	return vec2(i * InvNumSamples, radicalInverse_VdC(i));
+}
+
+// 均匀采样球面
+vec3 samplesphere(float u1, float u2)
+{
+	float theta = acos(1 - u1 * 2.0 );
+    float phi = 2 * PI * u2;
+
+    return vec3(sin(theta) * cos(phi),sin(theta) * sin(phi),cos(theta));
+}
+
+void calSH(vec3 sampleDirection,uint groupIndex)
+{
+    vec3 irradiance = texture(irradianceTexture, sampleDirection).rgb;
+
+    uint groupOffset = groupIndex * 9;
+    shcGroup[groupOffset + 0] = irradiance * GetY00(sampleDirection) * 4 * PI * InvNumSamples;
+    shcGroup[groupOffset + 1] = irradiance * GetY1n1(sampleDirection) * 4 * PI * InvNumSamples;
+    shcGroup[groupOffset + 2] = irradiance * GetY10(sampleDirection) * 4 * PI * InvNumSamples;
+    shcGroup[groupOffset + 3] = irradiance * GetY1p1(sampleDirection) * 4 * PI * InvNumSamples;
+    shcGroup[groupOffset + 4] = irradiance * GetY2n2(sampleDirection) * 4 * PI * InvNumSamples;
+    shcGroup[groupOffset + 5] = irradiance * GetY2n1(sampleDirection) * 4 * PI * InvNumSamples;
+    shcGroup[groupOffset + 6] = irradiance * GetY20(sampleDirection) * 4 * PI * InvNumSamples;
+    shcGroup[groupOffset + 7] = irradiance * GetY2p1(sampleDirection) * 4 * PI * InvNumSamples;
+    shcGroup[groupOffset + 8] = irradiance * GetY2p2(sampleDirection) * 4 * PI * InvNumSamples;
+}
+
+// 每个Thread只会计算一次，通过组间Reduction来进行归并结果
+layout(local_size_x=32, local_size_y=32, local_size_z=1) in;
+void main()
+{
+    //X方向上有32个Group
+    uint groupCountX = 1024 / 32; 
+    vec2 ij = sampleHammersley((gl_WorkGroupID.y * groupCountX + gl_WorkGroupID.x) * gl_WorkGroupSize.x * gl_WorkGroupSize.y  + gl_LocalInvocationIndex);
+
+    vec3 SampleDirection = samplesphere(ij.x,ij.y);
+
+    calSH(SampleDirection,gl_LocalInvocationIndex);
+    barrier();
+
+    uint threadCount = 32 * 32;
+
+    // 前半截取后半截的数据
+    for(uint k = (threadCount >> 1); k > 0 ; k >>= 1)
+    {
+        if(gl_LocalInvocationIndex < k)
+        {
+            uint shIndex = gl_LocalInvocationIndex * 9;
+            uint shIndex2 = (gl_LocalInvocationIndex + k) * 9;
+            for(uint offset = 0; offset < 9; offset ++)
+            {
+                shcGroup[shIndex + offset] += shcGroup[shIndex2 + offset];
+            }
+        }
+
+        barrier();
+    }
+
+    if(gl_LocalInvocationIndex == 0)
+    {    
+        //计算回读的Offset，按照X方向堆叠，满了上一层，每层32个Group
+        uint index = (gl_WorkGroupID.y * groupCountX + gl_WorkGroupID.x) * 9;
+        for(uint i = 0; i < 9; i ++)
+        {
+            vec3 c = shcGroup[i];
+            shcBuffer[index + i] = vec4(c,1.0);
+        }
+    }
+
+    // 这里回读的Offset总数是32 * 32 * 9（WorkgroupNum * SHCount)，需要在CPU端手动加起来所有再 / (32 * 32 * 32 *32):SamplerCount
+    // 可以再起一个16 * 16的Thread做一下dispatch，或者是类似mip的操作
+}
