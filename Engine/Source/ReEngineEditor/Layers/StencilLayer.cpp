@@ -13,6 +13,9 @@
 #include <DiffuseFilter_comp.h>
 #include <Lut_comp.h>
 
+#include <PbrMesh_vert.h>
+#include <PbrMesh_frag.h>
+
 #include "Mesh/Quad.h"
 #include "Platform/Vulkan/VulkanContext.h"
 
@@ -69,6 +72,15 @@ void RTLayer::OnDeInit()
     IrraPipe.reset();
     IrraShader.reset();
 
+
+    for(auto& tex : PBRTextureArray)
+    {
+        tex.reset();
+    }
+    PBRModel.reset();
+    PBRShader.reset();
+    PBRPipeline.reset();
+
     SpcularFilterShader.reset();       
     SpcularFilterPipe.reset();
     EnvCubeMap.reset();
@@ -103,6 +115,8 @@ void RTLayer::OnUpdate(Timestep ts)
     
     m_MVPData.view = m_Camera->GetViewMatrix();
     m_MVPData.projection = m_Camera->GetProjection();
+    
+    LightParams.eyePosition = glm::vec4(m_Camera->GetPosition(),0.0f);
 }
 
 void RTLayer::OnRender()
@@ -126,7 +140,7 @@ void RTLayer::OnRender()
     scissor.offset.y      = 0;
 
     {
-        RenderTarget->BeginRenderPass(VkContext->GetCommandList());
+        SkyBoxRenderTarget->BeginRenderPass(VkContext->GetCommandList());
         vkCmdBindPipeline(VkContext->GetCommandList(),VK_PIPELINE_BIND_POINT_GRAPHICS,SkyBoxMaterial->mPipeline->Pipeline);
 
         ModelViewProjectionBlock SkyBoxBlock;
@@ -146,39 +160,49 @@ void RTLayer::OnRender()
             Mesh->BindDraw(VkContext->GetCommandList());
         }
         
-        RenderTarget->EndRenderPass(VkContext->GetCommandList());
+        SkyBoxRenderTarget->EndRenderPass(VkContext->GetCommandList());
     }
     
     {
-        std::vector<std::string> diffusePaths =  {
-            "Assets/Mesh/Room/miniHouse_Part1.jpg",
-            "Assets/Mesh/Room/miniHouse_Part2.jpg",
-            "Assets/Mesh/Room/miniHouse_Part3.jpg",
-            "Assets/Mesh/Room/miniHouse_Part4.jpg"
-        };
-        
-        for(int32 i = 0; i < RenderObject.size(); i++)
-        {
-            if(TextureArray[i])
-                SceneMaterial->SetTexture("DiffuseMap",TextureArray[i],diffusePaths[i]);
-        }
-        
+        // 普通Model
+        // std::vector<std::string> diffusePaths =  {
+        //     "Assets/Mesh/Room/miniHouse_Part1.jpg",
+        //     "Assets/Mesh/Room/miniHouse_Part2.jpg",
+        //     "Assets/Mesh/Room/miniHouse_Part3.jpg",
+        //     "Assets/Mesh/Room/miniHouse_Part4.jpg"
+        // };
+        //
+        // for(int32 i = 0; i < RenderObject.size(); i++)
+        // {
+        //     if(TextureArray[i])
+        //         SceneMaterial->SetTexture("DiffuseMap",TextureArray[i],diffusePaths[i]);
+        // }
+        //
         RenderTarget->BeginRenderPass(VkContext->GetCommandList());
-
-        vkCmdBindPipeline(VkContext->GetCommandList(),VK_PIPELINE_BIND_POINT_GRAPHICS,SceneMaterial->mPipeline->Pipeline);
-        for(int32 i = 0; i < RenderObject.size(); i++)
+        //
+        // vkCmdBindPipeline(VkContext->GetCommandList(),VK_PIPELINE_BIND_POINT_GRAPHICS,SceneMaterial->mPipeline->Pipeline);
+        // for(int32 i = 0; i < RenderObject.size(); i++)
+        // {
+        //     for(auto& Mesh : RenderObject[i])
+        //     {
+        //         m_MVPData.model = Mesh->LinkNode.lock()->GetGlobalMatrix();
+        //
+        //         SceneMaterial->SetLocalUniform("uboMVP",&m_MVPData,sizeof(ModelViewProjectionBlock));
+        //         SceneMaterial->BindDescriptorSets(VkContext->GetCommandList(),VK_PIPELINE_BIND_POINT_GRAPHICS,diffusePaths[i]);
+        //
+        //         Mesh->BindDraw(VkContext->GetCommandList());
+        //     }
+        // }
+        vkCmdBindPipeline(VkContext->GetCommandList(),VK_PIPELINE_BIND_POINT_GRAPHICS,PBRPipeline->mPipeline->Pipeline);
+        for(auto& Mesh : PBRModel->Meshes)
         {
-            for(auto& Mesh : RenderObject[i])
-            {
-                m_MVPData.model = Mesh->LinkNode.lock()->GetGlobalMatrix();
-
-                SceneMaterial->SetLocalUniform("uboMVP",&m_MVPData,sizeof(ModelViewProjectionBlock));
-                SceneMaterial->BindDescriptorSets(VkContext->GetCommandList(),VK_PIPELINE_BIND_POINT_GRAPHICS,diffusePaths[i]);
-
-                Mesh->BindDraw(VkContext->GetCommandList());
-            }
+            m_MVPData.model = Mesh->LinkNode.lock()->GetGlobalMatrix();
+            PBRPipeline->SetLocalUniform("uboMVP",&m_MVPData,sizeof(ModelViewProjectionBlock));
+            PBRPipeline->SetLocalUniform("lightUniform",&LightParams,sizeof(ShadingUniforms));
+            PBRPipeline->BindDescriptorSets(VkContext->GetCommandList(),VK_PIPELINE_BIND_POINT_GRAPHICS);
+            Mesh->BindDraw(VkContext->GetCommandList());
         }
-
+        
         RenderTarget->EndRenderPass(VkContext->GetCommandList());
     }
 
@@ -197,8 +221,8 @@ void RTLayer::OnRender()
 
         {
             vkCmdBindPipeline(VkContext->GetCommandList(), VK_PIPELINE_BIND_POINT_GRAPHICS, mFilterMaterial->mPipeline->Pipeline);
-            // mFilterMaterial->SetTexture("InputImageTexture", ColorRT);
-            mFilterMaterial->SetTexture("InputImageTexture", Lut);
+            mFilterMaterial->SetTexture("InputImageTexture", ColorRT);
+            // mFilterMaterial->SetTexture("InputImageTexture", Lut);
             mFilterMaterial->BindDescriptorSets(VkContext->GetCommandList(), VK_PIPELINE_BIND_POINT_GRAPHICS);
             mQuad->Meshes[0]->BindDraw(VkContext->GetCommandList());
         }
@@ -513,7 +537,7 @@ void RTLayer::LoadAsset()
     SkyBoxShader = VulkanShader::Create(device,true,&SKYBOX_VERT,&SKYBOX_FRAG,nullptr,nullptr,nullptr,nullptr);
     SkyBoxMaterial = VulkanMaterial::Create(
         device,
-        RenderTarget->GetRenderPass(),
+        SkyBoxRenderTarget->GetRenderPass(),
         VkContext->CommandPool->m_PipelineCache,
         SkyBoxShader,
         m_RingBuffer
@@ -525,9 +549,7 @@ void RTLayer::LoadAsset()
     SkyBoxMaterial->mPipelineInfo.DepthStencilState.depthWriteEnable = VK_FALSE;
     SkyBoxMaterial->mPipelineInfo.DepthStencilState.stencilTestEnable = VK_FALSE; 
     SkyBoxMaterial->PreparePipeline();
-    // SkyBoxMaterial->SetTexture("diffuseMap",CubeMap);
-    // SkyBoxMaterial->SetTexture("diffuseMap",PreFilterCubeMap);
-    SkyBoxMaterial->SetTexture("diffuseMap",Lut);
+    SkyBoxMaterial->SetTexture("diffuseMap",PreFilterCubeMap);
     
     SkyBox = VulkanModel::LoadFromFile(
         "Assets/Mesh/cube.obj",
@@ -557,6 +579,66 @@ void RTLayer::LoadAsset()
             RenderObject[3].push_back(Mesh);
         }
     }
+
+    
+    PBRShader = VulkanShader::Create(device,true,&PBRMESH_VERT,&PBRMESH_FRAG,nullptr,nullptr,nullptr,nullptr);
+    PBRPipeline = VulkanMaterial::Create(device,RenderTarget->GetRenderPass(),VkContext->CommandPool->m_PipelineCache,PBRShader,m_RingBuffer);
+    PBRPipeline->PreparePipeline();
+    
+    PBRModel = VulkanModel::LoadFromFile(
+    "Assets/Mesh/cerberus.fbx",
+        device,
+        cmdBuffer,
+        PBRShader->perVertexAttributes
+    );
+
+    {
+        std::vector<std::string> PBRTextures{
+            "Assets/Textures/cerberus_A.png",
+            "Assets/Textures/cerberus_R.png",
+            "Assets/Textures/cerberus_M.png",
+            "Assets/Textures/cerberus_N.png",
+        };
+        
+        PBRTextureArray.resize(4);
+        PBRTextureArray[0]  = VulkanTexture::Create2DWithData(
+            PBRTextures[0],
+            device,
+            cmdBuffer,
+            VK_FORMAT_R8G8B8A8_SRGB
+        );
+        
+
+        PBRTextureArray[1]  = VulkanTexture::Create2DWithData(
+           PBRTextures[1],
+           device,
+           cmdBuffer,
+           VK_FORMAT_R8_UNORM
+       );
+
+        PBRTextureArray[2]  = VulkanTexture::Create2DWithData(
+           PBRTextures[2],
+           device,
+           cmdBuffer,
+           VK_FORMAT_R8_UNORM
+       );
+
+        PBRTextureArray[3]  = VulkanTexture::Create2DWithData(
+           PBRTextures[3],
+           device,
+           cmdBuffer,
+           VK_FORMAT_R8G8B8A8_UNORM
+       );
+        
+        PBRPipeline->SetTexture("albedoTexture",PBRTextureArray[0]);
+        PBRPipeline->SetTexture("roughnessTexture",PBRTextureArray[1]);
+        PBRPipeline->SetTexture("metalnessTexture",PBRTextureArray[2]);
+        PBRPipeline->SetTexture("normalTexture",PBRTextureArray[3]);
+        PBRPipeline->SetTexture("specularTexture",EnvCubeMap);
+        PBRPipeline->SetTexture("irradianceTexture",IrraMap);
+        PBRPipeline->SetTexture("specularBRDF_LUT",Lut);
+    }
+    
     
     // quad model
     Quad FilterQuad;
@@ -564,7 +646,7 @@ void RTLayer::LoadAsset()
     mQuad = VulkanModel::Create(
         device,
         cmdBuffer,
-        FilterQuad.GetVertexs(),
+        FilterQuad.GetVertexs(), 
         FilterQuad.GetIndices(),
         mFilterShader->perVertexAttributes
     );
@@ -574,6 +656,12 @@ void RTLayer::LoadAsset()
     m_MVPData.view = glm::identity<glm::mat4>();
 
     m_Camera = CreateRef<EditorCamera>();
+    m_Camera->SetSpeed(50);
+
+    for(int i = 0;i < NumLights ; i++)
+    {
+        LightParams.lights[i].radiance = glm::vec4(0.0,0.0,0.0,0.0); 
+    }
 }
 
 

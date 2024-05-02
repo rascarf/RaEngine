@@ -178,7 +178,7 @@ Ref<VulkanModel> VulkanModel::LoadFromFile(const std::string& filename, Ref<Vulk
         
     for (int32 i = 0; i < attributes.size(); ++i)
     {
-        if (attributes[i] == VertexAttribute::VA_Tangent)
+        if (attributes[i] == VertexAttribute::VA_Tangent || attributes[i] == VertexAttribute::VA_BitTangent)
         {
             assimpFlags = assimpFlags | aiProcess_CalcTangentSpace;
         }
@@ -684,9 +684,15 @@ void VulkanModel::LoadVertexDatas(std::unordered_map<uint32,VertexSkin>& skinInf
                     vertices.push_back(aiMesh->mTangents[i].x);
                     vertices.push_back(aiMesh->mTangents[i].y);
                     vertices.push_back(aiMesh->mTangents[i].z);
-                    vertices.push_back(1);
+                    // vertices.push_back(1);
                 }
-                 else if (Attributes[j] == VertexAttribute::VA_SkinPack) //PackIndex
+                else if(Attributes[j] == VertexAttribute::VA_BitTangent)
+                {
+                    vertices.push_back(aiMesh->mBitangents[i].x);
+                    vertices.push_back(aiMesh->mBitangents[i].y);
+                    vertices.push_back(aiMesh->mBitangents[i].z);
+                }
+                else if (Attributes[j] == VertexAttribute::VA_SkinPack) //PackIndex
                 {
                     if (mesh->IsSkin)
                     {

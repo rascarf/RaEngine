@@ -40,6 +40,7 @@ vec2 sampleHammersley(uint i)
 // 根据低差异和粗糙度对ggx采样，得到满足条件的采样光线
 // 这里采样出来的光线会偏向lobe，重要性采样
 // 逆变采样得到符合GGX分布的向量
+// 如果想了解如何推导的，可以看这里：https://agraphicsguynotes.com/posts/sample_microfacet_brdf/
 vec3 sampleGGX(float u1, float u2, float roughness)
 {
     float alpha = roughness * roughness;
@@ -53,7 +54,7 @@ vec3 sampleGGX(float u1, float u2, float roughness)
 }
 
 // 法线分布函数 根据roughness和半程向量得到pdf : Trowbridge-Reitz GGX
-// 本来就可以作为PDF使用（我觉得按理说应该去使用ggx的pdf
+// 本来就可以作为PDF使用，符合定义的
 // cosLh:N * H：N是平面法线 H是期望的半程向量，roughness：粗糙度
 // 返回值：float 代表H这条光线的概率密度
 float ndfGGX(float cosLh, float roughness)

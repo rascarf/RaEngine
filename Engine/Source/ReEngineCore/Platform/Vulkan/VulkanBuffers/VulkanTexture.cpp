@@ -257,8 +257,9 @@ Ref<VulkanTexture> VulkanTexture::Create2DWithData(const std::string& filename,s
     }
     
     cmdBuffer->Begin();
-    
-    const Ref<TextureData> Data = TextureData::FromeFile(filename);
+
+    // Channel这里相当于写死的，需要抽一层
+    const Ref<TextureData> Data = TextureData::FromeFile(filename,LoadFormat == VK_FORMAT_R8_UNORM ? 1 : 4);
     
     Ref<VulkanTexture> ResultImage =  Create2D(
         vulkanDevice,

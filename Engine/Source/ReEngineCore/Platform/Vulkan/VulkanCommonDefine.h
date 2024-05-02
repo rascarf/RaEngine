@@ -71,6 +71,7 @@ enum class VertexAttribute
     VA_UV1,
     VA_Normal,
     VA_Tangent,
+    VA_BitTangent,
     VA_Color,
     VA_SkinWeight,
     VA_SkinIndex,
@@ -129,6 +130,9 @@ FORCE_INLINE VertexAttribute StringToVertexAttribute(const char* name)
     }
     else if (strcmp(name, "inTangent") == 0) {
         return VertexAttribute::VA_Tangent;
+    }
+    else if (strcmp(name, "inBitangent") == 0) {
+        return VertexAttribute::VA_BitTangent;
     }
     else if (strcmp(name, "inColor") == 0) {
         return VertexAttribute::VA_Color;
@@ -350,7 +354,11 @@ FORCE_INLINE int32 VertexAttributeToSize(VertexAttribute attribute)
     }
     else if (attribute == VertexAttribute::VA_Tangent)
     {
-        return 4 * sizeof(float);
+        return 3 * sizeof(float);
+    }
+    else if(attribute == VertexAttribute::VA_BitTangent)
+    {
+        return 3 * sizeof(float);
     }
     else if (attribute == VertexAttribute::VA_Color)
     {
@@ -418,7 +426,11 @@ FORCE_INLINE VkFormat VertexAttributeToVkFormat(VertexAttribute attribute)
     }
     else if (attribute == VertexAttribute::VA_Tangent)
     {
-        format = VK_FORMAT_R32G32B32A32_SFLOAT;
+        format = VK_FORMAT_R32G32B32_SFLOAT;
+    }
+    else if(attribute == VertexAttribute::VA_BitTangent)
+    {
+        format = VK_FORMAT_R32G32B32_SFLOAT;
     }
     else if (attribute == VertexAttribute::VA_Color)
     {

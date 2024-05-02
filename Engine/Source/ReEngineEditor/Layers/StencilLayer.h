@@ -64,8 +64,12 @@ private:
     Ref<VulkanTexture>      Lut;
     Ref<VulkanShader>       LutShader;       
     Ref<VulkanComputePipeline> LutPipe;
-    
 
+    Ref<VulkanModel>        PBRModel;
+    std::vector<Ref<VulkanTexture>> PBRTextureArray;
+    Ref<VulkanShader>       PBRShader;
+    Ref<VulkanMaterial>     PBRPipeline;
+    
     struct ModelViewProjectionBlock
     {
         glm::mat4 model;
@@ -78,6 +82,19 @@ private:
         uint32_t level;
         float roughness;
     };
+
+    struct AnalyticalLight {
+        glm::vec4 direction;
+        glm::vec4 radiance;
+    };
+
+    // 这个应该以SpecializationInfo的方式传入Shader
+    static const int NumLights = 3;
+    struct ShadingUniforms
+    {
+        AnalyticalLight lights[NumLights];
+        glm::vec4 eyePosition;
+    }LightParams;
     
     AttachmentParamBlock DebugParam;
 

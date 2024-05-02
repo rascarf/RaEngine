@@ -29,7 +29,7 @@ vec2 sampleHammersley(uint i)
 }
 
 // 均匀半球采样：可以重要性采样Cosθ，但是本来就是预处理，无所谓
-// 这里的推导确实可以看看
+// 就是球面做一个InverseTranform的积分，Uniform的
 vec3 sampleHemisphere(float u1, float u2)
 {
 	const float u1p = sqrt(max(0.0, 1.0 - u1*u1));
