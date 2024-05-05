@@ -15,20 +15,21 @@ public:
     VkBuffer				Buffer = VK_NULL_HANDLE;
     VmaAllocation           VmaAllocation;
     VkDeviceMemory          DeviceMemory;
+    VkBufferUsageFlags		UsageFlags;
 
     VkDescriptorBufferInfo	Descriptor;
 
     VkDeviceSize			Size = 0;
-
+    
     void*					Mapped = nullptr;
-
-    VkBufferUsageFlags		UsageFlags;
-    VkMemoryPropertyFlags	MemoryPropertyFlags;
 
 public:
     //创建Buffer
     static Ref<VulkanBuffer> CreateBuffer(std::shared_ptr<VulkanDevice> device, VkBufferUsageFlags usageFlags, VkDeviceSize size, void *data = nullptr);
     static Ref<VulkanBuffer> CreateBuffer(std::shared_ptr<VulkanDevice> device, VkBufferUsageFlags usageFlags, VkDeviceSize size,const void *data);
+    static Ref<VulkanBuffer> CreateReadBackBuffer(std::shared_ptr<VulkanDevice> device, VkBufferUsageFlags usageFlags, VkDeviceSize size);
+    static Ref<VulkanBuffer> CreateOnlyGPUBuffer(std::shared_ptr<VulkanDevice> device, VkBufferUsageFlags usageFlags, VkDeviceSize size);
+
     static void TransferBuffer(const Ref<VulkanDevice>& Device,const VulkanCommandPool& CommandPool,VulkanBuffer* SrcBuffer, VulkanBuffer* DstBuffer, VkDeviceSize size);
     static void TransferBuffer(const Ref<VulkanDevice>& Device, Ref<VulkanCommandBuffer> CommandBuffer,Ref<VulkanBuffer> SrcBuffer, Ref<VulkanBuffer> DstBuffer, VkDeviceSize size);
 

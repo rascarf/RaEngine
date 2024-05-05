@@ -16,6 +16,8 @@
 #include <PbrMesh_vert.h>
 #include <PbrMesh_frag.h>
 
+#include <CalculateSH_comp.h>
+
 #include "Mesh/Quad.h"
 #include "Platform/Vulkan/VulkanContext.h"
 
@@ -62,6 +64,10 @@ void RTLayer::OnDeInit()
     SkyBoxMaterial.reset();
     SkyBox.reset();
     CubeMap.reset();
+
+    SHFilterShader.reset();
+    SHFilterPipe.reset();
+    SHReadBackBuffer.reset();
     
     EnvTextureEquirect.reset();
     EnvEquirect2CubeShader.reset();       
@@ -439,14 +445,50 @@ void RTLayer::GenerateDiffuseAndSpecular()
         );
     LutPipe->SetTexture("LUT",Lut);
     LutPipe->BindDispatch(ComputeCmdBuffer->CmdBuffer,512 / 32, 512/32,6);
+
+
+    SHFilterShader = VulkanShader::CreateCompute(device,false,&CALCULATESH_COMP);
+    SHFilterPipe = VulkanComputePipeline::Create(
+        device,
+        VkContext->CommandPool->m_PipelineCache,
+        SHFilterShader,
+        m_RingBuffer   
+    );
+        
+    SHReadBackBuffer = VulkanBuffer::CreateReadBackBuffer(
+        device,
+        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+        sizeof(float) * 4 * 10     
+    );
+
+    SHFilterPipe->SetTexture("irradianceTexture",IrraMap);
+    SHFilterPipe->SetStorageBuffer("outBuffer",SHReadBackBuffer);
+    SHParam.TotalSampleCount = 32 * 32 * 10; //10240个采样
+
+    for(int ci = 0 ; ci < 9 ; ci++)
+    {
+        SHParam.ci = ci;
+        for(int Batching = 0; Batching < 10 ; Batching++)
+        {
+            SHParam.BatchingIndex = Batching;
+            SHFilterPipe->PushContant(ComputeCmdBuffer,0,sizeof(SHParam),&SHParam);
+            SHFilterPipe->BindDispatch(ComputeCmdBuffer->CmdBuffer,1,1,1);
+            ComputeCmdBuffer->BufferWriteBarrier(SHReadBackBuffer);  
+        }
+    }
+
+    ComputeCmdBuffer->ReadBackBarrier(SHReadBackBuffer);  
     
-    ComputeCmdBuffer->End();
-    ComputeCmdBuffer->Submit();
+    ComputeCmdBuffer->End(); 
+    ComputeCmdBuffer->Submit(); 
 
     for(int i = 0 ; i < envTextureMipTailViews.size() ; i++)
     {
         vkDestroyImageView(device->GetInstanceHandle(),envTextureMipTailViews[i],nullptr);
     }
+ 
+    glm::vec4* ReadBackPtr =  (glm::vec4*)SHReadBackBuffer->Mapped;
+    RE_INFO("[0]:{0} [1]:{1} [2]:{2} [3]:{3}",ReadBackPtr[4].x,ReadBackPtr[4].y,ReadBackPtr[4].z,ReadBackPtr[4].w); 
 }
 
 void RTLayer::LoadAsset()

@@ -234,6 +234,31 @@ void NewVulkanCommandBuffer::CopyImage(Ref<VulkanTexture> Src, Ref<VulkanTexture
     VulkanTexture::ImagePipelineBarrier(CmdBuffer,Dst,Dst->mImageLayoutBarrier,ImageLayoutBarrier::PixelGeneralRW);
 }
 
+void NewVulkanCommandBuffer::ReadBackBarrier(Ref<VulkanBuffer> Dst)
+{
+    VkBufferMemoryBarrier BufferBarrier = {};
+    BufferBarrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+    BufferBarrier.srcAccessMask = VK_ACCESS_2_SHADER_WRITE_BIT_KHR;
+    BufferBarrier.dstAccessMask = VK_ACCESS_2_HOST_READ_BIT_KHR;
+    BufferBarrier.buffer = Dst->Buffer;
+    BufferBarrier.size  = Dst->Size;
+    BufferBarrier.offset = 0;
+    
+    vkCmdPipelineBarrier(CmdBuffer,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,VK_PIPELINE_STAGE_HOST_BIT,0,0,nullptr,1,&BufferBarrier,0,nullptr);
+}
+
+void NewVulkanCommandBuffer::BufferWriteBarrier(Ref<VulkanBuffer> Dst)
+{
+    VkBufferMemoryBarrier BufferBarrier = {};
+    BufferBarrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+    BufferBarrier.srcAccessMask = VK_ACCESS_2_SHADER_WRITE_BIT_KHR;
+    BufferBarrier.dstAccessMask = VK_ACCESS_2_SHADER_READ_BIT_KHR;
+    BufferBarrier.buffer = Dst->Buffer;
+    BufferBarrier.size  = Dst->Size;
+    BufferBarrier.offset = 0;
+    
+    vkCmdPipelineBarrier(CmdBuffer,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,0,0,nullptr,1,&BufferBarrier,0,nullptr);
+}
 
 VulkanCommandBuffer::~VulkanCommandBuffer()
 {

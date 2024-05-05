@@ -78,6 +78,58 @@ Ref<VulkanBuffer> VulkanBuffer::CreateBuffer(std::shared_ptr<VulkanDevice> devic
     return dvkBuffer;
 }
 
+Ref<VulkanBuffer> VulkanBuffer::CreateReadBackBuffer(std::shared_ptr<VulkanDevice> device,VkBufferUsageFlags usageFlags, VkDeviceSize size)
+{
+    Ref<VulkanBuffer> dvkBuffer = CreateRef<VulkanBuffer>();
+    dvkBuffer->Device = device;
+		
+    VkBufferCreateInfo bufferCreateInfo;
+    ZeroVulkanStruct(bufferCreateInfo, VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO);
+    bufferCreateInfo.usage = usageFlags;
+    bufferCreateInfo.size  = size;
+
+    VmaAllocationCreateInfo MemoryInfo{};
+    MemoryInfo.flags = VMA_ALLOCATION_CREATE_STRATEGY_BEST_FIT_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT;
+    MemoryInfo.usage = VMA_MEMORY_USAGE_AUTO;
+
+    VmaAllocationInfo AllocationInfo;
+    vmaCreateBuffer(device->vma_allocator,&bufferCreateInfo,&MemoryInfo,&dvkBuffer->Buffer,&dvkBuffer->VmaAllocation,&AllocationInfo);
+    
+    dvkBuffer->Size       = AllocationInfo.size;
+    dvkBuffer->UsageFlags = usageFlags;
+
+    dvkBuffer->Map();
+
+    dvkBuffer->SetupDescriptor();
+
+    return dvkBuffer;
+}
+
+Ref<VulkanBuffer> VulkanBuffer::CreateOnlyGPUBuffer(std::shared_ptr<VulkanDevice> device, VkBufferUsageFlags usageFlags,VkDeviceSize size)
+{
+    Ref<VulkanBuffer> dvkBuffer = CreateRef<VulkanBuffer>();
+    dvkBuffer->Device = device;
+		
+    VkBufferCreateInfo bufferCreateInfo;
+    ZeroVulkanStruct(bufferCreateInfo, VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO);
+    bufferCreateInfo.usage = usageFlags;
+    bufferCreateInfo.size  = size;
+
+    VmaAllocationCreateInfo MemoryInfo{};
+    MemoryInfo.flags = VMA_ALLOCATION_CREATE_STRATEGY_BEST_FIT_BIT | VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT ;
+    MemoryInfo.usage = VMA_MEMORY_USAGE_AUTO;
+
+    VmaAllocationInfo AllocationInfo;
+    vmaCreateBuffer(device->vma_allocator,&bufferCreateInfo,&MemoryInfo,&dvkBuffer->Buffer,&dvkBuffer->VmaAllocation,&AllocationInfo);
+    
+    dvkBuffer->Size       = AllocationInfo.size;
+    dvkBuffer->UsageFlags = usageFlags;
+
+    dvkBuffer->SetupDescriptor();
+
+    return dvkBuffer;
+}
+
 VkResult VulkanBuffer::Map()
 {
     if(Mapped)

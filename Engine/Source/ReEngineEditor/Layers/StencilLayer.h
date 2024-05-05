@@ -69,6 +69,17 @@ private:
     std::vector<Ref<VulkanTexture>> PBRTextureArray;
     Ref<VulkanShader>       PBRShader;
     Ref<VulkanMaterial>     PBRPipeline;
+
+    Ref<VulkanShader>           SHFilterShader;
+    Ref<VulkanComputePipeline> SHFilterPipe;
+    Ref<VulkanBuffer>       SHReadBackBuffer;
+
+    struct SHFilterParam
+    {
+        int32                   ci = 0;
+        int32                   BatchingIndex = 0;
+        int32                   TotalSampleCount = 1024 * 1024;
+    }SHParam;
     
     struct ModelViewProjectionBlock
     {

@@ -30,6 +30,12 @@ public:
     void  UploadCubeTextureData(Ref<class VulkanTexture> DstTexture,Ref<class VulkanBuffer> StagingBuffer,uint32 SliceSize);
     void  GenerateMipMaps(Ref<class VulkanTexture> DstTexture);
     void  CopyImage(Ref<VulkanTexture> Src,Ref<VulkanTexture> Dst);
+
+    
+public: // 封装好的Barrier
+    void  ReadBackBarrier(Ref<class VulkanBuffer> Dst); // buffer写完给回读的Barrier
+    void  BufferWriteBarrier(Ref<class VulkanBuffer> Dst);// buffer写完给下一个Buffer读的Barrier
+   
 };
 
 class VulkanCommandBuffer : public NewVulkanCommandBuffer
