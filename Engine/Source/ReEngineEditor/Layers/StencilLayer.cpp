@@ -302,7 +302,7 @@ void RTLayer::GenerateDiffuseAndSpecular()
 {
     auto device = VkContext->Instance->GetDevice();
     EnvTextureEquirect = VulkanTexture::Create2DWithData(
-        "Assets/Textures/environment.hdr",
+        "Assets/Textures/environment1.hdr",
         device,
         nullptr,
         VK_FORMAT_R32G32B32A32_SFLOAT,

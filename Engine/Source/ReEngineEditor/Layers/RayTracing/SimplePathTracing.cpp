@@ -14,9 +14,32 @@
 #include "Mesh/Quad.h"
 #include "Platform/Vulkan/VulkanContext.h"
 
+SimplePathTracing::SimplePathTracing()
+{
+    RE_INFO("Using Hardware-RayTracing");
+   
+    Application::GetInstance().DeviceExtension.push_back(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME);
+    Application::GetInstance().DeviceExtension.push_back(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME);
+    Application::GetInstance().DeviceExtension.push_back(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME);
+    
+    accelFeature = VkPhysicalDeviceAccelerationStructureFeaturesKHR{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR};
+    rtPipelineFeature =VkPhysicalDeviceRayTracingPipelineFeaturesKHR{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR};
+
+    accelFeature.accelerationStructure = VK_TRUE;
+    rtPipelineFeature.rayTracingPipeline = VK_TRUE;
+	
+    accelFeature.pNext = &rtPipelineFeature;
+    Application::GetInstance().pEnableFeatures = &accelFeature;
+}
+
 void SimplePathTracing::OnCreateBackBuffer()
 {
     GraphicalLayer::OnCreateBackBuffer();
+}
+
+void SimplePathTracing::OnPrepare()
+{
+    
 }
 
 void SimplePathTracing::OnInit()

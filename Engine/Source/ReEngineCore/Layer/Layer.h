@@ -10,6 +10,7 @@ namespace ReEngine
         Layer(const std::string& name = "Layer");
         virtual ~Layer();
 
+        virtual void OnPrepare() {}
         virtual void OnAttach() {}
         virtual void OnDetach() {}
         virtual void OnUpdate(Timestep ts) {}

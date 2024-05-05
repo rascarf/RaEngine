@@ -15,18 +15,22 @@ namespace ReEngine
 {
     void AppInit(Application& app)
     {
+        // const auto Layer = CreateRef<RTLayer>();
+
+        const auto Layer = CreateRef<SimplePathTracing>();
+        
+        app.PreInit();
         app.Init();
+        app.PushLayer(Layer);
 
         // app.PushLayer(CreateRef<SimplePathTracing>());
         // app.PushLayer(CreateRef<TileBasedForwardLayer>());
         // app.PushLayer(CreateRef<MSAALayer>());
         // app.PushLayer(CreateRef<AnimationTextureLayer>());
         // app.PushLayer(CreateRef<AnimationLayer>());
-        app.PushLayer(CreateRef<RTLayer>());
         // app.PushLayer(CreateRef<InputAttachment>());
         // app.PushLayer(CreateRef<SandBoxLayer>());
         // app.PushLayer(CreateRef<ComputeLayer>());
-        
         // app.PushLayer(CreateRef<FrameGraphTemplateLayer>());
     }
 }

@@ -2,6 +2,7 @@
 #include "VulkanCommonDefine.h"
 #include "VulkanFence.h"
 #include "vk_mem_alloc.h"
+#include "Core/Application.h"
 
 VulkanDevice::VulkanDevice(VkPhysicalDevice physicalDevice)
     : m_Device(VK_NULL_HANDLE)
@@ -33,16 +34,10 @@ void VulkanDevice::CreateDevice()
 	std::vector<const char*> validationLayers;
 	GetDeviceExtensionsAndLayers(deviceExtensions, validationLayers, debugMarkersFound);
 
-	// use raytracing!
-	// todo change to open/close with samples
-	if(HWRAYTRACING)
+	for(auto& ExtensionName : Application::GetInstance().DeviceExtension)
 	{
-		RE_INFO("Using Hardware-RayTracing");
-		m_AppDeviceExtensions.push_back(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME);
-		m_AppDeviceExtensions.push_back(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME);
-		m_AppDeviceExtensions.push_back(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME);
+		m_AppDeviceExtensions.emplace_back(ExtensionName.c_str());
 	}
-	
 	
 	if (m_AppDeviceExtensions.size() > 0)
 	{
@@ -81,18 +76,8 @@ void VulkanDevice::CreateDevice()
 	deviceVulkan12Features.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
 	deviceVulkan12Features.descriptorBindingSampledImageUpdateAfterBind = VK_TRUE;
 	deviceVulkan12Features.descriptorBindingPartiallyBound = VK_TRUE;
-	
-	if(HWRAYTRACING)
-	{
-		VkPhysicalDeviceAccelerationStructureFeaturesKHR accelFeature{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR};
-		VkPhysicalDeviceRayTracingPipelineFeaturesKHR rtPipelineFeature{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR};
 
-		accelFeature.accelerationStructure = VK_TRUE;
-		rtPipelineFeature.rayTracingPipeline = VK_TRUE;
-		
-		accelFeature.pNext = &rtPipelineFeature;
-		deviceVulkan12Features.pNext = &accelFeature;
-	}
+	deviceVulkan12Features.pNext = Application::GetInstance().pEnableFeatures;
 	
     VkDeviceCreateInfo deviceInfo;
     ZeroVulkanStruct(deviceInfo, VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO);
@@ -434,11 +419,6 @@ bool VulkanDevice::QueryGPU(int32 deviceIndex)
 	
 	m_PhysicalDeviceProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
 	m_PhysicalDeviceProperties.pNext = nullptr;
-	if(HWRAYTRACING)
-	{
-		VkPhysicalDeviceRayTracingPipelinePropertiesKHR m_rtProperties{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR};
-		m_PhysicalDeviceProperties.pNext = &m_rtProperties;
-	}
 
 	vkGetPhysicalDeviceProperties2(m_PhysicalDevice, &m_PhysicalDeviceProperties);
 	

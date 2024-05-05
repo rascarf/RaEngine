@@ -32,6 +32,7 @@ namespace ReEngine
         [[nodiscard]]const WindowProperty GetWindowInfo(){return m_WindowProperty;}
 
     public:
+        void PreInit();
         void Init();
         void Run();
         void Shutdown();
@@ -49,5 +50,8 @@ namespace ReEngine
 
     private:   
         friend void AppInit(Application& app);
+    public:
+        std::vector<std::string> DeviceExtension;
+        void* pEnableFeatures = nullptr;
     };
 }

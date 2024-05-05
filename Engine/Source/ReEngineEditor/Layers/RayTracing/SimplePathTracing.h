@@ -24,7 +24,9 @@ struct GlobalParamBlock
 class SimplePathTracing : public GraphicalLayer
 {
 public:
+    SimplePathTracing();
     virtual void OnCreateBackBuffer() override;
+    virtual void OnPrepare() override;
     virtual void OnInit() override;
     virtual void OnDeInit() override;
 
@@ -60,6 +62,9 @@ private:
     Ref<VulkanBuffer>                               mObjectBuffer = nullptr;
     Ref<VulkanTexture>                              mStorageImage = nullptr;
     GlobalParamBlock                                m_GlobalParam;
+
+    VkPhysicalDeviceAccelerationStructureFeaturesKHR accelFeature;
+    VkPhysicalDeviceRayTracingPipelineFeaturesKHR rtPipelineFeature;
 
 public:
 

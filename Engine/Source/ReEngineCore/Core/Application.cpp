@@ -16,6 +16,13 @@
 
 namespace ReEngine
 {
+    void Application::PreInit()
+    {
+        //更新数据
+        for (auto it = mLayerStack.end(); it != mLayerStack.begin(); )
+            (*(--it))->OnPrepare();
+    }
+
     void Application::Init()
     {
         m_Window = Window::CreateReWindow(m_WindowProperty);
