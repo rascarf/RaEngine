@@ -38,24 +38,21 @@ target_compile_definitions(imgui PUBLIC
 target_include_directories(imgui PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 
 # the following should go in different files, but we're keeping things here to avoid future conflicts. 
-if(FALSE)
-    if(NOT TARGET glfw)
-        include(FetchContent)
-        FetchContent_Declare(
-            glfw
-            GIT_REPOSITORY https://github.com/glfw/glfw.git
-            GIT_TAG tags/3.3
-            GIT_SHALLOW TRUE
-            GIT_VERSION_STRING
-        )
+if(NOT TARGET glfw)
+    include(FetchContent)
+    FetchContent_Declare(
+        glfw
+        GIT_REPOSITORY https://github.com/glfw/glfw.git
+        GIT_TAG tags/3.3
+        GIT_SHALLOW TRUE
+    )
 
-        option(GLFW_BUILD_EXAMPLES "Build the GLFW example programs" OFF)
-        option(GLFW_BUILD_TESTS "Build the GLFW test programs" OFF)
-        option(GLFW_BUILD_DOCS "Build the GLFW documentation" OFF)
-        option(GLFW_INSTALL "Generate installation target" OFF)
-        option(GLFW_VULKAN_STATIC "Use the Vulkan loader statically linked into application" OFF)
-        FetchContent_MakeAvailable(glfw)
-    endif()
+    option(GLFW_BUILD_EXAMPLES "Build the GLFW example programs" OFF)
+    option(GLFW_BUILD_TESTS "Build the GLFW test programs" OFF)
+    option(GLFW_BUILD_DOCS "Build the GLFW documentation" OFF)
+    option(GLFW_INSTALL "Generate installation target" OFF)
+    option(GLFW_VULKAN_STATIC "Use the Vulkan loader statically linked into application" OFF)
+    FetchContent_MakeAvailable(glfw)
 endif()
 
 target_link_libraries(imgui PUBLIC glfw)

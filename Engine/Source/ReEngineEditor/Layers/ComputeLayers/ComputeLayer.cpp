@@ -88,7 +88,7 @@ void ComputeLayer::OnRender()
     {
         m_MVPData.model = PlaneModel->Meshes[i]->LinkNode.lock()->GetGlobalMatrix();
         
-        mMaterial->SetLocalUniform("uboMVP",&m_MVPData,sizeof(MVPBlock));
+        mMaterial->SetUniform("uboMVP",&m_MVPData,sizeof(MVPBlock));
         
         mMaterial->BindDescriptorSets(VkContext->GetCommandList(),VK_PIPELINE_BIND_POINT_GRAPHICS);
         PlaneModel->Meshes[i]->BindDraw(VkContext->GetCommandList());
@@ -204,7 +204,7 @@ void ComputeLayer::LoadAsset()
         nullptr,nullptr,nullptr,nullptr
     );
     
-    mMaterial = VulkanMaterial::Create(
+    mMaterial = VulkanGraphicPipeline::Create(
         device,
         RenderTarget->GetRenderPass(),
         VkContext->CommandPool->m_PipelineCache,
@@ -224,7 +224,7 @@ void ComputeLayer::LoadAsset()
 
     {
         mFilterShader = VulkanShader::Create(device,true,&QUAD_VERT,&COLORFILTER_FRAG,nullptr,nullptr,nullptr,nullptr);
-        mFilterMaterial = VulkanMaterial::Create(
+        mFilterMaterial = VulkanGraphicPipeline::Create(
             device,
             FrameBuffer->m_RenderPass,
             VkContext->CommandPool->m_PipelineCache,

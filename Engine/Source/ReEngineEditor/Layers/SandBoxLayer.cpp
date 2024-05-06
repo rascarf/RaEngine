@@ -152,7 +152,7 @@ void SandBoxLayer::CreateGraphicsPipeline()
 	VulkanPipelineInfo DefaultInfo;
 	DefaultInfo.Shader = PipeShader;
     	
-	GraphicsPipeline = VulkanPipeline::Create(
+	GraphicsPipeline = VulkanPipeline::CreateGraphicPipeline(
 		VkContext->Instance->GetDevice(),
 		VkContext->CommandPool->m_PipelineCache,
 		DefaultInfo,

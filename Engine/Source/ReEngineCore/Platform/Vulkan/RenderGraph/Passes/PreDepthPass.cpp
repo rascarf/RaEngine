@@ -14,7 +14,7 @@ namespace ReEngine
         for(const auto& Mesh : Model->Meshes)
         {
             m_MVPData.model = Mesh->LinkNode.lock()->GetGlobalMatrix();
-            RenderPSO->SetLocalUniform("uboMVP",&m_MVPData,sizeof(ModelViewProjectionBlock));
+            RenderPSO->SetUniform("uboMVP",&m_MVPData,sizeof(ModelViewProjectionBlock));
             RenderPSO->BindDescriptorSets(VkContext->GetCommandList(),VK_PIPELINE_BIND_POINT_GRAPHICS);
 
             Mesh->BindDraw(VkContext->GetCommandList());
@@ -52,7 +52,7 @@ namespace ReEngine
         VkContext = dynamic_cast<ReEngine::VulkanContext*>(Context);
         
         SceneShader = VulkanShader::Create(Device,true,&OBJ_VERT,&PREDEPTH_FRAG,nullptr,nullptr,nullptr,nullptr);
-        RenderPSO = VulkanMaterial::Create(
+        RenderPSO = VulkanGraphicPipeline::Create(
             Device,
             Node->RenderTarget->mRenderPass->RenderPass,
             VkContext->CommandPool->m_PipelineCache,

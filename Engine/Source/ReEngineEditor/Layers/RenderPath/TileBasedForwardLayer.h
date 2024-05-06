@@ -1,7 +1,7 @@
 #pragma once
 #include "Camera/EditorCamera.h"
 #include "Core/Core.h"
-#include "Platform/Vulkan/VulkanMaterial.h"
+#include "Platform/Vulkan/VulkanGraphicPipeline.h"
 #include "Platform/Vulkan/VulkanRenderTarget.h"
 #include "Platform/Vulkan/Mesh/VulkanMesh.h"
 #include "ReEngineEditor/Layers/GraphicalLayer.h"
@@ -62,7 +62,7 @@ private:
     Ref<VulkanRenderTarget>                         RenderTarget;
 
     Ref<VulkanModel>                                mQuad = nullptr;
-    Ref<VulkanMaterial>                             mFilterMaterial;
+    Ref<VulkanGraphicPipeline>                             mFilterMaterial;
     Ref<VulkanShader>                               mFilterShader;
 
     MVPBlock                                        m_MVPData;
@@ -73,11 +73,11 @@ private:
     bool mReady = false;
     Ref<VulkanModel>             Model;
     Ref<VulkanShader>            ModelShader;
-    Ref<VulkanMaterial>          ModelMaterial;
+    Ref<VulkanGraphicPipeline>          ModelMaterial;
 
     // PreDepth
     Ref<VulkanShader>            PreDepthShader;
-    Ref<VulkanMaterial>          PreDepthMaterial;
+    Ref<VulkanGraphicPipeline>          PreDepthMaterial;
     Ref<VulkanTexture>           PreDepthTexture;
     Ref<VulkanRenderTarget>      PreDepthRenderTarget;
 

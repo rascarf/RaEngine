@@ -3,7 +3,7 @@
 #include "GraphicalLayer.h"
 #include "Camera/EditorCamera.h"
 #include "Mesh/LineSphere.h"
-#include "Platform/Vulkan/VulkanMaterial.h"
+#include "Platform/Vulkan/VulkanGraphicPipeline.h"
 #include "Platform/Vulkan/Mesh/VulkanMesh.h"
 
 class MSAABackBuffer : public VulkanBackBuffer
@@ -60,7 +60,7 @@ public:
 
     Ref<VulkanModel> LineModel = nullptr;
     Ref<VulkanShader> LineShader = nullptr;
-    Ref<VulkanMaterial> MSAAMaterial = nullptr;
+    Ref<VulkanGraphicPipeline> MSAAMaterial = nullptr;
 
     Ref<EditorCamera>                               m_Camera = nullptr;        
     Ref<VulkanDynamicBufferRing>                    m_RingBuffer = nullptr;

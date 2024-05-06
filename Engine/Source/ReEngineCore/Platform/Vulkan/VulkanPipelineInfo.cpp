@@ -1,6 +1,6 @@
 ﻿#include "VulkanPipelineInfo.h"
 
-Ref<VulkanPipeline> VulkanPipeline::Create(Ref<VulkanDevice> VulkanDeviceRef, VkPipelineCache PipelineCache,VulkanPipelineInfo& PipelineInfo, const std::vector<VkVertexInputBindingDescription>& InputBindings,const std::vector<VkVertexInputAttributeDescription>& VertexInputAttributs, VkPipelineLayout PipelineLayout,VkRenderPass RenderPass)
+Ref<VulkanPipeline> VulkanPipeline::CreateGraphicPipeline(Ref<VulkanDevice> VulkanDeviceRef, VkPipelineCache PipelineCache,VulkanPipelineInfo& PipelineInfo, const std::vector<VkVertexInputBindingDescription>& InputBindings,const std::vector<VkVertexInputAttributeDescription>& VertexInputAttributs, VkPipelineLayout PipelineLayout,VkRenderPass RenderPass)
 {
     Ref<VulkanPipeline>  pipeline   = CreateRef<VulkanPipeline>();
 		pipeline->VulkanDeviceRef   = VulkanDeviceRef;
@@ -63,4 +63,19 @@ Ref<VulkanPipeline> VulkanPipeline::Create(Ref<VulkanDevice> VulkanDeviceRef, Vk
 		VERIFYVULKANRESULT(vkCreateGraphicsPipelines(device, PipelineCache, 1, &pipelineCreateInfo, VULKAN_CPU_ALLOCATOR, &(pipeline->Pipeline)));
 		
 		return pipeline;
+}
+
+Ref<VulkanPipeline> VulkanPipeline::CreateComputePipeline(Ref<VulkanDevice> VulkanDeviceRef,VkPipelineCache PipelineCache, VulkanPipelineInfo& PipelineInfo)
+{
+	Ref<VulkanPipeline>  pipeline   = CreateRef<VulkanPipeline>();
+	pipeline->VulkanDeviceRef   = VulkanDeviceRef;
+	pipeline->PipelineLayout    = PipelineInfo.Shader->pipelineLayout;
+	
+	VkComputePipelineCreateInfo ComputePipelineCreateInfo;
+	ZeroVulkanStruct(ComputePipelineCreateInfo,VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO);
+	ComputePipelineCreateInfo.layout = PipelineInfo.Shader->pipelineLayout;
+	ComputePipelineCreateInfo.stage = PipelineInfo.Shader->ShaderStageInfos[0];
+	VERIFYVULKANRESULT(vkCreateComputePipelines(VulkanDeviceRef->GetInstanceHandle(), PipelineCache, 1, &ComputePipelineCreateInfo, VULKAN_CPU_ALLOCATOR, &pipeline->Pipeline));
+
+	return pipeline;
 }

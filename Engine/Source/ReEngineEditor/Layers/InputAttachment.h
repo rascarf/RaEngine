@@ -1,7 +1,7 @@
 ﻿#pragma once
 #include "GraphicalLayer.h"
 #include "Camera/EditorCamera.h"
-#include "Platform/Vulkan/VulkanMaterial.h"
+#include "Platform/Vulkan/VulkanGraphicPipeline.h"
 #include "Platform/Vulkan/Mesh/VulkanMesh.h"
 
 #define NUM_LIGHTS 64
@@ -82,21 +82,21 @@ protected:
     std::vector<std::vector<Ref<VulkanMesh>>>       m_SceneMeshes;
     
     
-    Ref<VulkanMaterial>                             m_Material0 = nullptr;
+    Ref<VulkanGraphicPipeline>                             m_Material0 = nullptr;
     Ref<VulkanShader>                               m_Shader0 = nullptr;
     
     Ref<VulkanModel>                                m_Quad = nullptr;
-    Ref<VulkanMaterial>                             m_Material1 = nullptr;
+    Ref<VulkanGraphicPipeline>                             m_Material1 = nullptr;
     Ref<VulkanShader>                               m_Shader1 = nullptr;
 
     Ref<VulkanModel>                                m_Role = nullptr;
     Ref<VulkanTexture>                              m_RoleDiffuse = nullptr;
-    Ref<VulkanMaterial>                             m_RoleMaterial = nullptr;
+    Ref<VulkanGraphicPipeline>                             m_RoleMaterial = nullptr;
     
     glm::vec3                                       m_RolePosition;
     glm::vec3                                       m_RoleScale;
     
-    Ref<VulkanMaterial>                             m_EffectMaterial1 = nullptr;
+    Ref<VulkanGraphicPipeline>                             m_EffectMaterial1 = nullptr;
     Ref<VulkanShader>                               m_EffectShader = nullptr;
     
     std::vector<Ref<VulkanTexture>>                 m_AttachmentDepth;

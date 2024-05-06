@@ -88,7 +88,7 @@ void TileBasedForwardLayer::OnRender()
             m_MVPData.view = m_Camera->GetViewMatrix();
             m_MVPData.projection = m_Camera->GetProjection();
 
-            PreDepthMaterial->SetLocalUniform("uboMVP",&m_MVPData,sizeof(MVPBlock));
+            PreDepthMaterial->SetUniform("uboMVP",&m_MVPData,sizeof(MVPBlock));
             PreDepthMaterial->BindDescriptorSets(VkContext->GetCommandList(),VK_PIPELINE_BIND_POINT_GRAPHICS);
 
             Model->Meshes[i]->BindDraw(VkContext->GetCommandList());
@@ -157,10 +157,10 @@ void TileBasedForwardLayer::OnRender()
 
             m_MVPData.model = Model->Meshes[i]->LinkNode.lock()->GlobalMatrix;
 
-            ModelMaterial->SetLocalUniform("uboMVP",&m_MVPData,sizeof(MVPBlock));
-            ModelMaterial->SetLocalUniform("uboLights",&LightParam,sizeof(LightsParamBlock));
-            ModelMaterial->SetLocalUniform("uboCulling",&CullingParam,sizeof(CullingParamBlock));
-            ModelMaterial->SetLocalUniform("uboDebug",&Debug,sizeof(glm::vec4));
+            ModelMaterial->SetUniform("uboMVP",&m_MVPData,sizeof(MVPBlock));
+            ModelMaterial->SetUniform("uboLights",&LightParam,sizeof(LightsParamBlock));
+            ModelMaterial->SetUniform("uboCulling",&CullingParam,sizeof(CullingParamBlock));
+            ModelMaterial->SetUniform("uboDebug",&Debug,sizeof(glm::vec4));
 
             ModelMaterial->BindDescriptorSets(VkContext->GetCommandList(),VK_PIPELINE_BIND_POINT_GRAPHICS);
             Model->Meshes[i]->BindDraw(VkContext->GetCommandList());
@@ -291,7 +291,7 @@ void TileBasedForwardLayer::LoadAsset()
         &FPOBJ_FRAG,
         nullptr,nullptr,nullptr,nullptr);
 
-    ModelMaterial = VulkanMaterial::Create(
+    ModelMaterial = VulkanGraphicPipeline::Create(
         device,
         RenderTarget->GetRenderPass(),
         VkContext->CommandPool->m_PipelineCache,
@@ -322,7 +322,7 @@ void TileBasedForwardLayer::LoadAsset()
         nullptr,nullptr,nullptr,nullptr
     );
 
-    PreDepthMaterial = VulkanMaterial::Create(
+    PreDepthMaterial = VulkanGraphicPipeline::Create(
         device,
         PreDepthRenderTarget->GetRenderPass(),
         VkContext->CommandPool->m_PipelineCache,
@@ -352,7 +352,7 @@ void TileBasedForwardLayer::LoadAsset()
     
     {
         mFilterShader = VulkanShader::Create(device,true,&QUAD_VERT,&COLORFILTER_FRAG,nullptr,nullptr,nullptr,nullptr);
-        mFilterMaterial = VulkanMaterial::Create(
+        mFilterMaterial = VulkanGraphicPipeline::Create(
             device,
             FrameBuffer->m_RenderPass,
             VkContext->CommandPool->m_PipelineCache,

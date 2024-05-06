@@ -151,7 +151,7 @@ public:
 		}
 	}
 
-	static Ref<VulkanPipeline> Create(
+	static Ref<VulkanPipeline> CreateGraphicPipeline(
 		Ref<VulkanDevice> VulkanDeviceRef,
 		VkPipelineCache PipelineCache,
 		VulkanPipelineInfo& PipelineInfo, 
@@ -159,6 +159,12 @@ public:
 		const std::vector<VkVertexInputAttributeDescription>& VertexInputAttributs,
 		VkPipelineLayout PipelineLayout,
 		VkRenderPass RenderPass
+	);
+
+	static Ref<VulkanPipeline> CreateComputePipeline(
+		Ref<VulkanDevice> VulkanDeviceRef,
+		VkPipelineCache PipelineCache,
+		VulkanPipelineInfo& PipelineInfo
 	);
 
 public:

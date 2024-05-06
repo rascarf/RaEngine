@@ -181,7 +181,7 @@ void SimplePathTracing::OnRender()
         {
             vkCmdBindPipeline(VkContext->GetCommandList(), VK_PIPELINE_BIND_POINT_GRAPHICS, mFilterMaterial->mPipeline->Pipeline);
             mFilterMaterial->SetTexture("InputImageTexture", mStorageImage);
-            mFilterMaterial->SetLocalUniform("uboParam",&m_GlobalParam.moving,sizeof(m_GlobalParam.moving));
+            mFilterMaterial->SetUniform("uboParam",&m_GlobalParam.moving,sizeof(m_GlobalParam.moving));
             mFilterMaterial->BindDescriptorSets(VkContext->GetCommandList(), VK_PIPELINE_BIND_POINT_GRAPHICS);
             mQuad->Meshes[0]->BindDraw(VkContext->GetCommandList());
         }
@@ -303,7 +303,7 @@ void SimplePathTracing::LoadAsset()
     
     {
         mFilterShader = VulkanShader::Create(device,true,&QUAD_VERT,&RAYTRACINGFILTER_FRAG,nullptr,nullptr,nullptr,nullptr);
-        mFilterMaterial = VulkanMaterial::Create(
+        mFilterMaterial = VulkanGraphicPipeline::Create(
             device,
             FrameBuffer->m_RenderPass,
             VkContext->CommandPool->m_PipelineCache,

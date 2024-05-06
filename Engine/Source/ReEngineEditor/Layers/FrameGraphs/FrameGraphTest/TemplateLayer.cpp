@@ -156,7 +156,7 @@ void FrameGraphTemplateLayer::LoadAsset()
     
     {
         mFilterShader = VulkanShader::Create(device,true,&QUAD_VERT,&DEPTHFILTER_FRAG,nullptr,nullptr,nullptr,nullptr);
-        mFilterMaterial = VulkanMaterial::Create(
+        mFilterMaterial = VulkanGraphicPipeline::Create(
             device,
             FrameBuffer->m_RenderPass,
             VkContext->CommandPool->m_PipelineCache,

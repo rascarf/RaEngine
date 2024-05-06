@@ -116,8 +116,8 @@ void AnimationLayer::OnRender()
                 m_BonesData.bones[0] = glm::identity<glm::mat4>();
             }
 
-            SceneMaterial->SetLocalUniform("BonesData",&m_BonesData,sizeof(BonesTransformBlock));
-            SceneMaterial->SetLocalUniform("uboMVP",&m_MVPData,sizeof(ModelViewProjectionBlock));
+            SceneMaterial->SetUniform("BonesData",&m_BonesData,sizeof(BonesTransformBlock));
+            SceneMaterial->SetUniform("uboMVP",&m_MVPData,sizeof(ModelViewProjectionBlock));
             SceneMaterial->BindDescriptorSets(VkContext->GetCommandList(),VK_PIPELINE_BIND_POINT_GRAPHICS);
 
             Mesh->BindDraw(VkContext->GetCommandList());
@@ -212,7 +212,7 @@ void AnimationLayer::LoadAsset()
 
     {
         SceneShader = VulkanShader::Create(device,true,&ANIMOBJPACK_VERT,&ANIMOBJ_FRAG,nullptr,nullptr,nullptr,nullptr); 
-        SceneMaterial = VulkanMaterial::Create(
+        SceneMaterial = VulkanGraphicPipeline::Create(
             device,
             RenderTarget->GetRenderPass(),
             VkContext->CommandPool->m_PipelineCache,
@@ -248,7 +248,7 @@ void AnimationLayer::LoadAsset()
 
     {
         mFilterShader = VulkanShader::Create(device,true,&QUAD_VERT,&COLORFILTER_FRAG,nullptr,nullptr,nullptr,nullptr);
-        mFilterMaterial = VulkanMaterial::Create(
+        mFilterMaterial = VulkanGraphicPipeline::Create(
             device,
             FrameBuffer->m_RenderPass,
             VkContext->CommandPool->m_PipelineCache,

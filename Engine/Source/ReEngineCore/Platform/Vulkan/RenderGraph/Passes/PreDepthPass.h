@@ -3,7 +3,7 @@
 
 #include "Core/Core.h"
 #include "Platform/Vulkan/VulkanContext.h"
-#include "Platform/Vulkan/VulkanMaterial.h"
+#include "Platform/Vulkan/VulkanGraphicPipeline.h"
 #include "Platform/Vulkan/RenderGraph/RenderGraph.h"
 #include "Platform/Vulkan/VulkanShader/VulkanShader.h"
 #include "ReEngineEditor/Layers/GraphicalLayer.h"
@@ -42,7 +42,7 @@ namespace ReEngine
         }m_MVPData;
         
         Ref<VulkanShader> SceneShader = nullptr;
-        Ref<VulkanMaterial> RenderPSO = nullptr;
+        Ref<VulkanGraphicPipeline> RenderPSO = nullptr;
         Ref<VulkanDynamicBufferRing> RingBuffer = nullptr;
         
         ReEngine::VulkanContext* VkContext = nullptr;

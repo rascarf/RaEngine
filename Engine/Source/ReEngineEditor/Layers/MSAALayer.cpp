@@ -214,7 +214,7 @@ void MSAALayer::OnRender()
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, MSAAMaterial->mPipeline->Pipeline);
     for (int32 j = 0; j < LineModel->Meshes.size(); ++j)
     {
-        MSAAMaterial->SetLocalUniform("uboMVP",&MVPData,sizeof(MVPBlock));
+        MSAAMaterial->SetUniform("uboMVP",&MVPData,sizeof(MVPBlock));
         MSAAMaterial->BindDescriptorSets(VkContext->GetCommandList(), VK_PIPELINE_BIND_POINT_GRAPHICS);
         LineModel->Meshes[j]->BindDraw(commandBuffer);
     }
@@ -309,7 +309,7 @@ void MSAALayer::CreateBuffer()
         nullptr,nullptr,nullptr,nullptr
     );
 
-    MSAAMaterial = VulkanMaterial::Create(
+    MSAAMaterial = VulkanGraphicPipeline::Create(
         device,
         FrameBuffer->m_RenderPass,
         VkContext->CommandPool->m_PipelineCache,

@@ -1,7 +1,7 @@
 #pragma once
 #include "GraphicalLayer.h"
 #include "Camera/EditorCamera.h"
-#include "Platform/Vulkan/VulkanMaterial.h"
+#include "Platform/Vulkan/VulkanGraphicPipeline.h"
 #include "Platform/Vulkan/Mesh/AsyncLoader.h"
 #include "Platform/Vulkan/Mesh/VulkanMesh.h"
 #include "Platform/Vulkan/Mesh/AsyncLoader.h"
@@ -27,7 +27,7 @@ private:
 private:
     
     Ref<VulkanModel> mQuad = nullptr;
-    Ref<VulkanMaterial> mFilterMaterial;
+    Ref<VulkanGraphicPipeline> mFilterMaterial;
     Ref<VulkanShader> mFilterShader;
 
     Ref<VulkanRenderTarget> RenderTarget;
@@ -36,14 +36,14 @@ private:
 
     Ref<VulkanModel> SceneModel;
     Ref<VulkanShader> SceneShader;
-    Ref<VulkanMaterial> SceneMaterial;
+    Ref<VulkanGraphicPipeline> SceneMaterial;
     
     std::vector<Ref<VulkanTexture>> TextureArray;
 
     std::vector<std::vector<Ref<VulkanMesh>>> RenderObject;
 
     Ref<VulkanShader>       SkyBoxShader;
-    Ref<VulkanMaterial>     SkyBoxMaterial;
+    Ref<VulkanGraphicPipeline>     SkyBoxMaterial;
     Ref<VulkanModel>        SkyBox;
     Ref<VulkanTexture>      CubeMap; 
     Ref<VulkanRenderTarget> SkyBoxRenderTarget;
@@ -68,7 +68,7 @@ private:
     Ref<VulkanModel>        PBRModel;
     std::vector<Ref<VulkanTexture>> PBRTextureArray;
     Ref<VulkanShader>       PBRShader;
-    Ref<VulkanMaterial>     PBRPipeline;
+    Ref<VulkanGraphicPipeline>     PBRPipeline;
 
     Ref<VulkanShader>           SHFilterShader;
     Ref<VulkanComputePipeline> SHFilterPipe;

@@ -158,7 +158,7 @@ void RTLayer::OnRender()
         
         SkyBoxBlock.projection = m_Camera->GetProjection();
         
-        SkyBoxMaterial->SetLocalUniform("uboMVP",&SkyBoxBlock,sizeof(ModelViewProjectionBlock));
+        SkyBoxMaterial->SetUniform("uboMVP",&SkyBoxBlock,sizeof(ModelViewProjectionBlock));
         SkyBoxMaterial->BindDescriptorSets(VkContext->GetCommandList(),VK_PIPELINE_BIND_POINT_GRAPHICS);
 
         for(const auto Mesh : SkyBox->Meshes)
@@ -193,7 +193,7 @@ void RTLayer::OnRender()
         //     {
         //         m_MVPData.model = Mesh->LinkNode.lock()->GetGlobalMatrix();
         //
-        //         SceneMaterial->SetLocalUniform("uboMVP",&m_MVPData,sizeof(ModelViewProjectionBlock));
+        //         SceneMaterial->SetUniform("uboMVP",&m_MVPData,sizeof(ModelViewProjectionBlock));
         //         SceneMaterial->BindDescriptorSets(VkContext->GetCommandList(),VK_PIPELINE_BIND_POINT_GRAPHICS,diffusePaths[i]);
         //
         //         Mesh->BindDraw(VkContext->GetCommandList());
@@ -203,8 +203,8 @@ void RTLayer::OnRender()
         for(auto& Mesh : PBRModel->Meshes)
         {
             m_MVPData.model = Mesh->LinkNode.lock()->GetGlobalMatrix();
-            PBRPipeline->SetLocalUniform("uboMVP",&m_MVPData,sizeof(ModelViewProjectionBlock));
-            PBRPipeline->SetLocalUniform("lightUniform",&LightParams,sizeof(ShadingUniforms));
+            PBRPipeline->SetUniform("uboMVP",&m_MVPData,sizeof(ModelViewProjectionBlock));
+            PBRPipeline->SetUniform("lightUniform",&LightParams,sizeof(ShadingUniforms));
             PBRPipeline->BindDescriptorSets(VkContext->GetCommandList(),VK_PIPELINE_BIND_POINT_GRAPHICS);
             Mesh->BindDraw(VkContext->GetCommandList());
         }
@@ -400,7 +400,7 @@ void RTLayer::GenerateDiffuseAndSpecular()
         const uint32_t numGroups = std::max<uint32_t>(1, size/32);
         const SpecularFilterPushConstants pushConstants = { level-1, level * deltaRoughness };
 
-        SpcularFilterPipe->PushContant(ComputeCmdBuffer,0,sizeof(pushConstants),(void*)&pushConstants);
+        SpcularFilterPipe->PushConstant(ComputeCmdBuffer,0,sizeof(pushConstants),(void*)&pushConstants);
         SpcularFilterPipe->BindDispatch(ComputeCmdBuffer->CmdBuffer,numGroups,numGroups,6);
     }
 
@@ -471,7 +471,7 @@ void RTLayer::GenerateDiffuseAndSpecular()
         for(int Batching = 0; Batching < 10 ; Batching++)
         {
             SHParam.BatchingIndex = Batching;
-            SHFilterPipe->PushContant(ComputeCmdBuffer,0,sizeof(SHParam),&SHParam);
+            SHFilterPipe->PushConstant(ComputeCmdBuffer,0,sizeof(SHParam),&SHParam);
             SHFilterPipe->BindDispatch(ComputeCmdBuffer->CmdBuffer,1,1,1);
             ComputeCmdBuffer->BufferWriteBarrier(SHReadBackBuffer);  
         }
@@ -503,7 +503,7 @@ void RTLayer::LoadAsset()
     
     {
         SceneShader = VulkanShader::Create(device,true,&OBJ_VERT,&OBJ_FRAG,nullptr,nullptr,nullptr,nullptr);
-        SceneMaterial = VulkanMaterial::Create(
+        SceneMaterial = VulkanGraphicPipeline::Create(
             device,
             RenderTarget->GetRenderPass(),
             VkContext->CommandPool->m_PipelineCache,
@@ -516,7 +516,7 @@ void RTLayer::LoadAsset()
 
     {
         mFilterShader = VulkanShader::Create(device,true,&QUAD_VERT,&COLORFILTER_FRAG,nullptr,nullptr,nullptr,nullptr);
-        mFilterMaterial = VulkanMaterial::Create(
+        mFilterMaterial = VulkanGraphicPipeline::Create(
             device,
             FrameBuffer->m_RenderPass,
             VkContext->CommandPool->m_PipelineCache,
@@ -577,7 +577,7 @@ void RTLayer::LoadAsset()
    );
     
     SkyBoxShader = VulkanShader::Create(device,true,&SKYBOX_VERT,&SKYBOX_FRAG,nullptr,nullptr,nullptr,nullptr);
-    SkyBoxMaterial = VulkanMaterial::Create(
+    SkyBoxMaterial = VulkanGraphicPipeline::Create(
         device,
         SkyBoxRenderTarget->GetRenderPass(),
         VkContext->CommandPool->m_PipelineCache,
@@ -624,7 +624,7 @@ void RTLayer::LoadAsset()
 
     
     PBRShader = VulkanShader::Create(device,true,&PBRMESH_VERT,&PBRMESH_FRAG,nullptr,nullptr,nullptr,nullptr);
-    PBRPipeline = VulkanMaterial::Create(device,RenderTarget->GetRenderPass(),VkContext->CommandPool->m_PipelineCache,PBRShader,m_RingBuffer);
+    PBRPipeline = VulkanGraphicPipeline::Create(device,RenderTarget->GetRenderPass(),VkContext->CommandPool->m_PipelineCache,PBRShader,m_RingBuffer);
     PBRPipeline->PreparePipeline();
     
     PBRModel = VulkanModel::LoadFromFile(

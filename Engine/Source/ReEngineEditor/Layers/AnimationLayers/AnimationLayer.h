@@ -2,7 +2,7 @@
 #include "Core/Core.h"
 #include "ReEngineEditor/Layers/GraphicalLayer.h"
 #include "Camera/EditorCamera.h"
-#include "Platform/Vulkan/VulkanMaterial.h"
+#include "Platform/Vulkan/VulkanGraphicPipeline.h"
 #include "Platform/Vulkan/Mesh/VulkanMesh.h"
 
 class AnimationLayer : public GraphicalLayer
@@ -24,7 +24,7 @@ private:
 private:
     
     Ref<VulkanModel> mQuad = nullptr;
-    Ref<VulkanMaterial> mFilterMaterial;
+    Ref<VulkanGraphicPipeline> mFilterMaterial;
     Ref<VulkanShader> mFilterShader;
 
     Ref<VulkanRenderTarget> RenderTarget;
@@ -33,7 +33,7 @@ private:
 
     Ref<VulkanModel> SceneModel;
     Ref<VulkanShader> SceneShader;
-    Ref<VulkanMaterial> SceneMaterial;
+    Ref<VulkanGraphicPipeline> SceneMaterial;
     std::vector<Ref<VulkanTexture>> TextureArray;
 
     float                       m_AnimDuration = 0.0f;

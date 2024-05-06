@@ -1,6 +1,6 @@
 #pragma once
 #include "Core/Core.h"
-#include "Platform/Vulkan/VulkanMaterial.h"
+#include "Platform/Vulkan/VulkanGraphicPipeline.h"
 #include "Platform/Vulkan/Mesh/VulkanMesh.h"
 #include "Camera/EditorCamera.h"
 #include "Platform/Vulkan/RenderGraph/RenderGraph.h"
@@ -29,7 +29,7 @@ private:
     Ref<VulkanModel>                                mSceneModel = nullptr;
     
     Ref<VulkanModel>                                mQuad = nullptr;
-    Ref<VulkanMaterial>                             mFilterMaterial;
+    Ref<VulkanGraphicPipeline>                             mFilterMaterial;
     Ref<VulkanShader>                               mFilterShader;
 
     MVPBlock                                        m_MVPData;

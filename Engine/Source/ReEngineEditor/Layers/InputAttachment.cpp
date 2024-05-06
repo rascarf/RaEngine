@@ -286,7 +286,7 @@ void InputAttachment::OnRender()
         {
             MvpBlock.model =  m_Role->Meshes[meshIndex]->LinkNode.lock()->GetGlobalMatrix();
             m_RoleMaterial->SetTexture("DiffuseMap",m_RoleDiffuse);
-            m_RoleMaterial->SetLocalUniform("uboMVP",&MvpBlock,sizeof(MVPBlock));
+            m_RoleMaterial->SetUniform("uboMVP",&MvpBlock,sizeof(MVPBlock));
             
             m_RoleMaterial->BindDescriptorSets(VkContext->GetCommandList(),VK_PIPELINE_BIND_POINT_GRAPHICS);
             m_Role->Meshes[meshIndex]->BindDraw(VkContext->GetCommandList());
@@ -301,7 +301,7 @@ void InputAttachment::OnRender()
             {
                 MvpBlock.model = Meshes->LinkNode.lock()->GetGlobalMatrix();
             
-                m_Material0->SetLocalUniform("uboMVP",&MvpBlock,sizeof(MVPBlock));
+                m_Material0->SetUniform("uboMVP",&MvpBlock,sizeof(MVPBlock));
                 m_Material0->BindDescriptorSets(VkContext->GetCommandList(),VK_PIPELINE_BIND_POINT_GRAPHICS);
 
                 Meshes->BindDraw(VkContext->GetCommandList());
@@ -314,8 +314,8 @@ void InputAttachment::OnRender()
         { 
             MvpBlock.model =  m_Role->Meshes[meshIndex]->LinkNode.lock()->GetGlobalMatrix();
             
-            m_EffectMaterial1->SetLocalUniform("uboMVP",&MvpBlock,sizeof(MVPBlock));
-            m_EffectMaterial1->SetLocalUniform("rayParam",&m_RayData,sizeof(RayParamBlock));
+            m_EffectMaterial1->SetUniform("uboMVP",&MvpBlock,sizeof(MVPBlock));
+            m_EffectMaterial1->SetUniform("rayParam",&m_RayData,sizeof(RayParamBlock));
             m_EffectMaterial1->BindDescriptorSets(VkContext->GetCommandList(),VK_PIPELINE_BIND_POINT_GRAPHICS);
 
             m_Role->Meshes[meshIndex]->BindDraw(VkContext->GetCommandList());
@@ -330,7 +330,7 @@ void InputAttachment::OnRender()
         for (int32 meshIndex = 0; meshIndex < m_Quad->Meshes.size(); ++meshIndex)
         {
             
-            m_Material1->SetLocalUniform("param",&m_DebugParam,sizeof(AttachmentParamBlock));
+            m_Material1->SetUniform("param",&m_DebugParam,sizeof(AttachmentParamBlock));
             m_Material1->SetInputAttachment("inputColor",  m_AttachmentColors[VkContext->GetCurrtIndex()]);
             m_Material1->SetInputAttachment("inputNormal", m_AttachmentNormals[VkContext->GetCurrtIndex()]);
             m_Material1->SetInputAttachment("inputDepth",  m_AttachmentDepth[VkContext->GetCurrtIndex()]);
@@ -432,7 +432,7 @@ void InputAttachment::CreateAttachments()
 void InputAttachment::CreateMaterial()
 {
     auto Device = VkContext->GetVulkanInstance()->GetDevice();
-    m_Material0 = VulkanMaterial::Create(
+    m_Material0 = VulkanGraphicPipeline::Create(
         Device,
         FrameBuffer->m_RenderPass,
         VkContext->CommandPool->m_PipelineCache,
@@ -453,7 +453,7 @@ void InputAttachment::CreateMaterial()
     depthStencilState.front             = depthStencilState.back;
     m_Material0->PreparePipeline();
 
-    m_RoleMaterial = VulkanMaterial::Create(
+    m_RoleMaterial = VulkanGraphicPipeline::Create(
         Device,
         FrameBuffer->m_RenderPass,
         VkContext->CommandPool->m_PipelineCache,
@@ -463,7 +463,7 @@ void InputAttachment::CreateMaterial()
     m_RoleMaterial->mPipelineInfo.ColorAttachmentsCount = 2;
     m_RoleMaterial->PreparePipeline();
     
-    m_EffectMaterial1 = VulkanMaterial::Create(
+    m_EffectMaterial1 = VulkanGraphicPipeline::Create(
         Device,
         FrameBuffer->m_RenderPass,
         VkContext->CommandPool->m_PipelineCache,
@@ -493,7 +493,7 @@ void InputAttachment::CreateMaterial()
     
     m_EffectMaterial1->PreparePipeline();
     
-    m_Material1 = VulkanMaterial::Create( 
+    m_Material1 = VulkanGraphicPipeline::Create( 
         Device,
         FrameBuffer->m_RenderPass,
         VkContext->CommandPool->m_PipelineCache,

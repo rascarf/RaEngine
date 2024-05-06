@@ -1,13 +1,13 @@
 #pragma once
 #include "RenderScene.h"
 #include "SceneGraph.h"
-#include "Platform/Vulkan/VulkanMaterial.h"
+#include "Platform/Vulkan/VulkanGraphicPipeline.h"
 
 namespace ReEngine
 {
     struct glTFMaterial
     {
-        Ref<VulkanMaterial> Material;
+        Ref<VulkanGraphicPipeline> Material;
         Ref<VulkanBuffer> MaterialBuffer;
 
         // Indices Used for Bindless Textures

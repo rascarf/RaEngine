@@ -104,7 +104,7 @@ void AnimationTextureLayer::OnRender()
         {
             m_MVPData.model = Mesh->LinkNode.lock()->GetGlobalMatrix();
             
-            SceneMaterial->SetLocalUniform("uboMVP",&m_MVPData,sizeof(ModelViewProjectionBlock));
+            SceneMaterial->SetUniform("uboMVP",&m_MVPData,sizeof(ModelViewProjectionBlock));
             SceneMaterial->SetTexture("BonesTexture",AnimTexture);
             SceneMaterial->BindDescriptorSets(VkContext->GetCommandList(),VK_PIPELINE_BIND_POINT_GRAPHICS);
 
@@ -201,7 +201,7 @@ void AnimationTextureLayer::LoadAsset()
 
     {
         SceneShader = VulkanShader::Create(device,true,&ANIMATIONTEXTURE_VERT,&ANIMOBJ_FRAG,nullptr,nullptr,nullptr,nullptr); 
-        SceneMaterial = VulkanMaterial::Create(
+        SceneMaterial = VulkanGraphicPipeline::Create(
             device,
             RenderTarget->GetRenderPass(),
             VkContext->CommandPool->m_PipelineCache,
@@ -237,7 +237,7 @@ void AnimationTextureLayer::LoadAsset()
 
     {
         mFilterShader = VulkanShader::Create(device,true,&QUAD_VERT,&COLORFILTER_FRAG,nullptr,nullptr,nullptr,nullptr);
-        mFilterMaterial = VulkanMaterial::Create(
+        mFilterMaterial = VulkanGraphicPipeline::Create(
             device,
             FrameBuffer->m_RenderPass,
             VkContext->CommandPool->m_PipelineCache,
