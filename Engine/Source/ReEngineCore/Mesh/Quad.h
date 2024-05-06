@@ -16,7 +16,7 @@ namespace ReEngine
                 -1.0f, -1.0f, 0.0f, 0.0f, 1.0f
             };
             
-            std::vector<uint16> ins = {
+            std::vector<uint32> ins = {
                 0, 1, 2, 0, 2, 3
             };
 

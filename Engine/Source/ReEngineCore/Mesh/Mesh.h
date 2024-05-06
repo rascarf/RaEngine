@@ -8,11 +8,11 @@ namespace ReEngine
     public:
 
         virtual std::vector<float>& GetVertexs(){return vertices;}
-        virtual std::vector<uint16>& GetIndices(){return indices;}
+        virtual std::vector<uint32>& GetIndices(){return indices;}
         
     protected:
         std::vector<float> vertices;
-        std::vector<uint16> indices;
+        std::vector<uint32> indices;
     };
 }
 

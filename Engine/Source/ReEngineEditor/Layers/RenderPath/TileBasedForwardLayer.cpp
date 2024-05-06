@@ -155,7 +155,7 @@ void TileBasedForwardLayer::OnRender()
         {
             vkCmdBindPipeline(VkContext->GetCommandList(),VK_PIPELINE_BIND_POINT_GRAPHICS,ModelMaterial->mPipeline->Pipeline);
 
-            m_MVPData.model = Model->Meshes[i]->LinkNode.lock()->GlobalMatrix;
+            m_MVPData.model = Model->Meshes[i]->LinkNode.lock()->GetGlobalMatrix();
 
             ModelMaterial->SetUniform("uboMVP",&m_MVPData,sizeof(MVPBlock));
             ModelMaterial->SetUniform("uboLights",&LightParam,sizeof(LightsParamBlock));

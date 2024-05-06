@@ -19,7 +19,7 @@ public:
         vkCmdDrawIndexed(CmdBuffer, IndexCount, 1, 0, 0, 0);
     }
 
-    static Ref<VulkanIndexBuffer> Create(std::shared_ptr<VulkanDevice> vulkanDevice, Ref<VulkanCommandBuffer> cmdBuffer, std::vector<uint16> indices, VkIndexType type = VK_INDEX_TYPE_UINT16);
+    static Ref<VulkanIndexBuffer> Create(std::shared_ptr<VulkanDevice> vulkanDevice, Ref<VulkanCommandBuffer> cmdBuffer, std::vector<uint32> indices, VkIndexType type = VK_INDEX_TYPE_UINT32);
     
 public:
     VkDevice Device = VK_NULL_HANDLE;
@@ -27,5 +27,5 @@ public:
     Ref<VulkanBuffer> Buffer = nullptr;
     
     int32 IndexCount = 0;
-    VkIndexType	 IndexType = VK_INDEX_TYPE_UINT16;
+    VkIndexType	 IndexType = VK_INDEX_TYPE_UINT32;
 };

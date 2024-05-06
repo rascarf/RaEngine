@@ -224,7 +224,7 @@ Ref<VulkanModel> VulkanModel::LoadFromFile(const std::string& filename, Ref<Vulk
     return model;
 }
 
-Ref<VulkanModel> VulkanModel::Create(std::shared_ptr<VulkanDevice> vulkanDevice, Ref<VulkanCommandBuffer> cmdBuffer,const std::vector<float>& vertices, const std::vector<uint16>& indices,const std::vector<VertexAttribute>& attributes)
+Ref<VulkanModel> VulkanModel::Create(std::shared_ptr<VulkanDevice> vulkanDevice, Ref<VulkanCommandBuffer> cmdBuffer,const std::vector<float>& vertices, const std::vector<uint32>& indices,const std::vector<VertexAttribute>& attributes)
 {
     Ref<VulkanModel> model   = CreateRef<VulkanModel>();
     model->Device     = vulkanDevice;
@@ -419,7 +419,6 @@ void VulkanModel::UpdateAnimation(float DeltaTime)
 
 void VulkanModel::SetAnimation(int32 index)
 {
-
     if (index >= Animations.size())
     {
         RE_WARN("AnimIndex is a invalid value");
@@ -546,7 +545,6 @@ Ref<VulkanTexture> VulkanModel::GenerateAnimationTexture(int index)
 void VulkanModel::GetKeys(int index)
 {
     Keys = GetAnimation(index).GetKeys();
-    
 }
 
 int VulkanModel::AnimationIndex()
@@ -801,73 +799,21 @@ void VulkanModel::LoadIndices(std::vector<uint32>& indices, const aiMesh* aiMesh
 void VulkanModel::LoadPrimitives(std::vector<float>& vertices, std::vector<uint32>& indices, Ref<VulkanMesh> mesh,const aiMesh* aiMesh, const aiScene* aiScene)
 {
     int32 stride = (int32)vertices.size() / aiMesh->mNumVertices;
-
-    //面数太多了要拆分
-    if (indices.size() > 65535)
+    
+    Ref<VulkanPrimitive> primitive = CreateRef<VulkanPrimitive>();
+    primitive->vertices = vertices;
+    for (uint32 i = 0; i < indices.size(); ++i)
     {
-        std::unordered_map<uint32, uint32> indicesMap;
-        Ref<VulkanPrimitive> primitive = nullptr;
-
-        for (int32 i = 0; i < indices.size(); ++i)
-        {
-            uint32 idx = indices[i];
-            if (primitive == nullptr)
-            {
-                primitive = CreateRef<VulkanPrimitive>();
-                indicesMap.clear();
-                
-                mesh->m_Primitives.push_back(primitive);
-            }
-
-            uint32 newIdx = 0;
-            auto it = indicesMap.find(idx);
-            if (it == indicesMap.end())
-            {
-                uint32 start = idx * stride;
-                newIdx = (uint32)primitive->vertices.size() / stride;
-                primitive->vertices.insert(primitive->vertices.end(), vertices.begin() + start, vertices.begin() + start + stride);
-                indicesMap.insert(std::make_pair(idx, newIdx));
-            }
-            else
-            {
-                newIdx = it->second;
-            }
-
-            primitive->indices.push_back(newIdx);
-
-            if (primitive->indices.size() == 65535)
-            {
-                primitive = nullptr;
-            }
-        }
-
-        if (CmdBuffer)
-        {
-            for (int32 i = 0; i < mesh->m_Primitives.size(); ++i)
-            {
-                primitive = mesh->m_Primitives[i];
-                primitive->VertexBuffer = VulkanVertexBuffer::Create(Device, CmdBuffer, primitive->vertices, Attributes);
-                primitive->IndexBuffer  = VulkanIndexBuffer::Create(Device, CmdBuffer, primitive->indices);
-            }
-        }
+        primitive->indices.push_back(indices[i]);
     }
-    else
+    mesh->m_Primitives.push_back(primitive);
+
+    if (CmdBuffer)
     {
-        Ref<VulkanPrimitive> primitive = CreateRef<VulkanPrimitive>();
-        primitive->vertices = vertices;
-        for (uint16 i = 0; i < indices.size(); ++i)
-        {
-            primitive->indices.push_back(indices[i]);
-        }
-        mesh->m_Primitives.push_back(primitive);
-
-        if (CmdBuffer)
-        {
-            primitive->VertexBuffer = VulkanVertexBuffer::Create(Device, CmdBuffer, primitive->vertices, Attributes);
-            primitive->IndexBuffer  = VulkanIndexBuffer::Create(Device, CmdBuffer, primitive->indices);
-        }
+        primitive->VertexBuffer = VulkanVertexBuffer::Create(Device, CmdBuffer, primitive->vertices, Attributes);
+        primitive->IndexBuffer  = VulkanIndexBuffer::Create(Device, CmdBuffer, primitive->indices);
     }
-
+    
     for (int32 i = 0; i < mesh->m_Primitives.size(); ++i)
     {
         Ref<VulkanPrimitive> primitive = mesh->m_Primitives[i];

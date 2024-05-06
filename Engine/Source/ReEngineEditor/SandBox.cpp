@@ -10,14 +10,15 @@
 #include "Layers/RayTracing/SimplePathTracing.h"
 #include "Layers/RenderPath/TileBasedForwardLayer.h"
 #include "Layers/FrameGraphs/FrameGraphTest/TemplateLayer.h"
+#include "Layers/GPUDriven/GPUDrivenLayer.h"
 
 namespace ReEngine
 {
     void AppInit(Application& app)
     {
         const auto Layer = CreateRef<RTLayer>();
-
         // const auto Layer = CreateRef<SimplePathTracing>();
+        // const auto Layer = CreateRef<GPUDrivenLayer>();
         
         app.PreInit();
         app.Init();

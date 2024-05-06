@@ -163,6 +163,12 @@ if(NOT TARGET marl)
   set_target_properties(marl PROPERTIES FOLDER ${ThirdPartyFolder}/marl)
 endif()
 
+if(NOT TARGET MeshOpt)
+  include(meshopt.cmake)
+  set_target_properties(MeshOpt PROPERTIES FOLDER ${ThirdPartyFolder}/MeshOpt)
+  NoWarning(MeshOpt)
+endif()
+
 if(NOT TARGET headers)
     add_library(headers INTERFACE)
     target_include_directories(headers INTERFACE "${ThirdPartyDir}")

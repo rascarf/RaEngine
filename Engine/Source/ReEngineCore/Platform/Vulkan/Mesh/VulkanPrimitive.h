@@ -10,7 +10,7 @@ public:
 
     std::vector<float>  vertices;
     std::vector<float>  instanceDatas;
-    std::vector<uint16> indices;
+    std::vector<uint32> indices;
 
     int32   vertexCount = 0;
     int32   triangleNum = 0;

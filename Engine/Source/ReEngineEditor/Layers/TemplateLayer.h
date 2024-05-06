@@ -17,6 +17,8 @@ public:
     virtual void OnUIRender(Timestep ts) override;
     virtual void OnChangeWindowSize(std::shared_ptr<ReEngine::Event> e) override;
 
+    virtual void OnNativeUpdate(Timestep ts){ /*子类里面写自己的代码*/ }
+    virtual void OnNativeLoadAsset(){ /*子类里面写自己的代码*/ }
 private:
     void CreateRenderTarget();
     void LoadAsset();

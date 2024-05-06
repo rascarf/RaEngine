@@ -36,8 +36,8 @@
     
     LoadTextures(cmdBuffer, gltfModel);
     LoadMaterials(cmdBuffer, gltfModel);
-    LoadMeshes(cmdBuffer, gltfModel);
     LoadNodes(cmdBuffer, gltfModel);
+    LoadMeshes(cmdBuffer, gltfModel);
     LoadLights(cmdBuffer, gltfModel);
 }
 
@@ -89,208 +89,209 @@ void glTFScene::LoadMaterials(Ref<VulkanCommandBuffer> cmdBuffer, tinygltf::Mode
 }
 
 void glTFScene::LoadMeshes(Ref<VulkanCommandBuffer> cmdBuffer, tinygltf::Model& gltfModel)
-{for (int32 i = 0; i < gltfModel.meshes.size(); ++i)
+{
+    for (int32 i = 0; i < gltfModel.meshes.size(); ++i)
+    {
+        tinygltf::Mesh& gltfMesh = gltfModel.meshes[i];
+
+        for (int32 j = 0; j < gltfMesh.primitives.size(); ++j)
         {
-            tinygltf::Mesh& gltfMesh = gltfModel.meshes[i];
+            tinygltf::Primitive& primitive = gltfMesh.primitives[j];
 
-            for (int32 j = 0; j < gltfMesh.primitives.size(); ++j)
+            std::vector<float> vertices;
+            std::vector<uint32> indices;
+            BoundingBox bounds;
+
+            // vertices
+            uint8* bufferPos = nullptr;
+            uint8* bufferNormals = nullptr;
+            uint8* bufferUV0 = nullptr;
+            uint8* bufferTangents = nullptr;
+
+            tinygltf::Accessor& posAccessor = gltfModel.accessors[primitive.attributes.find("POSITION")->second];
+            tinygltf::BufferView& posView = gltfModel.bufferViews[posAccessor.bufferView];
+            bufferPos = &(gltfModel.buffers[posView.buffer].data[posAccessor.byteOffset + posView.byteOffset]);
+
+            if (primitive.attributes.find("NORMAL") != primitive.attributes.end())
             {
-                tinygltf::Primitive& primitive = gltfMesh.primitives[j];
-
-                std::vector<float> vertices;
-                std::vector<uint32> indices;
-                BoundingBox bounds;
-
-                // vertices
-                uint8* bufferPos = nullptr;
-                uint8* bufferNormals = nullptr;
-                uint8* bufferUV0 = nullptr;
-                uint8* bufferTangents = nullptr;
-
-                tinygltf::Accessor& posAccessor = gltfModel.accessors[primitive.attributes.find("POSITION")->second];
-                tinygltf::BufferView& posView = gltfModel.bufferViews[posAccessor.bufferView];
-                bufferPos = &(gltfModel.buffers[posView.buffer].data[posAccessor.byteOffset + posView.byteOffset]);
-
-                if (primitive.attributes.find("NORMAL") != primitive.attributes.end())
-                {
-                    tinygltf::Accessor& normAccessor = gltfModel.accessors[primitive.attributes.find("NORMAL")->second];
-                    tinygltf::BufferView& normView = gltfModel.bufferViews[normAccessor.bufferView];
-                    bufferNormals = &(gltfModel.buffers[normView.buffer].data[normAccessor.byteOffset + normView.byteOffset]);
-                }
-
-                if (primitive.attributes.find("TEXCOORD_0") != primitive.attributes.end())
-                {
-                    tinygltf::Accessor& uvAccessor = gltfModel.accessors[primitive.attributes.find("TEXCOORD_0")->second];
-                    tinygltf::BufferView& uvView = gltfModel.bufferViews[uvAccessor.bufferView];
-                    bufferUV0 = &(gltfModel.buffers[uvView.buffer].data[uvAccessor.byteOffset + uvView.byteOffset]);
-                }
-
-                if (primitive.attributes.find("TANGENT") != primitive.attributes.end())
-                {
-                    tinygltf::Accessor& tangentAccessor = gltfModel.accessors[primitive.attributes.find("TANGENT")->second];
-                    tinygltf::BufferView& tangentView = gltfModel.bufferViews[tangentAccessor.bufferView];
-                    bufferTangents = &(gltfModel.buffers[tangentView.buffer].data[tangentAccessor.byteOffset + tangentView.byteOffset]);
-                }
-
-                for (int32 v = 0; v < posAccessor.count; ++v)
-                {
-                    // pos
-                    {
-                        const float* buf = (const float*)(bufferPos);
-                        float px = buf[v * 3 + 0];
-                        float py = buf[v * 3 + 1];
-                        float pz = buf[v * 3 + 2];
-
-                        if (v == 0)
-                        {
-                            bounds.Min.x = bounds.Max.x = px;
-                            bounds.Min.y = bounds.Max.y = py;
-                            bounds.Min.z = bounds.Max.z = pz;
-                        }
-
-                        bounds.Min.x = Math::Min(bounds.Min.x, px);
-                        bounds.Min.y = Math::Min(bounds.Min.y, py);
-                        bounds.Min.z = Math::Min(bounds.Min.z, pz);
-                        bounds.Max.x = Math::Max(bounds.Max.x, px);
-                        bounds.Max.y = Math::Max(bounds.Max.y, py);
-                        bounds.Max.z = Math::Max(bounds.Max.z, pz);
-
-                        vertices.push_back(px);
-                        vertices.push_back(py);
-                        vertices.push_back(pz);
-                    }
-                    // uv
-                    {
-                        if (bufferUV0)
-                        {
-                            const float* buf = (const float*)(bufferUV0);
-                            vertices.push_back(buf[v * 2 + 0]);
-                            vertices.push_back(buf[v * 2 + 1]);
-                        }
-                        else
-                        {
-                            vertices.push_back(0);
-                            vertices.push_back(0);
-                        }
-                    }
-                    // normal
-                    {
-                        if (bufferNormals)
-                        {
-                            const float* buf = (const float*)(bufferNormals);
-                            vertices.push_back(buf[v * 3 + 0]);
-                            vertices.push_back(buf[v * 3 + 1]);
-                            vertices.push_back(buf[v * 3 + 2]);
-                        }
-                        else
-                        {
-                            vertices.push_back(0);
-                            vertices.push_back(0);
-                            vertices.push_back(0);
-                        }
-                    }
-                    // tangent
-                    {
-                        if (bufferTangents)
-                        {
-                            const float* buf = (const float*)(bufferTangents);
-                            vertices.push_back(buf[v * 3 + 0]);
-                            vertices.push_back(buf[v * 3 + 1]);
-                            vertices.push_back(buf[v * 3 + 2]);
-                        }
-                        else
-                        {
-                            vertices.push_back(0);
-                            vertices.push_back(0);
-                            vertices.push_back(0);
-                        }
-                    }
-                }
-
-                // indices
-                tinygltf::Accessor& indicesAccessor = gltfModel.accessors[primitive.indices];
-                tinygltf::BufferView& indicesBufferView = gltfModel.bufferViews[indicesAccessor.bufferView];
-                uint8* bufferIndices = &(gltfModel.buffers[indicesBufferView.buffer].data[indicesAccessor.byteOffset + indicesBufferView.byteOffset]);
-
-                for (int32 v = 0; v < indicesAccessor.count; ++v)
-                {
-                    if (indicesAccessor.componentType == TINYGLTF_PARAMETER_TYPE_UNSIGNED_INT)
-                    {
-                        const uint32* buf = (const uint32*)(bufferIndices);
-                        indices.push_back(buf[v]);
-                    }
-                    else if (indicesAccessor.componentType == TINYGLTF_PARAMETER_TYPE_UNSIGNED_SHORT)
-                    {
-                        const uint16* buf = (const uint16*)(bufferIndices);
-                        indices.push_back(buf[v]);
-                    }
-                    else if (indicesAccessor.componentType == TINYGLTF_PARAMETER_TYPE_UNSIGNED_SHORT)
-                    {
-                        const uint8* buf = (const uint8*)(bufferIndices);
-                        indices.push_back(buf[v]);
-                    }
-                }
-
-                glTFMesh* mesh = new glTFMesh();
-                mesh->Bounds = bounds;
-                mesh->VertexStride = 11 * sizeof(float);
-                mesh->VertexCount  = vertices.size();
-                {
-                    Ref<VulkanBuffer> vertexStaging = VulkanBuffer::CreateBuffer(
-                        Device,
-                        VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                        vertices.size() * sizeof(float),
-                        vertices.data()
-                    );
-
-                    mesh->VertexBuffer = VulkanBuffer::CreateBuffer(
-                        Device,
-                        VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR,
-                        vertices.size() * sizeof(float)
-                    );
-
-                    cmdBuffer->Begin();
-
-                    VkBufferCopy copyRegion = {};
-                    copyRegion.size = vertices.size() * sizeof(float);
-                    vkCmdCopyBuffer(cmdBuffer->CmdBuffer, vertexStaging->Buffer, mesh->VertexBuffer->Buffer, 1, &copyRegion);
-
-                    cmdBuffer->End();
-                    cmdBuffer->Submit();
-                    
-                }
-
-                mesh->IndexCount = indices.size();
-                {
-                   Ref<VulkanBuffer> indexStaging = VulkanBuffer::CreateBuffer(
-                        Device,
-                        VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                        indices.size() * sizeof(uint32),
-                        indices.data()
-                    );
-
-                    mesh->IndexBuffer = VulkanBuffer::CreateBuffer(
-                        Device,
-                        VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR,
-                        indices.size() * sizeof(uint32)
-                    );
-
-                    cmdBuffer->Begin();
-
-                    VkBufferCopy copyRegion = {};
-                    copyRegion.size = indices.size() * sizeof(uint32);
-
-                    vkCmdCopyBuffer(cmdBuffer->CmdBuffer, indexStaging->Buffer, mesh->IndexBuffer->Buffer, 1, &copyRegion);
-
-                    cmdBuffer->End();
-                    cmdBuffer->Submit();
-                    
-                }
-
-                mesh->Material = primitive.material;
-                Meshes.push_back(mesh);
+                tinygltf::Accessor& normAccessor = gltfModel.accessors[primitive.attributes.find("NORMAL")->second];
+                tinygltf::BufferView& normView = gltfModel.bufferViews[normAccessor.bufferView];
+                bufferNormals = &(gltfModel.buffers[normView.buffer].data[normAccessor.byteOffset + normView.byteOffset]);
             }
+
+            if (primitive.attributes.find("TEXCOORD_0") != primitive.attributes.end())
+            {
+                tinygltf::Accessor& uvAccessor = gltfModel.accessors[primitive.attributes.find("TEXCOORD_0")->second];
+                tinygltf::BufferView& uvView = gltfModel.bufferViews[uvAccessor.bufferView];
+                bufferUV0 = &(gltfModel.buffers[uvView.buffer].data[uvAccessor.byteOffset + uvView.byteOffset]);
+            }
+
+            if (primitive.attributes.find("TANGENT") != primitive.attributes.end())
+            {
+                tinygltf::Accessor& tangentAccessor = gltfModel.accessors[primitive.attributes.find("TANGENT")->second];
+                tinygltf::BufferView& tangentView = gltfModel.bufferViews[tangentAccessor.bufferView];
+                bufferTangents = &(gltfModel.buffers[tangentView.buffer].data[tangentAccessor.byteOffset + tangentView.byteOffset]);
+            }
+
+            for (int32 v = 0; v < posAccessor.count; ++v)
+            {
+                // pos
+                {
+                    const float* buf = (const float*)(bufferPos);
+                    float px = buf[v * 3 + 0];
+                    float py = buf[v * 3 + 1];
+                    float pz = buf[v * 3 + 2];
+
+                    if (v == 0)
+                    {
+                        bounds.Min.x = bounds.Max.x = px;
+                        bounds.Min.y = bounds.Max.y = py;
+                        bounds.Min.z = bounds.Max.z = pz;
+                    }
+
+                    bounds.Min.x = Math::Min(bounds.Min.x, px);
+                    bounds.Min.y = Math::Min(bounds.Min.y, py);
+                    bounds.Min.z = Math::Min(bounds.Min.z, pz);
+                    bounds.Max.x = Math::Max(bounds.Max.x, px);
+                    bounds.Max.y = Math::Max(bounds.Max.y, py);
+                    bounds.Max.z = Math::Max(bounds.Max.z, pz);
+
+                    vertices.push_back(px);
+                    vertices.push_back(py);
+                    vertices.push_back(pz);
+                }
+                // uv
+                {
+                    if (bufferUV0)
+                    {
+                        const float* buf = (const float*)(bufferUV0);
+                        vertices.push_back(buf[v * 2 + 0]);
+                        vertices.push_back(buf[v * 2 + 1]);
+                    }
+                    else
+                    {
+                        vertices.push_back(0);
+                        vertices.push_back(0);
+                    }
+                }
+                // normal
+                {
+                    if (bufferNormals)
+                    {
+                        const float* buf = (const float*)(bufferNormals);
+                        vertices.push_back(buf[v * 3 + 0]);
+                        vertices.push_back(buf[v * 3 + 1]);
+                        vertices.push_back(buf[v * 3 + 2]);
+                    }
+                    else
+                    {
+                        vertices.push_back(0);
+                        vertices.push_back(0);
+                        vertices.push_back(0);
+                    }
+                }
+                // tangent
+                {
+                    if (bufferTangents)
+                    {
+                        const float* buf = (const float*)(bufferTangents);
+                        vertices.push_back(buf[v * 3 + 0]);
+                        vertices.push_back(buf[v * 3 + 1]);
+                        vertices.push_back(buf[v * 3 + 2]);
+                    }
+                    else
+                    {
+                        vertices.push_back(0);
+                        vertices.push_back(0);
+                        vertices.push_back(0);
+                    }
+                }
+            }
+
+            // indices
+            tinygltf::Accessor& indicesAccessor = gltfModel.accessors[primitive.indices];
+            tinygltf::BufferView& indicesBufferView = gltfModel.bufferViews[indicesAccessor.bufferView];
+            uint8* bufferIndices = &(gltfModel.buffers[indicesBufferView.buffer].data[indicesAccessor.byteOffset + indicesBufferView.byteOffset]);
+
+            for (int32 v = 0; v < indicesAccessor.count; ++v)
+            {
+                if (indicesAccessor.componentType == TINYGLTF_PARAMETER_TYPE_UNSIGNED_INT)
+                {
+                    const uint32* buf = (const uint32*)(bufferIndices);
+                    indices.push_back(buf[v]);
+                }
+                else if (indicesAccessor.componentType == TINYGLTF_PARAMETER_TYPE_UNSIGNED_SHORT)
+                {
+                    const uint16* buf = (const uint16*)(bufferIndices);
+                    indices.push_back(buf[v]);
+                }
+                else if (indicesAccessor.componentType == TINYGLTF_PARAMETER_TYPE_UNSIGNED_SHORT)
+                {
+                    const uint8* buf = (const uint8*)(bufferIndices);
+                    indices.push_back(buf[v]);
+                }
+            }
+
+            glTFMesh* mesh = new glTFMesh();
+            mesh->Bounds = bounds;
+            mesh->VertexStride = 11 * sizeof(float);
+            mesh->VertexCount  = vertices.size();
+            {
+                Ref<VulkanBuffer> vertexStaging = VulkanBuffer::CreateBuffer(
+                    Device,
+                    VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                    vertices.size() * sizeof(float),
+                    vertices.data()
+                );
+
+                mesh->VertexBuffer = VulkanBuffer::CreateBuffer(
+                    Device,
+                    VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR,
+                    vertices.size() * sizeof(float)
+                );
+
+                cmdBuffer->Begin();
+
+                VkBufferCopy copyRegion = {};
+                copyRegion.size = vertices.size() * sizeof(float);
+                vkCmdCopyBuffer(cmdBuffer->CmdBuffer, vertexStaging->Buffer, mesh->VertexBuffer->Buffer, 1, &copyRegion);
+
+                cmdBuffer->End();
+                cmdBuffer->Submit();
+                
+            }
+
+            mesh->IndexCount = indices.size();
+            {
+               Ref<VulkanBuffer> indexStaging = VulkanBuffer::CreateBuffer(
+                    Device,
+                    VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                    indices.size() * sizeof(uint32),
+                    indices.data()
+                );
+
+                mesh->IndexBuffer = VulkanBuffer::CreateBuffer(
+                    Device,
+                    VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR,
+                    indices.size() * sizeof(uint32)
+                );
+
+                cmdBuffer->Begin();
+
+                VkBufferCopy copyRegion = {};
+                copyRegion.size = indices.size() * sizeof(uint32);
+
+                vkCmdCopyBuffer(cmdBuffer->CmdBuffer, indexStaging->Buffer, mesh->IndexBuffer->Buffer, 1, &copyRegion);
+
+                cmdBuffer->End();
+                cmdBuffer->Submit();
+                
+            }
+
+            mesh->Material = primitive.material;
+            Meshes.push_back(mesh);
         }
+    }
 }
 
 void glTFScene::LoadNodes(Ref<VulkanCommandBuffer> cmdBuffer, tinygltf::Model& gltfModel)
@@ -312,8 +313,7 @@ void glTFScene::LoadNode(Node* parent, tinygltf::Node& gltfNode, tinygltf::Model
     node->Name = gltfNode.name;
     
     node->Transform = glm::identity<glm::mat4>();
-
-    
+        
     Nodes.push_back(node);
 
     if (gltfNode.rotation.size() == 4)
@@ -550,16 +550,17 @@ void glTFScene::CmdCreateBlas(VkCommandBuffer cmdBuffer,std::vector<uint32_t> in
         VkMemoryBarrier barrier{VK_STRUCTURE_TYPE_MEMORY_BARRIER};
         barrier.srcAccessMask = VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR;
         barrier.dstAccessMask = VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR;
+        
         vkCmdPipelineBarrier(cmdBuffer,
             VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR,
-                             VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR,
-                             0,
-                             1,
-                             &barrier,
-                             0,
-                             nullptr,
-                             0,
-                             nullptr);
+            VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR,
+             0,
+             1,
+             &barrier,
+             0,
+             nullptr,
+             0,
+             nullptr);
 
         if(queryPool)
         {
@@ -626,7 +627,7 @@ void glTFScene::CreateTlas()
         }
     }
 
-        BuildTlas(Tlas,VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR,false);
+    BuildTlas(Tlas,VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR,false);
 }
 
 // Build TLAS from an array of VkAccelerationStructureInstanceKHR
@@ -636,90 +637,90 @@ void glTFScene::CreateTlas()
 // 'allow_update'
 void glTFScene::BuildTlas(std::vector<VkAccelerationStructureInstanceKHR>& instances,VkBuildAccelerationStructureFlagsKHR flags, bool update)
 {
-        uint32_t Count_Instance = static_cast<uint32_t>(instances.size());
+    uint32_t Count_Instance = static_cast<uint32_t>(instances.size());
 
-        Ref<VulkanBuffer> InstancesBuffer = VulkanBuffer::CreateBuffer(
-            Device,
-            VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR,
-            sizeof(VkAccelerationStructureInstanceKHR) * Count_Instance,
-            instances.data()
-        );
-        
-        VkDeviceAddress InstanceBufferAddr = InstancesBuffer->GetDeviceAddress();
+    Ref<VulkanBuffer> InstancesBuffer = VulkanBuffer::CreateBuffer(
+        Device,
+        VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR,
+        sizeof(VkAccelerationStructureInstanceKHR) * Count_Instance,
+        instances.data()
+    );
+    
+    VkDeviceAddress InstanceBufferAddr = InstancesBuffer->GetDeviceAddress();
 
-        auto cmdBuffer = VulkanCommandBuffer::Create(Device, CmdBufferPool->m_CommandPool);
-        cmdBuffer->Begin();
-        VkMemoryBarrier barrier{VK_STRUCTURE_TYPE_MEMORY_BARRIER};
-        barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-        barrier.dstAccessMask = VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR;
-        vkCmdPipelineBarrier(cmdBuffer->CmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                             VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR, 0, 1, &barrier, 0, nullptr, 0,
-                             nullptr);
+    auto cmdBuffer = VulkanCommandBuffer::Create(Device, CmdBufferPool->m_CommandPool);
+    cmdBuffer->Begin();
+    VkMemoryBarrier barrier{VK_STRUCTURE_TYPE_MEMORY_BARRIER};
+    barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+    barrier.dstAccessMask = VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR;
+    vkCmdPipelineBarrier(cmdBuffer->CmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                         VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR, 0, 1, &barrier, 0, nullptr, 0,
+                         nullptr);
 
-        Ref<VulkanBuffer> ScratchBuffer;
+    Ref<VulkanBuffer> ScratchBuffer;
 
-        CmdBuildTlas(cmdBuffer->CmdBuffer,Count_Instance,ScratchBuffer,InstanceBufferAddr,flags,update);
-        cmdBuffer->End();
-        cmdBuffer->Submit();
+    CmdBuildTlas(cmdBuffer->CmdBuffer,Count_Instance,ScratchBuffer,InstanceBufferAddr,flags,update);
+    cmdBuffer->End();
+    cmdBuffer->Submit();
 }
 
 void glTFScene::CmdBuildTlas(VkCommandBuffer cmdBuffer, uint32_t CountInstance, Ref<VulkanBuffer>& ScratchBuffer,VkDeviceAddress InstBufferAddr, VkBuildAccelerationStructureFlagsKHR Flags,bool update)
 {
-        VkAccelerationStructureGeometryInstancesDataKHR InstanceVK{VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_INSTANCES_DATA_KHR};
-        InstanceVK.data.deviceAddress = InstBufferAddr;
+    VkAccelerationStructureGeometryInstancesDataKHR InstanceVK{VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_INSTANCES_DATA_KHR};
+    InstanceVK.data.deviceAddress = InstBufferAddr;
 
-        // Put the above into a VkAccelerationStructureGeometryKHR. We need to put
-        // the instances struct in a union and label it as instance data.
-        VkAccelerationStructureGeometryKHR TopASGeometry{VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR};
-        TopASGeometry.geometryType = VK_GEOMETRY_TYPE_INSTANCES_KHR;
-        TopASGeometry.geometry.instances = InstanceVK;
+    // Put the above into a VkAccelerationStructureGeometryKHR. We need to put
+    // the instances struct in a union and label it as instance data.
+    VkAccelerationStructureGeometryKHR TopASGeometry{VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR};
+    TopASGeometry.geometryType = VK_GEOMETRY_TYPE_INSTANCES_KHR;
+    TopASGeometry.geometry.instances = InstanceVK;
 
-        // Build Info
-        VkAccelerationStructureBuildGeometryInfoKHR BuildInfo{VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR};
-        BuildInfo.flags = Flags;
-        BuildInfo.geometryCount = 1; // 这里好像只能为1
-        BuildInfo.pGeometries = &TopASGeometry;
-        BuildInfo.mode =
-            update? VK_BUILD_ACCELERATION_STRUCTURE_MODE_UPDATE_KHR : VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR;
-        BuildInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR;
-        BuildInfo.srcAccelerationStructure = VK_NULL_HANDLE;
+    // Build Info
+    VkAccelerationStructureBuildGeometryInfoKHR BuildInfo{VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR};
+    BuildInfo.flags = Flags;
+    BuildInfo.geometryCount = 1; // 这里好像只能为1
+    BuildInfo.pGeometries = &TopASGeometry;
+    BuildInfo.mode =
+        update? VK_BUILD_ACCELERATION_STRUCTURE_MODE_UPDATE_KHR : VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR;
+    BuildInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR;
+    BuildInfo.srcAccelerationStructure = VK_NULL_HANDLE;
 
-        VkAccelerationStructureBuildSizesInfoKHR size_info{VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR};
-        vkGetAccelerationStructureBuildSizesKHR(
-            Device->GetInstanceHandle(),
-            VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,
-            &BuildInfo,
-            &CountInstance,
-            &size_info
-        );
+    VkAccelerationStructureBuildSizesInfoKHR size_info{VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR};
+    vkGetAccelerationStructureBuildSizesKHR(
+        Device->GetInstanceHandle(),
+        VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,
+        &BuildInfo,
+        &CountInstance,
+        &size_info
+    );
 
 #ifdef VK_NV_ray_tracing_motion_blur
-        VkAccelerationStructureMotionInfoNV motionInfo{VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_MOTION_INFO_NV};
-        motionInfo.maxInstances = CountInstance;
+    VkAccelerationStructureMotionInfoNV motionInfo{VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_MOTION_INFO_NV};
+    motionInfo.maxInstances = CountInstance;
 #endif 
 
-        if(update == false)
-        {
-            VkAccelerationStructureCreateInfoKHR CreateInfo{VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR};
-            CreateInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR;
-            CreateInfo.size = size_info.accelerationStructureSize;
-            Tla = AccelKHR::CreateAcceleration(Device,CreateInfo);
-        }
+    if(update == false)
+    {
+        VkAccelerationStructureCreateInfoKHR CreateInfo{VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR};
+        CreateInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR;
+        CreateInfo.size = size_info.accelerationStructureSize;
+        Tla = AccelKHR::CreateAcceleration(Device,CreateInfo);
+    }
 
-        ScratchBuffer = VulkanBuffer::CreateBuffer(Device,VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, size_info.buildScratchSize);
-        VkDeviceAddress scratchAddress = ScratchBuffer->GetDeviceAddress();
+    ScratchBuffer = VulkanBuffer::CreateBuffer(Device,VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, size_info.buildScratchSize);
+    VkDeviceAddress scratchAddress = ScratchBuffer->GetDeviceAddress();
 
-        // Update build information
-        BuildInfo.srcAccelerationStructure = update ? Tla.accel : VK_NULL_HANDLE;
-        BuildInfo.dstAccelerationStructure = Tla.accel;
-        BuildInfo.scratchData.deviceAddress = scratchAddress;
-        
-        // Build Offsets info: n instances
-        VkAccelerationStructureBuildRangeInfoKHR buildOffsetInfo{CountInstance, 0, 0, 0};
-        const VkAccelerationStructureBuildRangeInfoKHR* pBuildOffsetInfo = &buildOffsetInfo;
+    // Update build information
+    BuildInfo.srcAccelerationStructure = update ? Tla.accel : VK_NULL_HANDLE;
+    BuildInfo.dstAccelerationStructure = Tla.accel;
+    BuildInfo.scratchData.deviceAddress = scratchAddress;
+    
+    // Build Offsets info: n instances
+    VkAccelerationStructureBuildRangeInfoKHR buildOffsetInfo{CountInstance, 0, 0, 0};
+    const VkAccelerationStructureBuildRangeInfoKHR* pBuildOffsetInfo = &buildOffsetInfo;
 
-        // Build the TLAS
-        vkCmdBuildAccelerationStructuresKHR(cmdBuffer, 1, &BuildInfo, &pBuildOffsetInfo);
+    // Build the TLAS
+    vkCmdBuildAccelerationStructuresKHR(cmdBuffer, 1, &BuildInfo, &pBuildOffsetInfo);
 }
 
 

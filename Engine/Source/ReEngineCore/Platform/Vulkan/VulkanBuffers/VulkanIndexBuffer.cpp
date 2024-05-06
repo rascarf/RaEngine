@@ -1,6 +1,6 @@
 ﻿#include "VulkanIndexBuffer.h"
 
-Ref<VulkanIndexBuffer> VulkanIndexBuffer::Create(std::shared_ptr<VulkanDevice> vulkanDevice, Ref<VulkanCommandBuffer> cmdBuffer,std::vector<uint16> indices, VkIndexType type)
+Ref<VulkanIndexBuffer> VulkanIndexBuffer::Create(std::shared_ptr<VulkanDevice> vulkanDevice, Ref<VulkanCommandBuffer> cmdBuffer,std::vector<uint32> indices, VkIndexType type)
 {
     Ref<VulkanIndexBuffer> IndexBuffer = CreateRef<VulkanIndexBuffer>();
 

@@ -76,15 +76,13 @@ public:
     std::vector<Ref<VulkanMeshNode>> Children;
     
     glm::mat4 LocalMatrix;
-    glm::mat4 GlobalMatrix;
 
     int32 Index;
 
     VulkanMeshNode():
     name("None"),
     Index(-1),
-    LocalMatrix(glm::identity<glm::mat4>()),
-    GlobalMatrix(glm::identity<glm::mat4>())
+    LocalMatrix(glm::identity<glm::mat4>())
     {
         
     }
@@ -101,7 +99,7 @@ public:
 
     glm::mat4 GetGlobalMatrix()
     {
-        GlobalMatrix = LocalMatrix;
+        glm::mat4 GlobalMatrix = LocalMatrix;
         if (!Parent.expired())
         {
             GlobalMatrix = Parent.lock()->GetGlobalMatrix() * GlobalMatrix;
@@ -152,7 +150,6 @@ public:
         
         return Bounds;
     }
-    
 };
 
 class VulkanModel
@@ -175,7 +172,7 @@ public:
     std::vector<VkVertexInputAttributeDescription> GetInputAttributes();
 
     static Ref<VulkanModel> LoadFromFile(const std::string& filename, Ref<VulkanDevice> vulkanDevice, Ref<VulkanCommandBuffer> cmdBuffer, const std::vector<VertexAttribute>& attributes);
-    static Ref<VulkanModel> Create(std::shared_ptr<VulkanDevice> vulkanDevice, Ref<VulkanCommandBuffer> cmdBuffer, const std::vector<float>& vertices, const std::vector<uint16>& indices, const std::vector<VertexAttribute>& attributes);
+    static Ref<VulkanModel> Create(std::shared_ptr<VulkanDevice> vulkanDevice, Ref<VulkanCommandBuffer> cmdBuffer, const std::vector<float>& vertices, const std::vector<uint32>& indices, const std::vector<VertexAttribute>& attributes);
         
     Ref<VulkanMeshNode> LoadNode(const aiNode* node, const aiScene* scene);
     Ref<VulkanMesh> LoadMesh(const aiMesh* mesh, const aiScene* scene);
@@ -200,8 +197,7 @@ public:
     
     std::unordered_map<std::string,weak_ptr<Bone>> BonesMap;
     std::unordered_map<std::string,weak_ptr<VulkanMeshNode>> NodesMap;
-
-
+    
     void UpdateAnimation(float DeltaTime);
     void SetAnimation(int32 index);
     Animation& GetAnimation(int32 index = -1);

@@ -4,6 +4,7 @@
 #include "Light.h"
 #include "tiny_gltf.h"
 #include "Mesh/BoundingBox.h"
+#include "Platform/Vulkan/Mesh/VulkanMesh.h"
 #include "Platform/Vulkan/VulkanBuffers/VulkanBuffer.h"
 #include "Platform/Vulkan/VulkanBuffers/VulkanTexture.h"
 #include "Platform/Vulkan/RayTracing/AccelerationStruct.h"
@@ -80,6 +81,8 @@ namespace  ReEngine
         std::vector<Node*> Nodes;
         std::vector<Ref<VulkanTexture>> Textures;
         std::vector<Material> Materials;
+        std::vector<VulkanMesh> VulkanMeshs;
+        
         std::vector<glTFMesh*> Meshes;
     
         std::vector<Node*> Entities; // Meshes + Node = Entities , so Entities >= Meshes , for TLAS 
@@ -94,7 +97,6 @@ namespace  ReEngine
     public:
         std::vector<AccelKHR> Blases;
         AccelKHR Tla;
-        
         
         // Mesh -> Blas
         void CreateBlas();

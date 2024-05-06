@@ -38,6 +38,7 @@ void TemplateLayer::OnUpdate(Timestep ts)
     m_Camera->OnUpdate(ts);
 
     //TODO Write your logic
+    OnNativeUpdate(ts);
 
     m_MVPData.view = m_Camera->GetViewMatrix();
     m_MVPData.projection = m_Camera->GetProjection();
@@ -156,8 +157,7 @@ void TemplateLayer::LoadAsset()
      * Remember to bind RT's Renderpass for your material not FrameBuffer's renderpass!
      */
 
-
-
+    OnNativeLoadAsset();
     
     {
         mFilterShader = VulkanShader::Create(device,true,&QUAD_VERT,&COLORFILTER_FRAG,nullptr,nullptr,nullptr,nullptr);
