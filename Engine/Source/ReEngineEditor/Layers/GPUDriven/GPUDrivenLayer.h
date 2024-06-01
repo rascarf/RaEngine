@@ -9,7 +9,5 @@ class GPUDrivenLayer : public TemplateLayer
 public:
     virtual void OnNativeLoadAsset() override;
     virtual void OnNativeUpdate(Timestep ts) override;
-
-public:
-    glTFScene Scene;
+    virtual void OnNativeDeInit() override;
 };

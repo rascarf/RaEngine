@@ -12,6 +12,8 @@ void TemplateLayer::OnCreateBackBuffer()
 
 void TemplateLayer::OnInit()
 {
+    m_Scene = CreateRef<VulkanScene>();
+    
     CreateRenderTarget();
     LoadAsset();
 }
@@ -28,6 +30,7 @@ void TemplateLayer::OnDeInit()
     mFilterMaterial.reset();
 
     /*TODO Clear the Resources*/
+    
     
     m_RingBuffer.reset();
 }

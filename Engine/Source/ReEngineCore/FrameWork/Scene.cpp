@@ -1,16 +1,44 @@
 ﻿#include "Scene.h"
-
-#include "imgui.h"
 #include "Component/Component.h"
-#include "Component/CameraComponent.h"
-#include "Component/SpriteRenderComponent.h"
 #include "Component/TransformComponent.h"
-#include "Entity/Entity.h"
 #include "glm/glm.hpp"
 #include "Renderer/Renderer2D.h"
-#include "Renderer/RHI/RenderCommand.h"
+
 namespace ReEngine
 {
+    Entity::Entity(entt::entity handle, Scene* scene):mEntityHandle(handle),mScene(scene)
+    {
+    
+    }
+
+    Entity::Entity(Ref<Entity> ParentHandle, entt::entity handle, Scene* scene)
+        :mEntityHandle(handle),mParent(ParentHandle),mScene(scene)
+    {
+    
+    }
+
+    glm::mat4 Entity::GetGloablTransform()
+    {
+        glm::mat4 WorldMatrix = mScene->mRegistry.get<TransformComponent>(mEntityHandle).GetTransform();
+        if(mParent.expired())
+        {
+            WorldMatrix = mParent.lock()->GetGloablTransform() * WorldMatrix;
+        }
+
+        return WorldMatrix;
+    }
+
+    glm::mat4 Entity::GetLocalTransform()
+    {
+        glm::mat4 WorldMatrix = mScene->mRegistry.get<TransformComponent>(mEntityHandle).GetTransform();
+        return WorldMatrix;
+    }
+
+    const std::string& Entity::GetName() const
+    {
+        return mScene->mRegistry.get<TagComponent>(mEntityHandle).Tag;
+    }
+
     
     Scene::Scene()
     {
@@ -31,17 +59,18 @@ namespace ReEngine
     {
     }
 
-    Entity Scene::CreateEntity(const std::string& name)
+    Ref<Entity> Scene::CreateEntity(const std::string& name)
     {
-        Entity entity = {mRegistry.create(),this};
-        entity.AddComponent<TransformComponent>();
-        entity.AddComponent<TagComponent>(name);
+        Ref<Entity> entity = CreateRef<Entity>(mRegistry.create(),this);
+        
+        entity->AddComponent<TransformComponent>();
+        entity->AddComponent<TagComponent>(name);
         return entity;
     }
 
-    void Scene::DestroyEntity(Entity entity)
+    void Scene::DestroyEntity(Entity* entity)
     {
-        mRegistry.destroy(entity);
+        mRegistry.destroy(*entity);
     }
 
     void Scene::OnRuntimeStart()
@@ -54,38 +83,6 @@ namespace ReEngine
 
     void Scene::OnUpdate(Timestep ts)
     {
-        Camera* mainCamera = nullptr;
-        glm::mat4 CameraTransform;
-        auto group = mRegistry.view<TransformComponent,CameraComponnet>();
-        for(auto Entity:group)
-        {
-            auto [transformComponent,cameraComponent] = group.get<TransformComponent,CameraComponnet>(Entity);
-            if(cameraComponent.Primary)
-            {
-                mainCamera = &cameraComponent.Camera;
-                CameraTransform = transformComponent.GetTransform();
-                break;
-            }
-        }
-
-        if(mainCamera)
-        {
-            Renderer2D::BeginScene(*mainCamera,CameraTransform);
-            
-            auto SpriteRenderGroup = mRegistry.view<TransformComponent,SpriteRenderComponent>();
-            for(auto Entity:SpriteRenderGroup)
-            {
-                auto [transformComponent,spriteRenderComponent] = SpriteRenderGroup.get<TransformComponent,SpriteRenderComponent>(Entity);
-                Renderer2D::DrawQuad(transformComponent.GetTransform(),spriteRenderComponent.Color);
-            }
-            
-            Renderer2D::EndScene();
-        }
-    }
-    
-    Entity Scene::GetPrimaryEntity(Entity entity)
-    {
-        return entity;
     }
 
     void Scene::OnUpdateRuntime(Timestep ts)
@@ -98,61 +95,8 @@ namespace ReEngine
 
     void Scene::OnViewportResize(uint32_t Width, uint32_t Height)
     {
-        // Resize Our Non Fixed Ratio Camera
-        auto view = mRegistry.view<CameraComponnet>();
-        for(auto entity:view)
-        {
-            auto& cameraCop = view.get<CameraComponnet>(entity);
-            if(!cameraCop.FixedAspectRatio)
-            {
-                cameraCop.Camera.SetViewportSize(Width,Height);
-            }
-        }
     }
-
-    // template<Component... C>
-    // static void CopyComponent(entt::registry& dst, entt::registry& src, const std::unordered_map<UUID, entt::entity>& enttMap)
-    // {
-    // ([&]()
-    //     {
-    //         auto view = src.view<C>();
-    //         for (auto srcEntity : view)
-    //         {
-    //             entt::entity dstEntity = enttMap.at(src.get<IDComponent>(srcEntity).ID);
-    //
-    //             auto& srcComponent = src.get<C>(srcEntity);
-    //             dst.emplace_or_replace<C>(dstEntity, srcComponent);
-    //         }
-    //     }(), ...);
-    // }
-    //
-    // template<Component... C>
-    // static void CopyComponent(ComponentGroup<C...>, entt::registry& dst, entt::registry& src, const std::unordered_map<UUID, entt::entity>& enttMap)
-    // {
-    //     CopyComponent<C...>(dst, src, enttMap);
-    // }
-    //
-    // template<Component... C>
-    // static void CopyComponentIfExists(Entity dst, Entity src)
-    // {
-    //     ([&]()
-    //         {
-    //             if (src.HasComponent<C>())
-    //                 dst.AddOrReplaceComponent<C>(src.GetComponent<C>());
-    //         }(), ...);
-    // }
-    //
-    // template<Component... C>
-    // static void CopyComponentIfExists(ComponentGroup<C...>, Entity dst, Entity src)
-    // {
-    //     CopyComponentIfExists<C...>(dst, src);
-    // }
-
-    void Scene::DuplicateEntity(Entity entity)
-    {
-        Entity newEntity = CreateEntity(entity.GetName());
     
-    }
 }
 
 

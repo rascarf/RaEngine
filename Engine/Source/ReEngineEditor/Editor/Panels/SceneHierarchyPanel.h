@@ -2,7 +2,6 @@
 #include "Core/PCH.h"
 #include "Log/Log.h"
 #include "FrameWork/Scene.h"
-#include "FrameWork/Entity/Entity.h"
 
 namespace ReEngine
 {
@@ -19,7 +18,7 @@ namespace ReEngine
     private:
         void DrawEntityNode(Entity entity);
 
-        void DrawComponent(Entity SelectContext);
+        // void DrawComponent(Entity SelectContext);
     private:
 
         Ref<Scene> mContext;

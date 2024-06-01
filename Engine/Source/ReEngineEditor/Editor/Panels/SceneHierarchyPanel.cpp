@@ -83,11 +83,11 @@ namespace ReEngine
     void SceneHierarchyPanel::OnImGuiRender()
     {
         ImGui::Begin("Scene Hierarchy");
-        mContext->mRegistry.each([&](auto entityID)
-        {
-           Entity entity{entityID,mContext.get()};
-            DrawEntityNode(entity);
-        });
+        // mContext->mRegistry.each([&](auto entityID)
+        // {
+        //    Entity entity{entityID,mContext.get()};
+        //     DrawEntityNode(entity);
+        // });
 
         if(ImGui::IsMouseDown(0) && ImGui::IsWindowHovered())
             mSelectContext = {};
@@ -96,7 +96,7 @@ namespace ReEngine
         ImGui::Begin("Properties");
         if (mSelectContext)
         {
-            DrawComponent(mSelectContext);
+            // DrawComponent(mSelectContext);
 
         	if (ImGui::Button("Add Component"))
         		ImGui::OpenPopup("AddComponent");
@@ -158,13 +158,13 @@ namespace ReEngine
 
 		if (entityDeleted)
 		{
-			mContext->DestroyEntity(entity);
+			mContext->DestroyEntity(&entity);
 			if (mSelectContext == entity)
 				mSelectContext = {};
 		}
     }
 
-    void SceneHierarchyPanel::DrawComponent(Entity entity)
+    /*void SceneHierarchyPanel::DrawComponent(Entity entity)
     {
         if(entity.HasComponent<TagComponent>())
         {
@@ -293,5 +293,5 @@ namespace ReEngine
 			if (removeComponent)
 				entity.RemoveComponent<SpriteRenderComponent>();
 		}
-    }
+    // }*/
 }

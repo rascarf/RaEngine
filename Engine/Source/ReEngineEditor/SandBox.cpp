@@ -16,9 +16,9 @@ namespace ReEngine
 {
     void AppInit(Application& app)
     {
-        const auto Layer = CreateRef<RTLayer>();
+        // const auto Layer = CreateRef<RTLayer>();
         // const auto Layer = CreateRef<SimplePathTracing>();
-        // const auto Layer = CreateRef<GPUDrivenLayer>();
+        const auto Layer = CreateRef<GPUDrivenLayer>();
         
         app.PreInit();
         app.Init();

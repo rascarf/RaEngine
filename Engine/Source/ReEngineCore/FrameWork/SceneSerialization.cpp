@@ -5,7 +5,6 @@
 #include <fstream>
 
 #include "Component/CameraComponent.h"
-#include "Entity/Entity.h"
 #include "Component/Component.h"
 #include "Component/SpriteRenderComponent.h"
 #include "Component/TransformComponent.h"
@@ -106,9 +105,9 @@ namespace ReEngine
 			out << YAML::BeginMap; // TransformComponent
 
 			auto& tc = entity.GetComponent<TransformComponent>();
-			out << YAML::Key << "Translation" << YAML::Value << tc.Translation;
-			out << YAML::Key << "Rotation" << YAML::Value << tc.Rotation;
-			out << YAML::Key << "Scale" << YAML::Value << tc.Scale;
+			// out << YAML::Key << "Translation" << YAML::Value << tc.LocalMatrix.;
+			// out << YAML::Key << "Rotation" << YAML::Value << tc.Rotation;
+			// out << YAML::Key << "Scale" << YAML::Value << tc.Scale;
 
 			out << YAML::EndMap; // TransformComponent
 		}
@@ -157,14 +156,14 @@ namespace ReEngine
     	out << YAML::BeginMap;
     	out << YAML::Key << "Scene" << YAML::Value << "Untitled";
     	out << YAML::Key << "Entities" << YAML::Value << YAML::BeginSeq;
-    	mScene->mRegistry.each([&](auto entityID)
-		{
-			Entity entity = { entityID, mScene.get() };
-			if (!entity)
-				return;
-
-			SerializeEntity(out, entity);
-		});
+  //   	mScene->mRegistry.each([&](auto entityID)
+		// {
+		// 	Entity entity = { entityID, mScene.get() };
+		// 	if (!entity)
+		// 		return;
+	 //
+		// 	SerializeEntity(out, entity);
+		// });
     	out << YAML::EndSeq;
     	out << YAML::EndMap;
 
@@ -205,44 +204,44 @@ namespace ReEngine
 
 				RE_CORE_TRACE("Deserialized entity with ID = {0}, name = {1}", uuid, name);
 
-				Entity deserializedEntity = mScene->CreateEntity(name);
+				// Entity deserializedEntity = mScene->CreateEntity(name);
 
 				auto transformComponent = entity["TransformComponent"];
 				if (transformComponent)
 				{
 					// Entities always have transforms
-					auto& tc = deserializedEntity.GetComponent<TransformComponent>();
-					tc.Translation = transformComponent["Translation"].as<glm::vec3>();
-					tc.Rotation = transformComponent["Rotation"].as<glm::vec3>();
-					tc.Scale = transformComponent["Scale"].as<glm::vec3>();
+					// auto& tc = deserializedEntity.GetComponent<TransformComponent>();
+					// tc.Translation = transformComponent["Translation"].as<glm::vec3>();
+					// tc.Rotation = transformComponent["Rotation"].as<glm::vec3>();
+					// tc.Scale = transformComponent["Scale"].as<glm::vec3>();
 				}
 
 				auto cameraComponent = entity["CameraComponent"];
 				if (cameraComponent)
 				{
-					auto& cc = deserializedEntity.AddComponent<CameraComponnet>();
+					// auto& cc = deserializedEntity.AddComponent<CameraComponnet>();
 
-					auto cameraProps = cameraComponent["Camera"];
-					cc.Camera.SetProjectionType((SceneCamera::ProjectionType)cameraProps["ProjectionType"].as<int>());
-
-					cc.Camera.SetPerspectiveVerticalFOV(cameraProps["PerspectiveFOV"].as<float>());
-					cc.Camera.SetPerspectiveNearClip(cameraProps["PerspectiveNear"].as<float>());
-					cc.Camera.SetPerspectiveFarClip(cameraProps["PerspectiveFar"].as<float>());
-
-					cc.Camera.SetOrthoGraphicSize(cameraProps["OrthographicSize"].as<float>());
-					cc.Camera.SetOrthographicNearClip(cameraProps["OrthographicNear"].as<float>());
-					cc.Camera.SetOrthographicFarClip(cameraProps["OrthographicFar"].as<float>());
-
-					cc.Primary = cameraComponent["Primary"].as<bool>();
-					cc.FixedAspectRatio = cameraComponent["FixedAspectRatio"].as<bool>();
+					// auto cameraProps = cameraComponent["Camera"];
+					// cc.Camera.SetProjectionType((SceneCamera::ProjectionType)cameraProps["ProjectionType"].as<int>());
+					//
+					// cc.Camera.SetPerspectiveVerticalFOV(cameraProps["PerspectiveFOV"].as<float>());
+					// cc.Camera.SetPerspectiveNearClip(cameraProps["PerspectiveNear"].as<float>());
+					// cc.Camera.SetPerspectiveFarClip(cameraProps["PerspectiveFar"].as<float>());
+					//
+					// cc.Camera.SetOrthoGraphicSize(cameraProps["OrthographicSize"].as<float>());
+					// cc.Camera.SetOrthographicNearClip(cameraProps["OrthographicNear"].as<float>());
+					// cc.Camera.SetOrthographicFarClip(cameraProps["OrthographicFar"].as<float>());
+					//
+					// cc.Primary = cameraComponent["Primary"].as<bool>();
+					// cc.FixedAspectRatio = cameraComponent["FixedAspectRatio"].as<bool>();
 				}
 
-				auto spriteRendererComponent = entity["SpriteRendererComponent"];
-				if (spriteRendererComponent)
-				{
-					auto& src = deserializedEntity.AddComponent<SpriteRenderComponent>();
-					src.Color = spriteRendererComponent["Color"].as<glm::vec4>();
-				}
+				// auto spriteRendererComponent = entity["SpriteRendererComponent"];
+				// if (spriteRendererComponent)
+				// {
+				// 	auto& src = deserializedEntity.AddComponent<SpriteRenderComponent>();
+				// 	src.Color = spriteRendererComponent["Color"].as<glm::vec4>();
+				// }
 			}
 		}
 
