@@ -41,7 +41,7 @@ namespace ReEngine
         template<>
         void OnComponentAdded(Entity* entity,TagComponent& component)
         {
-            RE_INFO("{0}",component.Tag);
+            // RE_INFO("{0}",component.Tag);
         }
         
     public:

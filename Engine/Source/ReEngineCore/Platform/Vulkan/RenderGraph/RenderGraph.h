@@ -4,10 +4,11 @@
 #include "Platform/Vulkan/Mesh/VulkanMesh.h"
 #include "Platform/Vulkan/VulkanBuffers/VulkanBuffer.h"
 #include "Platform/Vulkan/VulkanBuffers/VulkanTexture.h"
-#include "RenderGraph/RenderScene.h"
 
 namespace ReEngine
 {
+    class VulkanScene;
+    
     enum class RenderPassOperation
     {  
         DontCare = 0, Load = 1, Clear = 2, Count = 3
@@ -117,9 +118,15 @@ namespace ReEngine
     public:
 
         virtual void Init(){};
-        
+
+        // 废弃
         virtual void PreRender(VkCommandBuffer CmdBuffer,Ref<VulkanModel> Model){}
         virtual void Render(VkCommandBuffer CmdBuffer,Ref<VulkanModel> Model){}
+        
+        virtual void PreRender(VkCommandBuffer CmdBuffer,VulkanScene* Scene);
+        virtual void Render(VkCommandBuffer CmdBuffer,VulkanScene* Scene);
+        virtual void PostRender(VkCommandBuffer CmdBuffer,VulkanScene* Scene);
+        
         virtual void OnResize(){}
 
         virtual void Register(Ref<FrameGraphNode> Node,Ref<VulkanDevice> Device){}
@@ -251,7 +258,6 @@ namespace ReEngine
         void Parse(const char* FilePath);
         void Compile();
         
-        void Render(Ref<VulkanCommandBuffer> Commands,Ref<RenderScene> Scene);
         void OnResize(uint32 NewWidth,uint32 NewHeight);
 
         Ref<FrameGraphNode> GetNode(cstring name);
@@ -259,8 +265,9 @@ namespace ReEngine
 
         Ref<FrameGraphResource> GetResource(cstring name);
         Ref<FrameGraphResource> AccessResource(FrameGraphResourceHandle handle);
-
+        
         void Render(VkCommandBuffer CmdBuffer,Ref<VulkanModel> RenderModel);
+        void Render(VkCommandBuffer CmdBuffer,ReEngine::VulkanScene* Scene);
 
         void AddNode(FrameGraphNodeCreation& node);
 

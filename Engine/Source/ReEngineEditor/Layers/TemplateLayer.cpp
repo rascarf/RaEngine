@@ -12,7 +12,7 @@ void TemplateLayer::OnCreateBackBuffer()
 
 void TemplateLayer::OnInit()
 {
-    m_Scene = CreateRef<VulkanScene>();
+    m_Scene = CreateRef<ReEngine::VulkanScene>(VkContext);
     
     CreateRenderTarget();
     LoadAsset();
@@ -30,7 +30,7 @@ void TemplateLayer::OnDeInit()
     mFilterMaterial.reset();
 
     /*TODO Clear the Resources*/
-    
+    OnNativeDeInit();
     
     m_RingBuffer.reset();
 }
@@ -45,6 +45,8 @@ void TemplateLayer::OnUpdate(Timestep ts)
 
     m_MVPData.view = m_Camera->GetViewMatrix();
     m_MVPData.projection = m_Camera->GetProjection();
+
+    m_Scene->Update(ts);
 }
 
 void TemplateLayer::OnRender()

@@ -1,4 +1,5 @@
 #pragma once
+#include "VulkanMesh.h"
 #include "Core/Core.h"
 #include "Platform/Vulkan/VulkanBuffers/VulkanBuffer.h"
 #include "Platform/Vulkan/VulkanBuffers/VulkanTexture.h"
@@ -11,7 +12,6 @@ namespace ReEngine
         Ref<VulkanTexture>      TextureHanle;
         Ref<VulkanBuffer>       BufferHanle;
     };
-
     
     using FileLoadCallBack = std::function<void(FileLoadCallBackParamStruct)>;
 

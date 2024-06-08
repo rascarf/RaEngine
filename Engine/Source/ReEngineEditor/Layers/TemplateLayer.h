@@ -2,9 +2,9 @@
 #include "Core/Core.h"
 #include "GraphicalLayer.h"
 #include "Platform/Vulkan/VulkanGraphicPipeline.h"
-#include "Platform/Vulkan/Mesh/VulkanMesh.h"
 #include "Camera/EditorCamera.h"
 #include "Platform/Vulkan/VulkanScene.h"
+#include "Platform/Vulkan/RenderGraph/RenderGraph.h"
 
 class TemplateLayer : public GraphicalLayer
 {
@@ -25,13 +25,13 @@ private:
     void CreateRenderTarget();
     void LoadAsset();
     
-private:
+public:
     Ref<VulkanTexture>                              ColorRT;
     Ref<VulkanTexture>                              DepthRT;
     Ref<VulkanRenderTarget>                         RenderTarget;
 
     Ref<VulkanModel>                                mQuad = nullptr;
-    Ref<VulkanGraphicPipeline>                             mFilterMaterial;
+    Ref<VulkanGraphicPipeline>                      mFilterMaterial;
     Ref<VulkanShader>                               mFilterShader;
 
     MVPBlock                                        m_MVPData;
@@ -39,5 +39,6 @@ private:
     Ref<VulkanDynamicBufferRing>                    m_RingBuffer = nullptr;
 
 public:
-    Ref<VulkanScene>                                m_Scene = nullptr;
+    Ref<ReEngine::VulkanScene>                      m_Scene = nullptr;
+        
 };

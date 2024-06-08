@@ -10,4 +10,6 @@ public:
     virtual void OnNativeLoadAsset() override;
     virtual void OnNativeUpdate(Timestep ts) override;
     virtual void OnNativeDeInit() override;
+
+    virtual void OnRender() override;
 };

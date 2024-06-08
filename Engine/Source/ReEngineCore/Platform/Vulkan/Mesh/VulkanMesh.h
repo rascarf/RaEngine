@@ -31,6 +31,16 @@ struct VulkanMaterialInfo
     std::string Normal;
     std::string Specular;
     std::string Metalic;
+
+    Ref<VulkanTexture> DiffuseTexture = nullptr;
+    Ref<VulkanTexture> NormalTexture = nullptr;
+    Ref<VulkanTexture> SpecularTexture = nullptr;
+    Ref<VulkanTexture> MetalicTexture = nullptr;
+
+    int32 DiffuseTextureIndex = -1;
+    int32 NormalTextureIndex = -1;
+    int32 SpecularTextureIndex = -1;
+    int32 MetalicTextureIndex = -1;
 };
 
 class VulkanMesh
@@ -179,6 +189,7 @@ public:
     void LoadBones(const aiScene* aiScene);
     void LoadAnimations(const aiScene* aiScene);
     void LoadSkin(std::unordered_map<uint32, VertexSkin>& skinInfoMap, Ref<VulkanMesh> mesh, const aiMesh* aiMesh, const aiScene* aiScene);
+    void ExportEntity(class VulkanScene* Scene);
     
     Ref<VulkanDevice>	Device;
     Ref<VulkanMeshNode>	RootNode;
@@ -197,6 +208,8 @@ public:
     
     std::unordered_map<std::string,weak_ptr<Bone>> BonesMap;
     std::unordered_map<std::string,weak_ptr<VulkanMeshNode>> NodesMap;
+
+    std::string Name = "";
     
     void UpdateAnimation(float DeltaTime);
     void SetAnimation(int32 index);

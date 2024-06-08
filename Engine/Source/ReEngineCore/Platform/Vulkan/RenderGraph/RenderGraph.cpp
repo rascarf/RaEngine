@@ -179,6 +179,18 @@ namespace ReEngine
         return Format >= VK_FORMAT_D32_SFLOAT && Format <= VK_FORMAT_D32_SFLOAT_S8_UINT;
     }
 
+    void FrameGraphRenderPass::PreRender(VkCommandBuffer CmdBuffer, VulkanScene* Scene)
+    {
+    }
+
+    void FrameGraphRenderPass::Render(VkCommandBuffer CmdBuffer, VulkanScene* Scene)
+    {
+    }
+
+    void FrameGraphRenderPass::PostRender(VkCommandBuffer CmdBuffer, VulkanScene* Scene)
+    {
+    }
+
     void FrameGraphBuilder::Init(VulkanContext* Context)
     {
         mContext = Context;
@@ -677,10 +689,6 @@ namespace ReEngine
         }
     }
 
-    void FrameGraph::Render(Ref<VulkanCommandBuffer> Commands, Ref<RenderScene> Scene)
-    {
-    }
-
     void FrameGraph::OnResize(uint32 NewWidth, uint32 NewHeight)
     {
     }
@@ -733,6 +741,58 @@ namespace ReEngine
 
             Node->RenderTarget->EndRenderPass(CmdBuffer);
             
+        }
+    }
+
+    void FrameGraph::Render(VkCommandBuffer CmdBuffer, VulkanScene* Scene)
+    {
+       for(uint32 n = 0 ; n < Nodes.size() ; n++)
+        {
+            Ref<FrameGraphNode> Node = builder->AccessNode(Nodes[n]);
+            if(!Node->Enabled)
+            {
+                continue;
+            }
+
+            for(uint32 i = 0 ; i < Node->Inputs.size() ; i++)
+            {
+                Ref<FrameGraphResource> Resource = builder->AccessResource(Node->Inputs[i]);
+
+                if(Resource->ResourceType == FrameGraphResourceType::FrameGraphResourceType_Texture)
+                {
+                    Ref<VulkanTexture> Texture = Resource->ResourceInfo.Texture.Texture;
+                    bool bIsDepth = Texture->bIsDepth();
+                    ImageLayoutBarrier Src = bIsDepth ? ImageLayoutBarrier::DepthStencilAttachment : ImageLayoutBarrier::ColorAttachment;
+                    ImageLayoutBarrier Dst = ImageLayoutBarrier::PixelShaderRead;
+
+                    VulkanTexture::ImagePipelineBarrier(CmdBuffer,Texture,Src,Dst,0,1,bIsDepth);
+                }
+            }
+
+            for(uint32 o = 0 ; o < Node->Outputs.size() ; o++)
+            {
+                Ref<FrameGraphResource> Resource = builder->AccessResource(Node->Outputs[ o ]);
+
+                if(Resource->ResourceType == FrameGraphResourceType::FrameGraphResourceType_Attachment)
+                {
+                    Ref<VulkanTexture> Texture = Resource->ResourceInfo.Texture.Texture;
+                    bool bIsDepth = Texture->bIsDepth();
+                    ImageLayoutBarrier Src = ImageLayoutBarrier::Undefined;
+                    ImageLayoutBarrier Dst = bIsDepth ? ImageLayoutBarrier::DepthStencilAttachment : ImageLayoutBarrier::ColorAttachment;
+
+                    VulkanTexture::ImagePipelineBarrier(CmdBuffer,Texture,Src,Dst,0,1,bIsDepth);
+                }
+            }
+
+            Node->GraphRenderPass->PreRender(CmdBuffer,Scene);
+
+            Node->RenderTarget->BeginRenderPass(CmdBuffer);
+            
+            Node->GraphRenderPass->Render(CmdBuffer,Scene);
+
+            Node->RenderTarget->EndRenderPass(CmdBuffer);
+
+           Node->GraphRenderPass->PostRender(CmdBuffer,Scene);
         }
     }
 

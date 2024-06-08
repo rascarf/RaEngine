@@ -6,8 +6,8 @@
 #include "Platform/Vulkan/VulkanGraphicPipeline.h"
 #include "Platform/Vulkan/RenderGraph/RenderGraph.h"
 #include "Platform/Vulkan/VulkanShader/VulkanShader.h"
+#include "Platform/Vulkan/VulkanScene.h"
 #include "ReEngineEditor/Layers/GraphicalLayer.h"
-#include "Renderer/RHI/Renderer.h"
 
 
 namespace ReEngine
@@ -27,6 +27,10 @@ namespace ReEngine
         virtual void PreRender(VkCommandBuffer Cmd, Ref<VulkanModel> Model) override;
         virtual void Render(VkCommandBuffer Cmd, Ref<VulkanModel> Model) override;
 
+        virtual void PreRender(VkCommandBuffer CmdBuffer, VulkanScene* Scene)override;
+        virtual void Render(VkCommandBuffer CmdBuffer, VulkanScene* Scene)override;
+        virtual void PostRender(VkCommandBuffer CmdBuffer, VulkanScene* Scene)override;
+        
         virtual ~PreDepthRenderPass() override
         {
             SceneShader.reset();

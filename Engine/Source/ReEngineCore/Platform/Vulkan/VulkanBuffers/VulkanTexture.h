@@ -209,4 +209,6 @@ public:
     bool bOnlyDepth = false; // 是否是DepthOnly的，区分DepthStencil
     bool IsUpload = false;
     bool IsCubeMap = false;
+
+    std::string Name = "";
 };

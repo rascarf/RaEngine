@@ -14,8 +14,9 @@ namespace ReEngine
         {
             return ConfigManager::GetInstance().GetRootFolder() / RelativePath;
         }
+        [[nodiscard]] static std::filesystem::path GetAssetDictionary(const std::string& RelativePath);
 
         static bool ReadFile(const std::string& filepath, uint8*& dataPtr, uint32& dataSize);
-    
+        
     };
 }

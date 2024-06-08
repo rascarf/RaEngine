@@ -1,5 +1,12 @@
 ﻿#include "AssetManager.h"
 
+std::filesystem::path ReEngine::AssetManager::GetAssetDictionary(const std::string& RelativePath)
+{
+    int count = RelativePath.find_last_of("/");
+    
+    return RelativePath.substr(0,count + 1);
+}
+
 bool ReEngine::AssetManager::ReadFile(const std::string& filepath, uint8*& dataPtr, uint32& dataSize)
 {
     auto finalPath = AssetManager::GetFullPath(filepath);

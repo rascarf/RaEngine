@@ -186,6 +186,11 @@ namespace ReEngine
 
     void AsyncLoader::RequestTexture(std::string path,FileLoadCallBack CallbBack)
     {
+        if(path.empty())
+        {
+            return;
+        }
+        
         FileLoadRequest Request;
         Request.Path = std::move(path);
         Request.Callback = std::move(CallbBack);

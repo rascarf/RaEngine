@@ -17,7 +17,6 @@ inline glm::quat GetGLMQuat(const aiQuaternion& pOrientation)
     return glm::quat(pOrientation.w, pOrientation.x, pOrientation.y, pOrientation.z);
 }
 
-
 VkVertexInputBindingDescription VulkanModel::GetInputBinding()
 {
     int32 stride = 0;
@@ -173,6 +172,7 @@ Ref<VulkanModel> VulkanModel::LoadFromFile(const std::string& filename, Ref<Vulk
     model->Device     = vulkanDevice;
     model->Attributes = attributes;
     model->CmdBuffer  = cmdBuffer;
+    model->Name = filename;
         
     int assimpFlags = aiProcess_Triangulate | aiProcess_FlipUVs;
         
@@ -370,6 +370,7 @@ Ref<VulkanMesh> VulkanModel::LoadMesh(const aiMesh* Inmesh, const aiScene* Insce
     {
         FillMaterialTextures(material, Mesh->Material);
     }
+    
 
     // // load bones
     std::unordered_map<uint32, VertexSkin> skinInfoMap;
@@ -578,7 +579,7 @@ void VulkanModel::FillMatrixWithAiMatrix(glm::mat4x4& OutMatix, const aiMatrix4x
         (double)from.a4, (double)from.b4, (double)from.c4, (double)from.d4};
 }
 
-void SimplifyTexturePath(std::string& path)
+void SimplifyTexturePath(VulkanModel* Model,std::string& path)
 {
     const size_t lastSlashIdx = path.find_last_of("\\/");
     if (std::string::npos != lastSlashIdx)
@@ -591,6 +592,8 @@ void SimplifyTexturePath(std::string& path)
     {
         path.erase(periodIdx);
     }
+
+    path = AssetManager::GetAssetDictionary(Model->Name).string() + path;
 }
 
 void VulkanModel::FillMaterialTextures(aiMaterial* aiMaterial, VulkanMaterialInfo& material)
@@ -600,7 +603,7 @@ void VulkanModel::FillMaterialTextures(aiMaterial* aiMaterial, VulkanMaterialInf
         aiString texturePath;
         aiMaterial->GetTexture(aiTextureType::aiTextureType_DIFFUSE, 0, &texturePath);
         material.Diffuse = texturePath.C_Str();
-        SimplifyTexturePath(material.Diffuse);
+        SimplifyTexturePath(this,material.Diffuse);
     }
 
     if (aiMaterial->GetTextureCount(aiTextureType::aiTextureType_NORMALS))
@@ -608,7 +611,7 @@ void VulkanModel::FillMaterialTextures(aiMaterial* aiMaterial, VulkanMaterialInf
         aiString texturePath;
         aiMaterial->GetTexture(aiTextureType::aiTextureType_NORMALS, 0, &texturePath);
         material.Normal = texturePath.C_Str();
-        SimplifyTexturePath(material.Normal);
+        SimplifyTexturePath(this,material.Normal);
     }
 
     if (aiMaterial->GetTextureCount(aiTextureType::aiTextureType_SPECULAR))
@@ -616,7 +619,7 @@ void VulkanModel::FillMaterialTextures(aiMaterial* aiMaterial, VulkanMaterialInf
         aiString texturePath;
         aiMaterial->GetTexture(aiTextureType::aiTextureType_SPECULAR, 0, &texturePath);
         material.Specular = texturePath.C_Str();
-        SimplifyTexturePath(material.Specular);
+        SimplifyTexturePath(this,material.Specular);
     }
 }
 

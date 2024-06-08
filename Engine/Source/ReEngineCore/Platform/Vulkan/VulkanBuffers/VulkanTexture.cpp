@@ -84,6 +84,8 @@ Ref<VulkanTexture> VulkanTexture::Create2D(const std::string& filename, std::sha
 
     Ref<VulkanTexture> texture = Create2D(rgbaData, width * height * 4, VK_FORMAT_R8G8B8A8_UNORM, width, height, vulkanDevice, cmdBuffer, imageUsageFlags, imageLayout);
 
+    texture->Name = filename;
+    
     StbImage::Free(rgbaData);
 
     return texture;
@@ -281,6 +283,8 @@ Ref<VulkanTexture> VulkanTexture::Create2DWithData(const std::string& filename,s
     cmdBuffer->Submit();
 
     StagingBuffer.reset();
+
+    ResultImage->Name = filename;
     return ResultImage;
 }
 
