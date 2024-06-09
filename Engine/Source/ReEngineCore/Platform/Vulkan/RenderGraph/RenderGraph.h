@@ -129,7 +129,7 @@ namespace ReEngine
         
         virtual void OnResize(){}
 
-        virtual void Register(Ref<FrameGraphNode> Node,Ref<VulkanDevice> Device){}
+        virtual void OnRegister(Ref<FrameGraphNode> Node,Ref<VulkanDevice> Device){}
         
         virtual ~FrameGraphRenderPass() = default;
     };
@@ -266,7 +266,6 @@ namespace ReEngine
         Ref<FrameGraphResource> GetResource(cstring name);
         Ref<FrameGraphResource> AccessResource(FrameGraphResourceHandle handle);
         
-        void Render(VkCommandBuffer CmdBuffer,Ref<VulkanModel> RenderModel);
         void Render(VkCommandBuffer CmdBuffer,ReEngine::VulkanScene* Scene);
 
         void AddNode(FrameGraphNodeCreation& node);

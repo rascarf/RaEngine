@@ -95,7 +95,7 @@ void FrameGraphTemplateLayer::OnRender()
     /*
      * TODO Write your Logic
      */
-    mFrameGraph.Render(VkContext->GetCommandList(),mSceneModel);
+    // mFrameGraph.Render(VkContext->GetCommandList(),mSceneModel);
 
     
     // FullScreen Pass

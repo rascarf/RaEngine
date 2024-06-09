@@ -19,13 +19,11 @@ namespace ReEngine
         static Ref<PreDepthRenderPass> Create();
         
         virtual void Init(Ref<VulkanDynamicBufferRing> RingBuffer);
-        virtual void Register(Ref<FrameGraphNode> Node,Ref<VulkanDevice> Device) override;
+        virtual void OnRegister(Ref<FrameGraphNode> Node,Ref<VulkanDevice> Device) override;
+        
         virtual const std::vector<VertexAttribute>& GetRenderPassAttribute();
 
         virtual void Update(const MVPBlock& MVPBLock);
-        
-        virtual void PreRender(VkCommandBuffer Cmd, Ref<VulkanModel> Model) override;
-        virtual void Render(VkCommandBuffer Cmd, Ref<VulkanModel> Model) override;
 
         virtual void PreRender(VkCommandBuffer CmdBuffer, VulkanScene* Scene)override;
         virtual void Render(VkCommandBuffer CmdBuffer, VulkanScene* Scene)override;

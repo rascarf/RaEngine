@@ -142,8 +142,8 @@ namespace ReEngine
           }
            
            UploadRequest NewUploadRequest;
-           NewUploadRequest.Path = FileLoadRequest.Path;
-           NewUploadRequest.Callback = FileLoadRequest.Callback;
+           NewUploadRequest.Path = std::move(FileLoadRequest.Path);
+           NewUploadRequest.Callback = std::move(FileLoadRequest.Callback);
            NewUploadRequest.data = rgbaData;
            NewUploadRequest.Texture = VulkanTexture::Create2D(mDevice,nullptr,VK_FORMAT_R8G8B8A8_UNORM ,VK_IMAGE_ASPECT_COLOR_BIT,width,height,VK_IMAGE_USAGE_SAMPLED_BIT|VK_IMAGE_USAGE_TRANSFER_DST_BIT|VK_IMAGE_USAGE_TRANSFER_SRC_BIT,VK_SAMPLE_COUNT_1_BIT,ImageLayoutBarrier::PixelShaderRead);
            UploadRequests.Emplace_Back(NewUploadRequest);
@@ -155,14 +155,15 @@ namespace ReEngine
         while(ReadyUploadRequests.GetSize() > 0)
         {
             const auto Ready =  ReadyUploadRequests.Back();
+            ReadyUploadRequests.Pop_Back();
+            
             FileLoadCallBackParamStruct CallBackStruct;
-            CallBackStruct.BufferHanle = Ready.BufferHandle;
-            CallBackStruct.TextureHanle = Ready.TextureHanle;
-            CallBackStruct.FilePath = Ready.Path;
+            CallBackStruct.BufferHanle = std::move(Ready.BufferHandle);
+            CallBackStruct.TextureHanle = std::move(Ready.TextureHanle);
+            CallBackStruct.FilePath = std::move(Ready.Path);
             
             Ready.Callback(CallBackStruct);
 
-            ReadyUploadRequests.Pop_Back();
         }
     }
 

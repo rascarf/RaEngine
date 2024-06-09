@@ -13,7 +13,7 @@ namespace ReEngine
         Ref<VulkanBuffer>       BufferHanle;
     };
     
-    using FileLoadCallBack = std::function<void(FileLoadCallBackParamStruct)>;
+    using FileLoadCallBack = std::function<void(FileLoadCallBackParamStruct&)>;
 
     uint32_t MemoryAlign(uint32_t Size,uint32_t Alignment);
 

@@ -2,40 +2,35 @@
 #include "Platform/Vulkan/VulkanContext.h"
 #include "Platform/Vulkan/Component/StaticMeshComponent.h"
 #include "Platform/Vulkan/RenderGraph/Passes/PreDepthPass.h"
+#include "Platform/Vulkan/RenderGraph/Passes/SimpleDiffusePass.h"
 
 void GPUDrivenLayer::OnNativeLoadAsset()
 {
+    m_Camera->SetSpeed(10.0f);
     const auto device = VkContext->Instance->GetDevice();
     auto cmdBuffer = VulkanCommandBuffer::Create(device, VkContext->CommandPool->m_CommandPool);
     
     m_Scene->ReqeustParseFrameGraph("Assets/Graphs/TestFrameGraph.json");
+    m_Scene->m_FrameGraph->Compile();
     
     Ref<PreDepthRenderPass> DepthTemplateRenderPass = PreDepthRenderPass::Create();
     DepthTemplateRenderPass->Init(m_RingBuffer);
-    
-    m_Scene->m_FrameGraph->GetNode("gbuffer_pass")->Enabled = false;
-    m_Scene->m_FrameGraph->Compile();
+
+    Ref<SimpleDiffusePass> DiffuseRenderPass = SimpleDiffusePass::Create();
+    DiffuseRenderPass->Init(m_RingBuffer);
     
     m_Scene->RegisterPass("depth_pre_pass",DepthTemplateRenderPass);
+    m_Scene->RegisterPass("shading_pass",DiffuseRenderPass);
     
     ModelLoadRequest Request;
     Request.filename = "Assets/Mesh/Room/miniHouse_FBX.FBX";
-    
     m_Scene->ReqeustLoadModel(Request);
-
     m_Scene->HandleLoadList(device,cmdBuffer);
-
-    for(auto& Entity : m_Scene->EntityNodes)
-    {
-        if(Entity->HasComponent<StaticMeshComponent>())
-        {
-            RE_INFO("{0}",Entity->GetComponent<StaticMeshComponent>().PbrMaterialParamIndex);
-        }
-    }
 }
 
 void GPUDrivenLayer::OnNativeUpdate(Timestep ts)
 {
+    m_Scene->Update(ts);
 }
 
 void GPUDrivenLayer::OnNativeDeInit()
@@ -77,10 +72,10 @@ void GPUDrivenLayer::OnRender()
         
         vkCmdSetViewport(VkContext->GetCommandList(), 0, 1, &viewport);
         vkCmdSetScissor(VkContext->GetCommandList(),  0, 1, &scissor);
-
+        
         {
             vkCmdBindPipeline(VkContext->GetCommandList(), VK_PIPELINE_BIND_POINT_GRAPHICS, mFilterMaterial->mPipeline->Pipeline);
-            mFilterMaterial->SetTexture("InputImageTexture", ColorRT);
+            mFilterMaterial->SetTexture("InputImageTexture",  m_Scene->m_FrameGraph->GetResource("gbuffer_colour")->ResourceInfo.Texture.Texture);
             mFilterMaterial->BindDescriptorSets(VkContext->GetCommandList(), VK_PIPELINE_BIND_POINT_GRAPHICS);
             mQuad->Meshes[0]->BindDraw(VkContext->GetCommandList());
         }

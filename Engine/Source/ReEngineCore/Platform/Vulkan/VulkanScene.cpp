@@ -63,6 +63,7 @@ namespace ReEngine
         for(auto& Request : ToLoadMap)
         {
             std::vector<VertexAttribute> Attributes {};
+
             
             for(auto& Attribute : Request.second.VertexAttributes)
             {
@@ -132,62 +133,66 @@ namespace ReEngine
 
                 if(!FindSame)
                 {
-                    ImportTexture(Mesh->Material);
-                    
-                    FindSameNameEntity(Mesh->LinkNode.lock()->name)->GetComponent<StaticMeshComponent>().PbrMaterialParamIndex = PBRTextureParam.size();
-
                     PBRTextureParam.emplace_back(Mesh->Material);
+                    
+                    ImportTexture(PBRTextureParam.size() - 1);
+                    FindSameNameEntity(Mesh->LinkNode.lock()->name)->GetComponent<StaticMeshComponent>().PbrMaterialParamIndex = PBRTextureParam.size() - 1;
                 }
             }
         }
     }
 
-    void VulkanScene::ImportTexture(VulkanMaterialInfo& Info)
+    void VulkanScene::ImportTexture(int32 MaterialIndex)
     {
-        if(!Info.Diffuse.empty())
-        m_ASyncLoader->RequestTexture(Info.Diffuse + ".jpg",[&Info,this](FileLoadCallBackParamStruct param)
+        auto Info = &PBRTextureParam[MaterialIndex];
+        
+        if(!Info->Diffuse.empty())
+        m_ASyncLoader->RequestTexture(Info->Diffuse + ".jpg",[MaterialIndex,this](FileLoadCallBackParamStruct& param)
         {
             if(param.TextureHanle)
             {
-                Info.DiffuseTexture = param.TextureHanle;
-                Info.DiffuseTextureIndex = Textures.size();
+                auto Info = &PBRTextureParam[MaterialIndex];
+                
+                Info->DiffuseTexture = param.TextureHanle;
+                Info->DiffuseTexture.lock()->Name = param.FilePath;
+                Info->DiffuseTextureIndex = Textures.size();
+                
+                Textures.emplace_back(param.TextureHanle);
+            }
+        });
+
+        if(!Info->Specular.empty())
+        m_ASyncLoader->RequestTexture(Info->Specular + ".jpg",[&Info,this](FileLoadCallBackParamStruct& param)
+        {
+            if(param.TextureHanle)
+            {
+                Info->SpecularTexture = param.TextureHanle;
+                Info->SpecularTextureIndex = Textures.size();
                 Textures.emplace_back(param.TextureHanle);
                 param.TextureHanle->Name = param.FilePath;
             }
         });
 
-        if(!Info.Specular.empty())
-        m_ASyncLoader->RequestTexture(Info.Specular + ".jpg",[&Info,this](FileLoadCallBackParamStruct param)
+        if(!Info->Normal.empty())
+        m_ASyncLoader->RequestTexture(Info->Normal + ".jpg",[&Info,this](FileLoadCallBackParamStruct& param)
         {
             if(param.TextureHanle)
             {
-                Info.SpecularTexture = param.TextureHanle;
-                Info.SpecularTextureIndex = Textures.size();
-                Textures.emplace_back(param.TextureHanle);
-                param.TextureHanle->Name = param.FilePath;
-            }
-        });
-
-        if(!Info.Normal.empty())
-        m_ASyncLoader->RequestTexture(Info.Normal + ".jpg",[&Info,this](FileLoadCallBackParamStruct param)
-        {
-            if(param.TextureHanle)
-            {
-                Info.NormalTextureIndex = Textures.size();
-                Info.NormalTexture = param.TextureHanle;
+                Info->NormalTextureIndex = Textures.size();
+                Info->NormalTexture = param.TextureHanle;
                 
                 Textures.emplace_back(param.TextureHanle);
                 param.TextureHanle->Name = param.FilePath;
             }
         });
 
-        if(!Info.Metalic.empty())
-        m_ASyncLoader->RequestTexture(Info.Metalic + ".jpg",[&Info,this](FileLoadCallBackParamStruct param)
+        if(!Info->Metalic.empty())
+        m_ASyncLoader->RequestTexture(Info->Metalic + ".jpg",[&Info,this](FileLoadCallBackParamStruct& param)
         {
             if(param.TextureHanle)
             {
-                Info.MetalicTexture = param.TextureHanle;
-                Info.MetalicTextureIndex = Textures.size();
+                Info->MetalicTexture = param.TextureHanle;
+                Info->MetalicTextureIndex = Textures.size();
                 
                 Textures.emplace_back(param.TextureHanle);
                 param.TextureHanle->Name = param.FilePath;

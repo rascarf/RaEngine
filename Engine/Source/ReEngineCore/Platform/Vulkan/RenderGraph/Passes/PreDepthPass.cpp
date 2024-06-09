@@ -7,27 +7,10 @@
 
 namespace ReEngine
 {
-    inline void PreDepthRenderPass::PreRender(VkCommandBuffer Cmd, Ref<VulkanModel> Model)
-    {
-       
-    }
-
-    inline void PreDepthRenderPass::Render(VkCommandBuffer Cmd, Ref<VulkanModel> Model)
-    {
-        vkCmdBindPipeline(VkContext->GetCommandList(),VK_PIPELINE_BIND_POINT_GRAPHICS,RenderPSO->mPipeline->Pipeline);
-        for(const auto& Mesh : Model->Meshes)
-        {
-            m_MVPData.model = Mesh->LinkNode.lock()->GetGlobalMatrix();
-            RenderPSO->SetUniform("uboMVP",&m_MVPData,sizeof(ModelViewProjectionBlock));
-            RenderPSO->BindDescriptorSets(VkContext->GetCommandList(),VK_PIPELINE_BIND_POINT_GRAPHICS);
-
-            Mesh->BindDraw(VkContext->GetCommandList());
-        }
-    }
-
     void PreDepthRenderPass::PreRender(VkCommandBuffer CmdBuffer, VulkanScene* Scene)
     {
-        
+        m_MVPData.view = Scene->SceneCamera->GetViewMatrix();
+        m_MVPData.projection = Scene->SceneCamera->GetProjection();
     }
 
     void PreDepthRenderPass::Render(VkCommandBuffer CmdBuffer, VulkanScene* Scene)
@@ -76,7 +59,7 @@ namespace ReEngine
         RingBuffer = InRingBuffer;
     }
 
-    inline void PreDepthRenderPass::Register(Ref<FrameGraphNode> Node,Ref<VulkanDevice> Device)
+    inline void PreDepthRenderPass::OnRegister(Ref<FrameGraphNode> Node,Ref<VulkanDevice> Device)
     {
         if(!Node->Enabled)
             return;

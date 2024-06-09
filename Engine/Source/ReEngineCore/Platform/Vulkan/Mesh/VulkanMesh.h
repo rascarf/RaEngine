@@ -32,10 +32,10 @@ struct VulkanMaterialInfo
     std::string Specular;
     std::string Metalic;
 
-    Ref<VulkanTexture> DiffuseTexture = nullptr;
-    Ref<VulkanTexture> NormalTexture = nullptr;
-    Ref<VulkanTexture> SpecularTexture = nullptr;
-    Ref<VulkanTexture> MetalicTexture = nullptr;
+    std::weak_ptr<VulkanTexture> DiffuseTexture;
+    std::weak_ptr<VulkanTexture> NormalTexture;
+    std::weak_ptr<VulkanTexture> SpecularTexture;
+    std::weak_ptr<VulkanTexture> MetalicTexture;
 
     int32 DiffuseTextureIndex = -1;
     int32 NormalTextureIndex = -1;

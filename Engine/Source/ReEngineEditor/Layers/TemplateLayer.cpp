@@ -1,6 +1,7 @@
 #include "TemplateLayer.h"
 
 #include <ColorFilter_frag.h>
+#include <DepthFilter_frag.h>
 #include <quad_vert.h>
 #include "Mesh/Quad.h"
 #include "Platform/Vulkan/VulkanContext.h"
@@ -13,6 +14,7 @@ void TemplateLayer::OnCreateBackBuffer()
 void TemplateLayer::OnInit()
 {
     m_Scene = CreateRef<ReEngine::VulkanScene>(VkContext);
+    m_Scene->SceneCamera = m_Camera;
     
     CreateRenderTarget();
     LoadAsset();
@@ -39,14 +41,13 @@ void TemplateLayer::OnUpdate(Timestep ts)
 {
     m_RingBuffer->OnBeginFrame();
     m_Camera->OnUpdate(ts);
-
+    
     //TODO Write your logic
     OnNativeUpdate(ts);
 
     m_MVPData.view = m_Camera->GetViewMatrix();
     m_MVPData.projection = m_Camera->GetProjection();
 
-    m_Scene->Update(ts);
 }
 
 void TemplateLayer::OnRender()
@@ -153,6 +154,16 @@ void TemplateLayer::LoadAsset()
     
     m_RingBuffer = CreateRef<VulkanDynamicBufferRing>();
     m_RingBuffer->OnCreate(VkContext->Instance->GetDevice(),3,200 * 1024 * 1024);
+    
+    m_Camera = CreateRef<EditorCamera>();
+    m_Camera->SetSpeed(0.1f);
+    
+    m_Scene->SceneCamera = m_Camera;
+    // m_Camera->SetCenter(glm::vec3(BoundsCenter.x,BoundsCenter.y,BoundsCenter.z - BoundsSize.length() * 2.0));
+    
+    m_MVPData.model = glm::identity<glm::mat4>();
+    m_MVPData.projection = glm::identity<glm::mat4>();
+    m_MVPData.view = m_Camera->GetViewMatrix();
 
     auto cmdBuffer = VulkanCommandBuffer::Create(device, VkContext->CommandPool->m_CommandPool);
 
@@ -186,17 +197,4 @@ void TemplateLayer::LoadAsset()
             mFilterShader->perVertexAttributes
         );
     }
-
-    // BoundingBox Bounds = PlaneModel->RootNode->GetBounds();
-    // glm::vec3 BoundsSize = Bounds.Max - Bounds.Min;
-    // glm::vec3 BoundsCenter = Bounds.Min + BoundsSize * 0.5f;
-    //
-    
-    m_Camera = CreateRef<EditorCamera>();
-    m_Camera->SetSpeed(0.1f);
-    // m_Camera->SetCenter(glm::vec3(BoundsCenter.x,BoundsCenter.y,BoundsCenter.z - BoundsSize.length() * 2.0));
-    
-    m_MVPData.model = glm::identity<glm::mat4>();
-    m_MVPData.projection = glm::identity<glm::mat4>();
-    m_MVPData.view = m_Camera->GetViewMatrix();
 }

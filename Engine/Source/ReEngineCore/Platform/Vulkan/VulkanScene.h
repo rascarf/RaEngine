@@ -50,6 +50,7 @@ namespace ReEngine
         
         void Update(Timestep ts)
         {
+            
             m_ASyncLoader->Update_MainThread();
         }
 
@@ -63,7 +64,7 @@ namespace ReEngine
         
         void HandleLoadList(Ref<VulkanDevice> vulkanDevice, Ref<VulkanCommandBuffer> cmdBuffer);
         void ImportModel(Ref<VulkanModel> Model);
-        void ImportTexture(VulkanMaterialInfo& Info);
+        void ImportTexture(int32 MaterialIndex);
 
     public:// ------------------ RenderScene ----------------
         void ReqeustParseFrameGraph(std::string FileName);
@@ -85,6 +86,8 @@ namespace ReEngine
         Ref<FrameGraph>               m_FrameGraph = nullptr;
         Ref<FrameGraphBuilder>        m_FrameGraphBuilder = nullptr;
         Ref<VulkanDevice>             mDevice = nullptr;
+
+        Ref<EditorCamera>             SceneCamera = nullptr;
     };    
 }
 
