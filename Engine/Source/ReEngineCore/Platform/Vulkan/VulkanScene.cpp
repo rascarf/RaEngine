@@ -42,7 +42,7 @@ namespace ReEngine
 
     void VulkanScene::HandleLoadList(Ref<VulkanDevice> vulkanDevice, Ref<VulkanCommandBuffer> cmdBuffer)
     {
-        std::unordered_map<std::string,ModelLoadRequest> ToLoadMap;
+        std::map<std::string,ModelLoadRequest> ToLoadMap;
 
         //遍历所有 去重
         for (int32 i = 0 ; i < ModelToLoad.size() ; i++)
@@ -63,14 +63,12 @@ namespace ReEngine
         for(auto& Request : ToLoadMap)
         {
             std::vector<VertexAttribute> Attributes {};
-
-            
             for(auto& Attribute : Request.second.VertexAttributes)
             {
                 Attributes.emplace_back(Attribute);
             }
 
-            auto VulkanModel = VulkanModel::LoadFromFile(Request.second.filename,vulkanDevice,cmdBuffer,Attributes);
+            auto VulkanModel = VulkanModel::LoadFromFile(Request.second.filename,vulkanDevice,cmdBuffer,Attributes,true);
             VulkanModel->Name = Request.first;
             ImportModel(VulkanModel);
             
@@ -133,10 +131,11 @@ namespace ReEngine
 
                 if(!FindSame)
                 {
+                    const auto BackIndex = PBRTextureParam.size();
                     PBRTextureParam.emplace_back(Mesh->Material);
                     
-                    ImportTexture(PBRTextureParam.size() - 1);
-                    FindSameNameEntity(Mesh->LinkNode.lock()->name)->GetComponent<StaticMeshComponent>().PbrMaterialParamIndex = PBRTextureParam.size() - 1;
+                    ImportTexture(BackIndex);
+                    FindSameNameEntity(Mesh->LinkNode.lock()->name)->GetComponent<StaticMeshComponent>().PbrMaterialParamIndex = BackIndex;
                 }
             }
         }

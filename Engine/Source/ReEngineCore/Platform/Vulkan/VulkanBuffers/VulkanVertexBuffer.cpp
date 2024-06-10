@@ -82,3 +82,47 @@ Ref<VulkanVertexBuffer> VulkanVertexBuffer::Create(std::shared_ptr<VulkanDevice>
     
     return VertexBuffer;
 }
+
+void VulkanVertexFactory::AddStream(std::shared_ptr<VulkanDevice> device, Ref<VulkanCommandBuffer> cmdBuffer,std::vector<float> vertices, const VertexAttribute& attributes)
+{
+    this->Device = device->GetInstanceHandle();
+    VkDeviceSize VertexbufferSize = vertices.size() * sizeof(float);
+    
+    auto stagingIndexBuffer = VulkanBuffer::CreateBuffer(
+                device,
+                VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                VertexbufferSize,(void*)vertices.data());
+
+    Ref<VulkanBuffer>Buffer = VulkanBuffer::CreateBuffer(
+            device,
+            VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+            VertexbufferSize
+    );
+
+    VulkanBuffer::TransferBuffer(device,cmdBuffer,stagingIndexBuffer,Buffer,VertexbufferSize);
+
+    Streams.try_emplace(attributes,Buffer);
+}
+
+void VulkanVertexFactory::Bind(VkCommandBuffer cmdBuffer, const std::vector<AttributeStream>& BindStream)
+{
+    std::vector<int32> Bindings;
+    std::vector<VkBuffer> Buffers;
+    std::vector<VkDeviceSize> Offsets;
+    for(const auto& Stream :BindStream)
+    {
+        if(Streams.contains(Stream.AttributeSemantic))
+        {
+            Bindings.emplace_back(Stream.Binding);
+            Buffers.emplace_back(Streams[Stream.AttributeSemantic]->Buffer);
+            Offsets.emplace_back(0);
+        }
+        else
+        {
+            RE_ERROR("Needed Stream is not Exsit,Plaese Check Vertex Factory");
+            break;
+        }
+    }
+    
+    vkCmdBindVertexBuffers(cmdBuffer, 0, Bindings.size(), Buffers.data(), Offsets.data());
+}

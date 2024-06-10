@@ -4,7 +4,6 @@
 #include "VulkanCommandBuffer.h"
 #include "Platform/Vulkan/VulkanCommandPool.h"
 
-
 class VulkanVertexBuffer
 {
 public:
@@ -30,3 +29,24 @@ public:
     std::vector<VertexAttribute>    Attributes;
     Ref<VulkanBuffer>               Buffer = nullptr;
 };
+
+class VulkanVertexFactory
+{
+public:
+    ~VulkanVertexFactory()
+    {
+        for(auto& Pair : Streams)
+        {
+            Pair.second.reset();
+            Pair.second = nullptr;
+        }
+    }
+
+    void AddStream(std::shared_ptr<VulkanDevice> device , Ref<VulkanCommandBuffer> cmdBuffer, std::vector<float> vertices, const VertexAttribute& attributes);
+    void Bind(VkCommandBuffer cmdBuffer,const std::vector<AttributeStream>& BindStream);
+    
+    VkDevice                        Device = VK_NULL_HANDLE;
+    std::unordered_map<VertexAttribute,Ref<VulkanBuffer>> Streams;
+};
+
+

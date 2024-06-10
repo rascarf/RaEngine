@@ -166,13 +166,14 @@ void VulkanModel::LoadSkin(std::unordered_map<uint32, VertexSkin>& skinInfoMap, 
     }
 }
 
-Ref<VulkanModel> VulkanModel::LoadFromFile(const std::string& filename, Ref<VulkanDevice> vulkanDevice,Ref<VulkanCommandBuffer> cmdBuffer, const std::vector<VertexAttribute>& attributes)
+Ref<VulkanModel> VulkanModel::LoadFromFile(const std::string& filename, Ref<VulkanDevice> vulkanDevice,Ref<VulkanCommandBuffer> cmdBuffer, const std::vector<VertexAttribute>& attributes,bool LoadWithStreams)
 {
     Ref<VulkanModel> model   = CreateRef<VulkanModel>();
     model->Device     = vulkanDevice;
     model->Attributes = attributes;
     model->CmdBuffer  = cmdBuffer;
     model->Name = filename;
+    model->bSeperateBuffer = LoadWithStreams;
         
     int assimpFlags = aiProcess_Triangulate | aiProcess_FlipUVs;
         
@@ -371,8 +372,7 @@ Ref<VulkanMesh> VulkanModel::LoadMesh(const aiMesh* Inmesh, const aiScene* Insce
         FillMaterialTextures(material, Mesh->Material);
     }
     
-
-    // // load bones
+   // load bones
     std::unordered_map<uint32, VertexSkin> skinInfoMap;
     if (Inmesh->mNumBones > 0 && loadSkin)
     {
@@ -389,9 +389,16 @@ Ref<VulkanMesh> VulkanModel::LoadMesh(const aiMesh* Inmesh, const aiScene* Insce
     std::vector<uint32> indices;
     LoadIndices(indices, Inmesh, Inscene);
 
-    // load primitives
-    LoadPrimitives(vertices, indices, Mesh, Inmesh, Inscene);
-
+    // // load primitives
+    if(bSeperateBuffer)
+    {
+        LoadPrimitivesWithStreams(Mesh,Inmesh,Inscene);
+    }
+    else
+    {
+        LoadPrimitives(vertices, indices, Mesh, Inmesh, Inscene);
+    }
+    
     Mesh->m_BoundingBox.Min = mmin;
     Mesh->m_BoundingBox.Max = mmax;
     Mesh->m_BoundingBox.UpdateCorners();
@@ -825,5 +832,102 @@ void VulkanModel::LoadPrimitives(std::vector<float>& vertices, std::vector<uint3
 
         mesh->VertexCount   += primitive->vertexCount;
         mesh->TriangleCount += primitive->triangleNum;
+    }
+}
+
+void VulkanModel::LoadPrimitivesWithStreams(Ref<VulkanMesh> mesh, const aiMesh* aiMesh, const aiScene* aiScene)
+{
+    Ref<VulkanPrimitive> primitive = CreateRef<VulkanPrimitive>();
+    
+    primitive->VertexFactory = CreateRef<VulkanVertexFactory>();
+    mesh->m_Primitives.push_back(primitive);
+    
+    for (int32 i = 0; i < (int32)aiMesh->mNumFaces; ++i)
+    {
+        primitive->indices.push_back(aiMesh->mFaces[i].mIndices[0]);
+        primitive->indices.push_back(aiMesh->mFaces[i].mIndices[1]);
+        primitive->indices.push_back(aiMesh->mFaces[i].mIndices[2]);
+    }
+    
+    for (int32 i = 0; i < (int32)mesh->m_Primitives.size(); ++i)
+    {
+        Ref<VulkanPrimitive> primitive = mesh->m_Primitives[i];
+        primitive->vertexCount  = (int32)aiMesh->mNumVertices;
+        primitive->triangleNum  = (int32)aiMesh->mNumFaces;
+        
+        mesh->VertexCount   += primitive->vertexCount;
+        mesh->TriangleCount += primitive->triangleNum;
+    }
+
+    if (CmdBuffer)
+    {
+        primitive->IndexBuffer  = VulkanIndexBuffer::Create(Device, CmdBuffer, primitive->indices);
+    }
+    
+    for (int32 AttributeIndex = 0; AttributeIndex < Attributes.size(); ++AttributeIndex)
+    {
+        primitive->AttributeDatas.try_emplace(Attributes[AttributeIndex],std::vector<float>());
+        
+        for(int32 VertexIndex = 0 ; VertexIndex < (int32)aiMesh->mNumVertices ; ++VertexIndex)
+        {
+            if(Attributes[AttributeIndex] == VertexAttribute::VA_Position)
+            {
+                primitive->AttributeDatas[Attributes[AttributeIndex]].emplace_back(aiMesh->mVertices[VertexIndex].x);
+                primitive->AttributeDatas[Attributes[AttributeIndex]].emplace_back(aiMesh->mVertices[VertexIndex].y);
+                primitive->AttributeDatas[Attributes[AttributeIndex]].emplace_back(aiMesh->mVertices[VertexIndex].z);
+            }
+            else if(Attributes[AttributeIndex] == VertexAttribute::VA_UV0)
+            {
+                primitive->AttributeDatas[Attributes[AttributeIndex]].emplace_back(aiMesh->mTextureCoords[0][VertexIndex].x);
+                primitive->AttributeDatas[Attributes[AttributeIndex]].emplace_back(aiMesh->mTextureCoords[0][VertexIndex].y);
+            }
+            else if(Attributes[AttributeIndex] == VertexAttribute::VA_UV1)
+            {
+                primitive->AttributeDatas[Attributes[AttributeIndex]].emplace_back(aiMesh->mTextureCoords[1][VertexIndex].x);
+                primitive->AttributeDatas[Attributes[AttributeIndex]].emplace_back(aiMesh->mTextureCoords[1][VertexIndex].y);
+            }
+            else if(Attributes[AttributeIndex] == VertexAttribute::VA_Normal)
+            {
+                primitive->AttributeDatas[Attributes[AttributeIndex]].emplace_back(aiMesh->mNormals[VertexIndex].x);
+                primitive->AttributeDatas[Attributes[AttributeIndex]].emplace_back(aiMesh->mNormals[VertexIndex].y);
+                primitive->AttributeDatas[Attributes[AttributeIndex]].emplace_back(aiMesh->mNormals[VertexIndex].z);
+            }
+            else if(Attributes[AttributeIndex] == VertexAttribute::VA_Tangent)
+            {
+                primitive->AttributeDatas[Attributes[AttributeIndex]].emplace_back(aiMesh->mTangents[VertexIndex].x);
+                primitive->AttributeDatas[Attributes[AttributeIndex]].emplace_back(aiMesh->mTangents[VertexIndex].y);
+                primitive->AttributeDatas[Attributes[AttributeIndex]].emplace_back(aiMesh->mTangents[VertexIndex].z);
+            }
+            else if(Attributes[AttributeIndex] == VertexAttribute::VA_BitTangent)
+            {
+                primitive->AttributeDatas[Attributes[AttributeIndex]].emplace_back(aiMesh->mBitangents[VertexIndex].x);
+                primitive->AttributeDatas[Attributes[AttributeIndex]].emplace_back(aiMesh->mBitangents[VertexIndex].y);
+                primitive->AttributeDatas[Attributes[AttributeIndex]].emplace_back(aiMesh->mBitangents[VertexIndex].z);
+            }
+            else if(Attributes[AttributeIndex] == VertexAttribute::VA_Color)
+            {
+                primitive->AttributeDatas[Attributes[AttributeIndex]].emplace_back(aiMesh->mColors[VertexIndex]->r);
+                primitive->AttributeDatas[Attributes[AttributeIndex]].emplace_back(aiMesh->mColors[VertexIndex]->g);
+                primitive->AttributeDatas[Attributes[AttributeIndex]].emplace_back(aiMesh->mColors[VertexIndex]->b);
+                primitive->AttributeDatas[Attributes[AttributeIndex]].emplace_back(aiMesh->mColors[VertexIndex]->a);
+            }
+            else if(Attributes[AttributeIndex] == VertexAttribute::VA_SkinPack)
+            {
+
+            }
+            else if(Attributes[AttributeIndex] == VertexAttribute::VA_SkinWeight)
+            {
+                
+            }
+            else if(Attributes[AttributeIndex] == VertexAttribute::VA_SkinIndex)
+            {
+                
+            }
+        }
+        
+        if(CmdBuffer)
+        {
+            primitive->VertexFactory->AddStream(Device, CmdBuffer,primitive->AttributeDatas[Attributes[AttributeIndex]],Attributes[AttributeIndex]);
+        }
     }
 }

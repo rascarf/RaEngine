@@ -52,7 +52,7 @@ public:
         VkShaderStageFlags StageFlags = 0;
     };
     
-    static Ref<VulkanShader> Create(Ref<VulkanDevice> vulkanDevice,bool DynamicUBO,const std::vector<unsigned char>* Vert,const std::vector<unsigned char>* Frag,const std::vector<unsigned char>* Geom,const std::vector<unsigned char>* Compute,const std::vector<unsigned char>* Tesc,const std::vector<unsigned char>* Tese);
+    static Ref<VulkanShader> Create(Ref<VulkanDevice> vulkanDevice,bool DynamicUBO,const std::vector<unsigned char>* Vert,const std::vector<unsigned char>* Frag,const std::vector<unsigned char>* Geom,const std::vector<unsigned char>* Compute,const std::vector<unsigned char>* Tesc,const std::vector<unsigned char>* Tese,bool bWithVertexStream = false);
     static Ref<VulkanShader> CreateCompute(Ref<VulkanDevice> vulkanDevice,bool DynamicUBO,const std::vector<unsigned char>* Compute,VulkanSpecialInfo specializationInfo = {});
     static Ref<VulkanShader> CreateRayTracingShader(Ref<VulkanDevice> vulkanDevice,const std::vector<unsigned char>* ClosethitShaderModule,const std::vector<unsigned char>* RayGenerationShaderModule,const std::vector<unsigned char>* MissShaderModule);
     static Ref<VulkanShader> CreateRayTracingShader(Ref<VulkanDevice> vulkanDevice,const std::vector<unsigned char>* ClosethitShaderModule,const std::vector<unsigned char>* RayGenerationShaderModule,const std::vector<unsigned char>* MissShaderModule,const std::unordered_map<std::string,int>& ArrayParams);
@@ -72,10 +72,13 @@ public:
     virtual void ProcessAccelerationSructure(spirv_cross::Compiler& compiler, spirv_cross::ShaderResources& resources, VkShaderStageFlags stageFlags);
     
     virtual void GenerateInputInfo();
+    
+    virtual void GenerateInputInfoWithStream(); // 拆分Buffer
     virtual void GenerateLayout();
 
     Ref<VulkanDescriptorSet> AllocateDescriptorSet();
-    
+
+    bool bWithVertexStream = false;
 public:
     Ref<VulkanShaderModule>           vertShaderModule = nullptr;
     Ref<VulkanShaderModule>           fragShaderModule = nullptr;
@@ -110,6 +113,9 @@ public:
     //Attr信息
     std::vector<VertexAttribute>    instancesAttributes;
     std::vector<VertexAttribute>    perVertexAttributes;
+
+    // 包含了以上两者的信息,给RenderPass绘制使用
+    std::vector<AttributeStream>   OutputAttributes;
 
     std::unordered_map<std::string,int32>   ArrayParams;
     std::vector<VkPushConstantRange> PushConstantParams;

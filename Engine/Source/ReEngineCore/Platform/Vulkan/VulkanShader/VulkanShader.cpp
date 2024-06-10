@@ -82,7 +82,8 @@ VulkanShader::~VulkanShader()
 Ref<VulkanShader> VulkanShader::Create(Ref<VulkanDevice> vulkanDevice,bool DynamicUBO
                                        ,const std::vector<unsigned char>* Vert,const std::vector<unsigned char>* Frag
                                        ,const std::vector<unsigned char>* Geom,const std::vector<unsigned char>* Compute
-                                       ,const std::vector<unsigned char>* Tesc,const std::vector<unsigned char>* Tese)
+                                       ,const std::vector<unsigned char>* Tesc,const std::vector<unsigned char>* Tese
+                                       ,bool WithVertexStream)
 {
     using ShaderModuleRef = Ref<VulkanShaderModule>;
 
@@ -104,6 +105,7 @@ Ref<VulkanShader> VulkanShader::Create(Ref<VulkanDevice> vulkanDevice,bool Dynam
     Shader->compShaderModule = compModule;
     Shader->tescShaderModule = tescModule;
     Shader->teseShaderModule = teseModule;
+    Shader->bWithVertexStream = WithVertexStream;
     Shader->specializationInfo = {};
 
     Shader->Compile();
@@ -238,8 +240,16 @@ void VulkanShader::Compile()
         ProcessRayTracingShaderModule(ClosethitShaderModule);
         ProcessRayTracingShaderModule(MissShaderModule);
     }
+
+    if(bWithVertexStream)
+    {
+        GenerateInputInfoWithStream();
+    }
+    else
+    {
+        GenerateInputInfo();
+    }
     
-    GenerateInputInfo();
     GenerateLayout();
 }
 
@@ -693,6 +703,59 @@ void VulkanShader::GenerateInputInfo()
 
             location += 1;
         }
+    }
+}
+
+void VulkanShader::GenerateInputInfoWithStream()
+{
+     // 对inputAttributes进行排序，获取Attributes列表
+    std::sort(
+        m_InputAttributes.begin(),
+        m_InputAttributes.end(),
+        [](const VulkanAttribute& a, const VulkanAttribute& b) -> bool
+        {
+            return a.Location < b.Location;
+        }
+    );
+
+    // 对inputAttributes进行归类整理
+    for (int32 i = 0; i < m_InputAttributes.size(); ++i)
+    {
+        VertexAttribute attribute = m_InputAttributes[i].Attribute;
+        if (attribute == VertexAttribute::VA_InstanceFloat1 || attribute == VertexAttribute::VA_InstanceFloat2 || attribute == VertexAttribute::VA_InstanceFloat3 || attribute == VertexAttribute::VA_InstanceFloat4)
+        {
+            instancesAttributes.push_back(attribute);
+        }
+        else
+        {
+            perVertexAttributes.push_back(attribute);
+        }
+    }
+
+    // 对inputAttributes进行归类整理
+    for (int32 i = 0; i < m_InputAttributes.size(); ++i)
+    {
+        AttributeStream Stream;
+        Stream.Binding = m_InputAttributes[i].Location;
+        Stream.Location = m_InputAttributes[i].Location;
+        Stream.AttributeSemantic = m_InputAttributes[i].Attribute;
+
+        VkVertexInputBindingDescription Binding;
+        VkVertexInputAttributeDescription Attribute;
+
+        Binding.binding = m_InputAttributes[i].Location;
+        Binding.stride = VertexAttributeToSize(m_InputAttributes[i].Attribute);
+        Binding.inputRate = IsInstanceAttribute(m_InputAttributes[i].Attribute)? VK_VERTEX_INPUT_RATE_INSTANCE : VK_VERTEX_INPUT_RATE_VERTEX;
+
+        Attribute.binding = Binding.binding;
+        Attribute.location = Binding.binding;
+        Attribute.format = VertexAttributeToVkFormat(m_InputAttributes[i].Attribute);
+        Attribute.offset = 0;
+        
+        inputBindings.emplace_back(Binding);
+        inputAttributes.emplace_back(Attribute);
+        
+        OutputAttributes.emplace_back(std::move(Stream));
     }
 }
 

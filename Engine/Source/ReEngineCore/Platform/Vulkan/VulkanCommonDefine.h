@@ -114,6 +114,13 @@ enum class VertexElementType
     VET_NumBits = 5,
 };
 
+struct AttributeStream
+{
+    uint32 Binding = 0;
+    uint32 Location = 0;
+    VertexAttribute AttributeSemantic = VertexAttribute::VA_None;
+};
+
 FORCE_INLINE VertexAttribute StringToVertexAttribute(const char* name)
 {
     if (strcmp(name, "inPosition") == 0) {
@@ -333,6 +340,14 @@ FORCE_INLINE VkImageLayout GetImageLayout(ImageLayoutBarrier target)
         return layout;
     }
 
+FORCE_INLINE bool IsInstanceAttribute(VertexAttribute attribute)
+{
+    return attribute == VertexAttribute::VA_InstanceFloat1
+        || attribute == VertexAttribute::VA_InstanceFloat2
+        || attribute == VertexAttribute::VA_InstanceFloat3
+        || attribute == VertexAttribute::VA_InstanceFloat4;
+}
+
 FORCE_INLINE int32 VertexAttributeToSize(VertexAttribute attribute)
 {
     // count * sizeof(float)
@@ -362,7 +377,7 @@ FORCE_INLINE int32 VertexAttributeToSize(VertexAttribute attribute)
     }
     else if (attribute == VertexAttribute::VA_Color)
     {
-        return 3 * sizeof(float);
+        return 4 * sizeof(float); //rgba
     }
     else if (attribute == VertexAttribute::VA_SkinWeight)
     {

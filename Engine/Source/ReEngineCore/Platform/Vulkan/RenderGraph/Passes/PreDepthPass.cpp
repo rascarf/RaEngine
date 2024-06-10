@@ -27,7 +27,7 @@ namespace ReEngine
 
             if(!View.get<StaticMeshComponent>(Entity).Mesh.expired())
             {
-                View.get<StaticMeshComponent>(Entity).Mesh.lock()->BindDraw(CmdBuffer);
+                View.get<StaticMeshComponent>(Entity).Mesh.lock()->BindDraw(CmdBuffer,SceneShader->OutputAttributes);
             }
         }
     }
@@ -67,7 +67,7 @@ namespace ReEngine
         auto Context = Renderer::GetContext().get();
         VkContext = dynamic_cast<ReEngine::VulkanContext*>(Context);
         
-        SceneShader = VulkanShader::Create(Device,true,&OBJ_VERT,&PREDEPTH_FRAG,nullptr,nullptr,nullptr,nullptr);
+        SceneShader = VulkanShader::Create(Device,true,&OBJ_VERT,&PREDEPTH_FRAG,nullptr,nullptr,nullptr,nullptr,true);
         RenderPSO = VulkanGraphicPipeline::Create(
             Device,
             Node->RenderTarget->mRenderPass->RenderPass,

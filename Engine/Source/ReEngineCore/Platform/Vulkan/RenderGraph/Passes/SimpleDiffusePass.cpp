@@ -26,7 +26,7 @@ void SimpleDiffusePass::OnRegister(Ref<FrameGraphNode> Node, Ref<VulkanDevice> D
     auto Context = Renderer::GetContext().get();
     VkContext = dynamic_cast<ReEngine::VulkanContext*>(Context);
         
-    SceneShader = VulkanShader::Create(Device,true,&OBJ_VERT,&OBJ_FRAG,nullptr,nullptr,nullptr,nullptr);
+    SceneShader = VulkanShader::Create(Device,true,&OBJ_VERT,&OBJ_FRAG,nullptr,nullptr,nullptr,nullptr,true);
     RenderPSO = VulkanGraphicPipeline::Create(
         Device,
         Node->RenderTarget->mRenderPass->RenderPass,
@@ -104,7 +104,7 @@ void SimpleDiffusePass::Render(VkCommandBuffer CmdBuffer, VulkanScene* Scene)
             RenderPSO->SetUniform("uboMVP",&m_MVPData,sizeof(ModelViewProjectionBlock));
             RenderPSO->BindDescriptorSets(VkContext->GetCommandList(),VK_PIPELINE_BIND_POINT_GRAPHICS,std::to_string(MaterialIndex));
             
-            View.get<StaticMeshComponent>(Entity).Mesh.lock()->BindDraw(CmdBuffer);
+            View.get<StaticMeshComponent>(Entity).Mesh.lock()->BindDraw(CmdBuffer,SceneShader->OutputAttributes);
         }
     }
 }
