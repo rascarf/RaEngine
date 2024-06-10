@@ -713,7 +713,7 @@ namespace ReEngine
                     bool bIsDepth = Texture->bIsDepth();
                     ImageLayoutBarrier Src = bIsDepth ? ImageLayoutBarrier::DepthStencilAttachment : ImageLayoutBarrier::ColorAttachment;
                     ImageLayoutBarrier Dst = ImageLayoutBarrier::PixelShaderRead;
-
+                    
                     VulkanTexture::ImagePipelineBarrier(CmdBuffer,Texture,Src,Dst,0,1,bIsDepth);
                 }
             }
@@ -726,10 +726,10 @@ namespace ReEngine
                 {
                     Ref<VulkanTexture> Texture = Resource->ResourceInfo.Texture.Texture;
                     bool bIsDepth = Texture->bIsDepth();
-                    ImageLayoutBarrier Src = ImageLayoutBarrier::Undefined;
                     ImageLayoutBarrier Dst = bIsDepth ? ImageLayoutBarrier::DepthStencilAttachment : ImageLayoutBarrier::ColorAttachment;
 
-                    VulkanTexture::ImagePipelineBarrier(CmdBuffer,Texture,Src,Dst,0,1,bIsDepth);
+                    // 这里的其实主要是做MemoryBarrier,Layout其实是次要的
+                    VulkanTexture::ImagePipelineBarrier(CmdBuffer,Texture,Texture->mImageLayoutBarrier,Dst,0,1,bIsDepth);
                 }
             }
 

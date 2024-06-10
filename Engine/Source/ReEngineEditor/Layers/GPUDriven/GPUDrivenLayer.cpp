@@ -44,6 +44,9 @@ void GPUDrivenLayer::OnRender()
     ZeroVulkanStruct(cmdBeginInfo, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
     VERIFYVULKANRESULT(vkBeginCommandBuffer(VkContext->GetCommandList(), &cmdBeginInfo));
     
+    m_Scene->m_FrameGraph->Render(VkContext->GetCommandList(),m_Scene.get());
+    
+    //Second Pass
     VkViewport viewport = {};
     viewport.x        = 0;
     viewport.y        = FrameBuffer->m_Height;
@@ -57,10 +60,7 @@ void GPUDrivenLayer::OnRender()
     scissor.extent.height = FrameBuffer->m_Height;
     scissor.offset.x      = 0;
     scissor.offset.y      = 0;
-
-    m_Scene->m_FrameGraph->Render(VkContext->GetCommandList(),m_Scene.get());
     
-    //Second Pass
     {
         VkClearValue clearValues[1];
         clearValues[0].color        =

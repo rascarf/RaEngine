@@ -26,7 +26,7 @@ VulkanRenderTargetLayout::VulkanRenderTargetLayout(const VulkanRenderPassInfo& R
         attchmentDescription.storeOp        = colorEntry.StoreAction;
         attchmentDescription.stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
         attchmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        attchmentDescription.initialLayout  =  colorEntry.LoadAction == VK_ATTACHMENT_LOAD_OP_LOAD? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_UNDEFINED ;
+        attchmentDescription.initialLayout  = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
         attchmentDescription.finalLayout    = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
         ColorReferences[NumColorAttachments].attachment = NumAttachmentDescriptions;
@@ -64,7 +64,7 @@ VulkanRenderTargetLayout::VulkanRenderTargetLayout(const VulkanRenderPassInfo& R
         attchmentDescription.stencilLoadOp  = RenderPassInfo.DepthStencilRenderTarget.LoadAction;
         attchmentDescription.storeOp        = RenderPassInfo.DepthStencilRenderTarget.StoreAction;
         attchmentDescription.stencilStoreOp = RenderPassInfo.DepthStencilRenderTarget.StoreAction;
-        attchmentDescription.initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
+        attchmentDescription.initialLayout  = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
         attchmentDescription.finalLayout    = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
         if(RenderPassInfo.DepthStencilRenderTarget.LoadAction == VK_ATTACHMENT_LOAD_OP_LOAD)
@@ -109,13 +109,12 @@ VulkanRenderPass::VulkanRenderPass(VkDevice InDevice, const VulkanRenderTargetLa
     SubpassDesc.pResolveAttachments     = RtLayout.HasResolveAttachments ? RtLayout.ResolveReferences : nullptr;
     SubpassDesc.pDepthStencilAttachment = RtLayout.HasDepthStencil ? &RtLayout.DepthStencilReference : nullptr;
     SubpassDesc.pInputAttachments       = RtLayout.NumInputAttachments > 0 ? RtLayout.InputAttachments : nullptr;
-
-    // RtLayout.Descriptions[0].initialLayout
+    
     
     VkRenderPassCreateInfo renderPassCreateInfo;
     ZeroVulkanStruct(renderPassCreateInfo, VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO);
-    renderPassCreateInfo.attachmentCount = RtLayout.NumAttachmentDescriptions;
-    renderPassCreateInfo.pAttachments    = RtLayout.Descriptions;
+    renderPassCreateInfo.attachmentCount = Layout.NumAttachmentDescriptions;
+    renderPassCreateInfo.pAttachments    = Layout.Descriptions;
     renderPassCreateInfo.subpassCount    = 1;
     renderPassCreateInfo.pSubpasses      = &SubpassDesc;
     // renderPassCreateInfo.dependencyCount = NumDependencies;
@@ -186,21 +185,23 @@ void VulkanRenderTarget::BeginRenderPass(VkCommandBuffer CmdBuffer)
 {
      for (int32 index = 0; index < RenderPassInfo.NumColorRenderTargets; ++index)
     {
-            Ref<VulkanTexture> texture = RenderPassInfo.ColorRenderTargets[index].RenderTarget;
-            VkImage image = texture->Image;
-            VkImageSubresourceRange subResRange = { };
-            subResRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
-            subResRange.baseMipLevel   = 0;
-            subResRange.levelCount     = 1;
-            subResRange.layerCount     = texture->LayerCount;
-            subResRange.baseArrayLayer = 0;
-            VulkanTexture::ImagePipelineBarrier(CmdBuffer, texture, ImageLayoutBarrier::Undefined, ImageLayoutBarrier::ColorAttachment, subResRange);
+        Ref<VulkanTexture> texture = RenderPassInfo.ColorRenderTargets[index].RenderTarget;
+        VkImageSubresourceRange subResRange = { };
+        subResRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+        subResRange.baseMipLevel   = 0;
+        subResRange.levelCount     = 1;
+        subResRange.layerCount     = texture->LayerCount;
+        subResRange.baseArrayLayer = 0;
+         
+         if(texture->mImageLayoutBarrier != ImageLayoutBarrier::ColorAttachment)
+         {
+             VulkanTexture::ImagePipelineBarrier(CmdBuffer, texture,texture->mImageLayoutBarrier , ImageLayoutBarrier::ColorAttachment, subResRange);    
+         }
     }
 
     if (RenderPassInfo.DepthStencilRenderTarget.DepthStencilTarget)
     {
         Ref<VulkanTexture> texture = RenderPassInfo.DepthStencilRenderTarget.DepthStencilTarget;
-        VkImage image = texture->Image;
         VkImageSubresourceRange subResRange = { };
         subResRange.aspectMask     = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
         
@@ -208,7 +209,11 @@ void VulkanRenderTarget::BeginRenderPass(VkCommandBuffer CmdBuffer)
         subResRange.levelCount     = 1;
         subResRange.layerCount     = RenderPassInfo.DepthStencilRenderTarget.DepthStencilTarget->LayerCount;
         subResRange.baseArrayLayer = 0;
-        VulkanTexture::ImagePipelineBarrier(CmdBuffer, texture, ImageLayoutBarrier::Undefined, ImageLayoutBarrier::DepthStencilAttachment, subResRange);
+
+        if(texture->mImageLayoutBarrier != ImageLayoutBarrier::DepthStencilAttachment)
+        {
+            VulkanTexture::ImagePipelineBarrier(CmdBuffer, texture,texture->mImageLayoutBarrier , ImageLayoutBarrier::DepthStencilAttachment, subResRange);    
+        }
     }
 
     VkViewport viewport = {};
@@ -218,7 +223,7 @@ void VulkanRenderTarget::BeginRenderPass(VkCommandBuffer CmdBuffer)
     viewport.height   = -(float)Extent2D.height;    // flip y axis
     viewport.minDepth = 0.0f;
     viewport.maxDepth = 1.0f;
-
+    
     VkRect2D scissor = {};
     scissor.extent.width  = Extent2D.width;
     scissor.extent.height = Extent2D.height;
